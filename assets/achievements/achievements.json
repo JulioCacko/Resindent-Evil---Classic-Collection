@@ -1,0 +1,2198 @@
+{
+  "re1": [
+    {
+      "id": "re1_001",
+      "name": "A Member of S.T.A.R.S.",
+      "desc": "Complete the game as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_002",
+      "name": "Future Boulder Puncher",
+      "desc": "Complete the game as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_003",
+      "name": "S.T.A.R.S. Officer Jill Reporting In",
+      "desc": "Complete the game as Jill on Advanced Mode",
+      "icon": ""
+    },
+    {
+      "id": "re1_004",
+      "name": "The BSAA Wants To Hire You",
+      "desc": "Complete the game as Chris on Advanced Mode",
+      "icon": ""
+    },
+    {
+      "id": "re1_005",
+      "name": "In and Out, Three Hours",
+      "desc": "Complete the game in less than 3 hours on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_006",
+      "name": "Typewriters Are a Thing of the Past",
+      "desc": "Complete the game without using an Ink Ribbon on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_007",
+      "name": "The Master of Zombie CQC",
+      "desc": "Complete the game using only a knife as Chris without picking up weapons on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_008",
+      "name": "Spray Wisely",
+      "desc": "Complete the game as Jill without picking up any healing items on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_009",
+      "name": "Taking up Some Light Reading",
+      "desc": "Obtain every file as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_010",
+      "name": "Oh My God! He Ate Kenneth!",
+      "desc": "Kill the zombie eating Kenneth's corpse before returning to Barry as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_011",
+      "name": "Such Little Damage for Such a Big Gun",
+      "desc": "Be saved by Barry's magnum as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_012",
+      "name": "A JLT from McSpencers",
+      "desc": "Narrowly avoid becoming a Jill Sandwich as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_013",
+      "name": "Let's Just Leave-Oop, Never Mind",
+      "desc": "Attempt to leave the mansion out the front door as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_014",
+      "name": "The Game Can't Continue without You",
+      "desc": "Attempt to leave the Dining Room without talking to Barry as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_015",
+      "name": "Time for You to Move",
+      "desc": "Move the clock in the Dining Room as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_016",
+      "name": "Jill the Pianist",
+      "desc": "Play the piano as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_017",
+      "name": "Time to Redecorate",
+      "desc": "Push the statue off the ledge in the Dining Room as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_018",
+      "name": "Did Someone Say Boom?",
+      "desc": "Obtain the grenade launcher as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_019",
+      "name": "Down Boys, Down!",
+      "desc": "Kill the two dogs in the L-Passage before acquiring the Shotgun as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_020",
+      "name": "The L-Cache",
+      "desc": "Take the hidden ammo clip in the L-Passage room as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_021",
+      "name": "The Gem of the Tiger",
+      "desc": "Use the Blue Jewel for the first time as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_022",
+      "name": "A Life in Paintings",
+      "desc": "Complete the Picture Room puzzle as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_023",
+      "name": "Science Be Damned",
+      "desc": "Complete the Armor Room puzzle as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_024",
+      "name": "Pierce the Door",
+      "desc": "Open all the Armor Doors as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_025",
+      "name": "The Master of Unlocking",
+      "desc": "Open all the Helmet Doors as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_026",
+      "name": "Let's Get Some Fresh Air Now",
+      "desc": "Open the Crest Door as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_027",
+      "name": "An Effective Pesticide",
+      "desc": "Kill the vines surrounding the fountain as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_028",
+      "name": "Quit Digging up My Flowers",
+      "desc": "Kill all the dogs in the Courtyard Garden as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_029",
+      "name": "Harvest Time for These Guys",
+      "desc": "Collect every herb in the Courtyard Garden without mixing as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_030",
+      "name": "Maybe I'll Turn into a WereJill",
+      "desc": "Defeat Yawn before picking up the Moon Crest as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_031",
+      "name": "Don't You Hiss at Me, Young Snake",
+      "desc": "Obtain the Moon Crest before defeating Yawn as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_032",
+      "name": "Sir, Can You Please Move?",
+      "desc": "Defeat Yawn before picking up Moon Crest in under 25 seconds as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_033",
+      "name": "I Said Go On and Git!",
+      "desc": "Defeat second Yawn in less than 15 seconds as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_034",
+      "name": "Snakebiting the Snake",
+      "desc": "Defeat the second encounter with Yawn as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_035",
+      "name": "At Least the Key Didn't Go down the Drain",
+      "desc": "Unplug the bathtub as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_036",
+      "name": "Quoteth the Crows, Nevermore",
+      "desc": "Kill all the crows in the picture room as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_037",
+      "name": "Ah Well That's Convenient",
+      "desc": "Open the door with the digital keypad as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_038",
+      "name": "The Whole Truth Presented in Powerpoint",
+      "desc": "Use the Slide Projector as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_039",
+      "name": "Efficient Dog Napping",
+      "desc": "Kill the dogs in the Boiler Room in less than 10 seconds as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_040",
+      "name": "Should Probably Make That Fence Higher",
+      "desc": "Kill the dogs in the Boiler Room as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_041",
+      "name": "Putting on a Leash",
+      "desc": "Kill all the dogs in the Courtyard Garden in less than 10 seconds as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_042",
+      "name": "No Way, Hent-se",
+      "desc": "Use the statue to block the tentacle in the Guardhouse as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_043",
+      "name": "Push with Your Legs",
+      "desc": "Solve the Box Puzzle in Guardhouse B1 as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_044",
+      "name": "The Plants Don't Need That Much Water",
+      "desc": "Use the V-Jolt as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_045",
+      "name": "Take at It with a Lawnmower",
+      "desc": "Kill Plant 42 after V-Jolt in less than 15 seconds as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_046",
+      "name": "You're All Wilted Now",
+      "desc": "Kill Plant 42 after using the V-Jolt as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_047",
+      "name": "Pesky Weeds",
+      "desc": "Kill Plant 42 without using the V-Jolt as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_048",
+      "name": "Apologies If You Have Arachnophobia",
+      "desc": "Kill the Black Tiger before cutting the web as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_049",
+      "name": "More Effective than Patrick's Rock",
+      "desc": "Kill Black Tiger before cutting web in under 5 seconds as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_050",
+      "name": "Dogs and Spiders Attacking Together, Mass Hysteria!",
+      "desc": "Return to L-Passage and kill the Web Spinners as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_051",
+      "name": "Resident Sharknado",
+      "desc": "Kill all the Neptunes in the Aquarium without leaving as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_052",
+      "name": "You're Letting the Rain In!",
+      "desc": "Have a hole in the ceiling in the second boulder room as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_053",
+      "name": "It's Time to Go Deeper",
+      "desc": "Obtain the Battery as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_054",
+      "name": "The Hunter Falls to Your Knees",
+      "desc": "Kill the first Hunter without leaving the room as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_055",
+      "name": "Vanity Thy Hunter Has",
+      "desc": "Kill the Hunter in the room with big mirror and bed as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_056",
+      "name": "The Hunters Are Hunted",
+      "desc": "Kill all Hunters in Back Passage and East Stairways without going to other rooms as Jill",
+      "icon": ""
+    },
+    {
+      "id": "re1_057",
+      "name": "This Is for Enrico",
+      "desc": "Kill three Hunters after finding Enrico as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_058",
+      "name": "That's Twice You've Saved Me",
+      "desc": "Watch Barry kill a Hunter in the Underground as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_059",
+      "name": "I'm Sure It'll Be Fine",
+      "desc": "Let Barry go first in the Underground as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_060",
+      "name": "We'll Make a Sandwich in Your Honor",
+      "desc": "Watch Barry die in the Underground as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_061",
+      "name": "What Secrets Does This Mansion Hold?",
+      "desc": "Get into the Laboratory as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_062",
+      "name": "At Least It Wasn't Nemesis",
+      "desc": "Kill the first Tyrant in the Laboratory as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_063",
+      "name": "The Most Non-Canon You Can Get",
+      "desc": "Escape the Mansion with Barry as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_064",
+      "name": "Saving the Inept Hero",
+      "desc": "Escape the Mansion with Chris as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_065",
+      "name": "I'm Sure Billy Will Save Rebecca",
+      "desc": "Escape the Mansion with both Barry and Chris as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_066",
+      "name": "The Lone Survivor",
+      "desc": "Escape the Mansion alone as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_067",
+      "name": "You Won't Be Needing That Now",
+      "desc": "Take the ammo clip from Kenneth's corpse as Jill on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_068",
+      "name": "Stabby Stab Stab",
+      "desc": "Kill the zombie eating Kenneth's corpse before returning to Dining Room as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_069",
+      "name": "Well above Your Paygrade",
+      "desc": "Attempt to leave the Dining Room without investigating as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_070",
+      "name": "You Could've Just Pushed It Aside",
+      "desc": "Push the Grandfather Clock aside as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_071",
+      "name": "Musically Inept",
+      "desc": "Attempt to play the piano as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_072",
+      "name": "I'll Keep It Warm for Her",
+      "desc": "Pick up Jill's pistol as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_073",
+      "name": "Just Put a Thumb in It",
+      "desc": "Obtain the Broken Shotgun as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_074",
+      "name": "Time for Boomstick Action",
+      "desc": "Obtain the Shotgun as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_075",
+      "name": "Let's All Go Out on the Porch",
+      "desc": "Open the Crest Door as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_076",
+      "name": "Survival Horror",
+      "desc": "Kill three zombies in 2F Left Stairs Room without leaving as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_077",
+      "name": "Training for Africa",
+      "desc": "Kill three zombies in Central Corridor without leaving as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_078",
+      "name": "One Sword to Open Them All",
+      "desc": "Open all the Sword Doors as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_079",
+      "name": "Let the Man Do His Business, Chris",
+      "desc": "Kill the zombie in 002 Bathroom as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_080",
+      "name": "Can't a Zombie Get Some Privacy?",
+      "desc": "Kill the zombie in 003 Bathroom as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_081",
+      "name": "I've Seen Bigger Ones in Texas",
+      "desc": "Defeat first Yawn before Moon Crest as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_082",
+      "name": "Silver Fangs Can't Stop Me",
+      "desc": "Defeat first Yawn before Moon Crest without damage as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_083",
+      "name": "How Many Times Do We Have to Teach You",
+      "desc": "Defeat second Yawn without damage as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_084",
+      "name": "You Ain't Worth the Venom",
+      "desc": "Defeat second Yawn as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_085",
+      "name": "Oh No! Well That's a Shame",
+      "desc": "Find Richard's corpse as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_086",
+      "name": "It Lacks Tactical Engravings",
+      "desc": "Obtain the Colt Python as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_087",
+      "name": "Double-Crossed!",
+      "desc": "Find Enrico as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_088",
+      "name": "It's Time to Be a Hero!",
+      "desc": "Begin Rebecca's journey to save Chris from snake poison",
+      "icon": ""
+    },
+    {
+      "id": "re1_089",
+      "name": "Easy Peasy!",
+      "desc": "Open the V-Jolt Room as Rebecca on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_090",
+      "name": "Shoot It with the Dehydration Gun!",
+      "desc": "Inject Plant 42 with V-Jolt as Rebecca on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_091",
+      "name": "Saving These for Myself",
+      "desc": "Take two ammo clips from Kenneth's corpse as Rebecca",
+      "icon": ""
+    },
+    {
+      "id": "re1_092",
+      "name": "The Shark Slayer",
+      "desc": "Kill three Neptunes in the Aquarium as Rebecca",
+      "icon": ""
+    },
+    {
+      "id": "re1_093",
+      "name": "Let Me Clear the Way for You",
+      "desc": "Kill two zombies in Mansion 2F C-Passage as Rebecca",
+      "icon": ""
+    },
+    {
+      "id": "re1_094",
+      "name": "Back to the Doghouses with You",
+      "desc": "Kill all dogs at Guardhouse Gate without leaving as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_095",
+      "name": "Summer's over Now",
+      "desc": "Drain the water in Guardhouse B1 as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_096",
+      "name": "Raccoon City Flytrap",
+      "desc": "Kill Plant 42 as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_097",
+      "name": "Handle Your Weeds Carefully",
+      "desc": "Kill Plant 42 without taking damage as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_098",
+      "name": "Jill Taught Me This",
+      "desc": "Use the statue to block the tentacle as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_099",
+      "name": "I Hate Web Spinners",
+      "desc": "Kill the Black Tiger as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_100",
+      "name": "Nope, Nope, Not Dealing With That",
+      "desc": "Remove the web without killing Black Tiger as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_101",
+      "name": "Sorry, Not on the Menu",
+      "desc": "Kill Black Tiger without damage as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_102",
+      "name": "Breach and Clear",
+      "desc": "Kill all spiders in Billiards Room without leaving as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_103",
+      "name": "The Waterfall Will Drown out Their Yelps",
+      "desc": "Kill all dogs at Waterfall without leaving as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_104",
+      "name": "Make Sure to Dump the Boiler",
+      "desc": "Kill all zombies in Boiler Room without leaving as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_105",
+      "name": "Using Those Inventory Slots Wisely",
+      "desc": "Collect all Green Herbs in Boiler Room without leaving as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_106",
+      "name": "Leave No Drawer Unopened",
+      "desc": "Open all Drawers as Chris on Standard",
+      "icon": ""
+    },
+    {
+      "id": "re1_107",
+      "name": "What's behind Door Number B2?",
+      "desc": "Open B2 doors in Laboratory as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_108",
+      "name": "No Zombie Left Alive",
+      "desc": "Kill all zombies in Lab B3 without entering Save Room as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_109",
+      "name": "Wesker's a Pushover, Isn't He?",
+      "desc": "Kill Tyrant in Laboratory as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_110",
+      "name": "Was This Supposed to Be Challenging?",
+      "desc": "Kill Tyrant without damage as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_111",
+      "name": "What a Lovely Dinner Party",
+      "desc": "Kill all Hunters in Dining Room 2F without leaving as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_112",
+      "name": "I'm Sure This Couple Will Work",
+      "desc": "Escape with Rebecca as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_113",
+      "name": "I'm Sure Barry's Fine",
+      "desc": "Escape with Jill and Rebecca as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_114",
+      "name": "Lost In Nightmares",
+      "desc": "Escape with Jill as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re1_115",
+      "name": "Piers Won't Be Happy about This",
+      "desc": "Escape alone as Chris",
+      "icon": ""
+    }
+  ],
+  "re2": [
+    {
+      "id": "re2_001",
+      "name": "Meat Is No Substitute",
+      "desc": "Complete the Tofu Survivor scenario",
+      "icon": ""
+    },
+    {
+      "id": "re2_002",
+      "name": "Zombies Are People Too",
+      "desc": "Complete New Game: Scenario A without killing any zombies",
+      "icon": ""
+    },
+    {
+      "id": "re2_003",
+      "name": "You Were Wong to Do It",
+      "desc": "Leon-B: Chew out Ada",
+      "icon": ""
+    },
+    {
+      "id": "re2_004",
+      "name": "Your Star Pupil",
+      "desc": "Defeat G-Type 3 in the Laboratory Cargo Room without taking damage",
+      "icon": ""
+    },
+    {
+      "id": "re2_005",
+      "name": "You're Such a Cutup!",
+      "desc": "Defeat G-Type 3 in the Turntable Yard using only the knife",
+      "icon": ""
+    },
+    {
+      "id": "re2_006",
+      "name": "You Make Me Sick!",
+      "desc": "Defeat the G Adult without taking damage",
+      "icon": ""
+    },
+    {
+      "id": "re2_007",
+      "name": "You Didn't Invite Me, So I Crashed",
+      "desc": "Leon-B: Witness a helicopter crash",
+      "icon": ""
+    },
+    {
+      "id": "re2_008",
+      "name": "Xtreme Parkour",
+      "desc": "Claire-B: Defeat Mr. X on the 3F Main Hall",
+      "icon": ""
+    },
+    {
+      "id": "re2_009",
+      "name": "X Gon' Give It to Ya!",
+      "desc": "Claire-B: Witness the arrival of a new friend",
+      "icon": ""
+    },
+    {
+      "id": "re2_010",
+      "name": "Would You Cut It Out?!",
+      "desc": "Defeat the 5th form of G using only the knife",
+      "icon": ""
+    },
+    {
+      "id": "re2_011",
+      "name": "What's This Thing?",
+      "desc": "Complete Scenario A without saving",
+      "icon": ""
+    },
+    {
+      "id": "re2_012",
+      "name": "What a Nice Man",
+      "desc": "Claire-B: Meet Chief Irons",
+      "icon": ""
+    },
+    {
+      "id": "re2_013",
+      "name": "We're Leaving This Place Together",
+      "desc": "Leon-A: Take Ada to the security office to rest",
+      "icon": ""
+    },
+    {
+      "id": "re2_014",
+      "name": "True End",
+      "desc": "Complete Scenario B on Normal Difficulty",
+      "icon": ""
+    },
+    {
+      "id": "re2_015",
+      "name": "Traditionalist of Unlocking",
+      "desc": "Unlock 3 locks with small keys",
+      "icon": ""
+    },
+    {
+      "id": "re2_016",
+      "name": "Tough Break, Pal",
+      "desc": "Leon-A: Eliminate the zombies in the gun shop and obtain Kendo's shotgun",
+      "icon": ""
+    },
+    {
+      "id": "re2_017",
+      "name": "Those Zombies Aren't the Only Things Crawling Around Out There",
+      "desc": "Leon-B: Meet Ben",
+      "icon": ""
+    },
+    {
+      "id": "re2_018",
+      "name": "This Place IS Safer",
+      "desc": "Claire-B: Open the safe",
+      "icon": ""
+    },
+    {
+      "id": "re2_019",
+      "name": "Think Fast!",
+      "desc": "Complete Scenario A in less than 3 hours",
+      "icon": ""
+    },
+    {
+      "id": "re2_020",
+      "name": "The Xtra Mile",
+      "desc": "Defeat Mr. X every time he appears",
+      "icon": ""
+    },
+    {
+      "id": "re2_021",
+      "name": "The Truth",
+      "desc": "Claire-A: Meet Annette and learn the truth about what happened to Raccoon City",
+      "icon": ""
+    },
+    {
+      "id": "re2_022",
+      "name": "These Puns Couldn't Get Any Cornea",
+      "desc": "Defeat G-Type 5 without taking damage",
+      "icon": ""
+    },
+    {
+      "id": "re2_023",
+      "name": "The Hard Way",
+      "desc": "Complete Scenario A without unlocking RPD East Stairway, Weapon Storage, Sewer Warehouses, nor using Main Hall Ladder, Cord or Weapon Box Key",
+      "icon": ""
+    },
+    {
+      "id": "re2_024",
+      "name": "The Bitch in the Red Dress",
+      "desc": "Leon-A: Meet a mysterious stranger in the parking lot",
+      "icon": ""
+    },
+    {
+      "id": "re2_025",
+      "name": "That's Just How Eye Roll",
+      "desc": "Defeat G-Type 2 in the Turntable Yard without taking damage",
+      "icon": ""
+    },
+    {
+      "id": "re2_026",
+      "name": "SYLVIA!!!",
+      "desc": "Leon-B: Defeat Mr. X the first time he appears",
+      "icon": ""
+    },
+    {
+      "id": "re2_027",
+      "name": "Survival Hentai",
+      "desc": "Claire-A: Dispose of the vines",
+      "icon": ""
+    },
+    {
+      "id": "re2_028",
+      "name": "Sucker!",
+      "desc": "Claire-B: Encourage Mr. X to take a dip in the pool",
+      "icon": ""
+    },
+    {
+      "id": "re2_029",
+      "name": "Split Up",
+      "desc": "Leon-A: Return to Ben",
+      "icon": ""
+    },
+    {
+      "id": "re2_030",
+      "name": "Special Training",
+      "desc": "Complete Extreme Battle Mode in under 30 minutes",
+      "icon": ""
+    },
+    {
+      "id": "re2_031",
+      "name": "So This Is What Everyone's Been Dying For",
+      "desc": "Leon-A: Reunite with Ada on the bridge",
+      "icon": ""
+    },
+    {
+      "id": "re2_032",
+      "name": "... SON OF A BITCH!!!",
+      "desc": "Claire-B: Return to the Turntable Cabin on level B4 of the Laboratory to check on Sherry",
+      "icon": ""
+    },
+    {
+      "id": "re2_033",
+      "name": "Some Sort of Prehistoric Computer?",
+      "desc": "Complete Scenario B without saving",
+      "icon": ""
+    },
+    {
+      "id": "re2_034",
+      "name": "Someone to Rely Upon",
+      "desc": "Claire-A: Reach the Umbrella Lab",
+      "icon": ""
+    },
+    {
+      "id": "re2_035",
+      "name": "So How's Your First Day Been?",
+      "desc": "Claire-B: Meet Leon in the Sewers",
+      "icon": ""
+    },
+    {
+      "id": "re2_036",
+      "name": "Snake? Is that You?",
+      "desc": "Complete Original Game: Scenario B on Normal difficulty, leaving the item box exactly how you found it",
+      "icon": ""
+    },
+    {
+      "id": "re2_037",
+      "name": "Smooth",
+      "desc": "Leon-B: Give Claire your number",
+      "icon": ""
+    },
+    {
+      "id": "re2_038",
+      "name": "Smokin' Weed",
+      "desc": "Kill all the Ivies in the laboratory on Scenario B with the flamethrower or flame rounds in one session",
+      "icon": ""
+    },
+    {
+      "id": "re2_039",
+      "name": "Smile!",
+      "desc": "Leon-B: See an old friend on the security monitor",
+      "icon": ""
+    },
+    {
+      "id": "re2_040",
+      "name": "She's the Bomb!",
+      "desc": "Complete Extreme Battle Mode as Claire",
+      "icon": ""
+    },
+    {
+      "id": "re2_041",
+      "name": "Sherring the Love",
+      "desc": "Leon-B: Collect the little girl's pendant",
+      "icon": ""
+    },
+    {
+      "id": "re2_042",
+      "name": "Sherring is Caring",
+      "desc": "Complete scenario A without taking either item out of the weapons locker",
+      "icon": ""
+    },
+    {
+      "id": "re2_043",
+      "name": "See Ya Later, Alligator!",
+      "desc": "Force the alligator to run away in scenario A without taking any damage",
+      "icon": ""
+    },
+    {
+      "id": "re2_044",
+      "name": "Remember Your Training",
+      "desc": "Leon-B: Start the train",
+      "icon": ""
+    },
+    {
+      "id": "re2_045",
+      "name": "Really. DAMN Good!",
+      "desc": "Kill 200 zombies in a new game, Scenario A & B",
+      "icon": ""
+    },
+    {
+      "id": "re2_046",
+      "name": "Raccoon City's Finest",
+      "desc": "Complete Leon Scenario A with an A Rank",
+      "icon": ""
+    },
+    {
+      "id": "re2_047",
+      "name": "Put a Leash On Her",
+      "desc": "Claire-B: Reunite with Sherry yet again",
+      "icon": ""
+    },
+    {
+      "id": "re2_048",
+      "name": "Punchin' Boulders",
+      "desc": "Complete Extreme Battle Mode as Chris",
+      "icon": ""
+    },
+    {
+      "id": "re2_049",
+      "name": "Prom Flashbacks",
+      "desc": "Claire-A: Encounter and kill the first licker",
+      "icon": ""
+    },
+    {
+      "id": "re2_050",
+      "name": "Please Forgive Me, Claire",
+      "desc": "Claire-B: Find out what happened to your brother",
+      "icon": ""
+    },
+    {
+      "id": "re2_051",
+      "name": "Pipe Down!",
+      "desc": "Defeat G-Type 1 without taking damage",
+      "icon": ""
+    },
+    {
+      "id": "re2_052",
+      "name": "Party's Over",
+      "desc": "Leon-A: Get to work and meet your boss, Marvin Branagh",
+      "icon": ""
+    },
+    {
+      "id": "re2_053",
+      "name": "Packing",
+      "desc": "Put on the side pack",
+      "icon": ""
+    },
+    {
+      "id": "re2_054",
+      "name": "Now I'll Show You Why They Call Me 'Redfield'",
+      "desc": "Change Claire's costume and obtain the Colt S.A.A.",
+      "icon": ""
+    },
+    {
+      "id": "re2_055",
+      "name": "No Time to Waste",
+      "desc": "Complete Leon-B",
+      "icon": ""
+    },
+    {
+      "id": "re2_056",
+      "name": "Nothing More",
+      "desc": "Leon-B: Meet up with Ada in the Power Room",
+      "icon": ""
+    },
+    {
+      "id": "re2_057",
+      "name": "No Papers, No Entry",
+      "desc": "Kill the 3 invaders at the R.P.D. front gate",
+      "icon": ""
+    },
+    {
+      "id": "re2_058",
+      "name": "Night of the Living Claire",
+      "desc": "Leon-A: Reunite with Claire in the S.T.A.R.S. Office",
+      "icon": ""
+    },
+    {
+      "id": "re2_059",
+      "name": "My Stomach...",
+      "desc": "Claire-A: Find Sherry",
+      "icon": ""
+    },
+    {
+      "id": "re2_060",
+      "name": "My God Has Protected You",
+      "desc": "Complete Claire-A",
+      "icon": ""
+    },
+    {
+      "id": "re2_061",
+      "name": "My Fee is Way Too Good",
+      "desc": "Kill 100 zombies in a new game, Scenario A",
+      "icon": ""
+    },
+    {
+      "id": "re2_062",
+      "name": "Mr. Death",
+      "desc": "Complete the 4th Survivor scenario",
+      "icon": ""
+    },
+    {
+      "id": "re2_063",
+      "name": "Mother",
+      "desc": "Leon-A: Kill the moth",
+      "icon": ""
+    },
+    {
+      "id": "re2_064",
+      "name": "Made in Heaven",
+      "desc": "Complete Claire Scenario A with an A Rank",
+      "icon": ""
+    },
+    {
+      "id": "re2_065",
+      "name": "Loose Ends",
+      "desc": "Claire-A: Talk to Leon on the security monitor",
+      "icon": ""
+    },
+    {
+      "id": "re2_066",
+      "name": "Let's Blow This Joint",
+      "desc": "Complete Extreme Battle Mode Level 3",
+      "icon": ""
+    },
+    {
+      "id": "re2_067",
+      "name": "Let Me Live",
+      "desc": "Complete Claire Scenario B with an A Rank",
+      "icon": ""
+    },
+    {
+      "id": "re2_068",
+      "name": "'Leon! You Killed the Zombie Vickers!' 'He Was a Zombie?'",
+      "desc": "Kill Zombie Brad Vickers",
+      "icon": ""
+    },
+    {
+      "id": "re2_069",
+      "name": "Lending a Hand",
+      "desc": "Leon-A: Cross the cable car to the vacant factory",
+      "icon": ""
+    },
+    {
+      "id": "re2_070",
+      "name": "Knife to See You Again",
+      "desc": "Defeat G-Type 2 in the Turntable Yard using only the knife",
+      "icon": ""
+    },
+    {
+      "id": "re2_071",
+      "name": "Knife to Meet You!",
+      "desc": "Defeat G-Type 1 using only the knife",
+      "icon": ""
+    },
+    {
+      "id": "re2_072",
+      "name": "Just the Fax, Ma'am. Just the Fax",
+      "desc": "Claire-A: Receive a fax",
+      "icon": ""
+    },
+    {
+      "id": "re2_073",
+      "name": "Just a Box",
+      "desc": "Complete Original Game: Scenario A on Normal difficulty, leaving the item box exactly how you found it",
+      "icon": ""
+    },
+    {
+      "id": "re2_074",
+      "name": "Journalist",
+      "desc": "Find all files in Scenario B",
+      "icon": ""
+    },
+    {
+      "id": "re2_075",
+      "name": "Jenny McCarthy's Worst Nightmare",
+      "desc": "Claire-A: Synthesize the Vaccine",
+      "icon": ""
+    },
+    {
+      "id": "re2_076",
+      "name": "I've Been Workin' on the Railroad",
+      "desc": "Claire-B: Start the train",
+      "icon": ""
+    },
+    {
+      "id": "re2_077",
+      "name": "It's Over",
+      "desc": "Complete Leon-A",
+      "icon": ""
+    },
+    {
+      "id": "re2_078",
+      "name": "It's Not Easy Being Green",
+      "desc": "Complete Original Game: Scenario B without collecting any red herbs or using first aid sprays",
+      "icon": ""
+    },
+    {
+      "id": "re2_079",
+      "name": "It's Coming After Me!",
+      "desc": "Claire-A: Meet Sherry",
+      "icon": ""
+    },
+    {
+      "id": "re2_080",
+      "name": "It's a Gas!",
+      "desc": "Claire-B: Sprinkle the anti-B.O.W. gas in the laboratory",
+      "icon": ""
+    },
+    {
+      "id": "re2_081",
+      "name": "I Still Love You",
+      "desc": "Claire-B: Reunite Sherry with her mother",
+      "icon": ""
+    },
+    {
+      "id": "re2_082",
+      "name": "Iris My Case",
+      "desc": "Defeat G-Type 4 in the Laboratory Cargo Room without taking damage",
+      "icon": ""
+    },
+    {
+      "id": "re2_083",
+      "name": "I Need a Bandaida",
+      "desc": "Leon-B: Stop laying down on the job!",
+      "icon": ""
+    },
+    {
+      "id": "re2_084",
+      "name": "I'm Sorry...",
+      "desc": "Leon-A: Put a friend out of his misery",
+      "icon": ""
+    },
+    {
+      "id": "re2_085",
+      "name": "I'm Sensing a Pattern",
+      "desc": "Claire-B: Lose Sherry... again",
+      "icon": ""
+    },
+    {
+      "id": "re2_086",
+      "name": "I'm Fired!",
+      "desc": "Leon-B: Find Chief Irons",
+      "icon": ""
+    },
+    {
+      "id": "re2_087",
+      "name": "I Just Wanted Some Water...",
+      "desc": "Claire-A: Extinguish the Fire",
+      "icon": ""
+    },
+    {
+      "id": "re2_088",
+      "name": "I Have to Find You",
+      "desc": "Complete Claire-B",
+      "icon": ""
+    },
+    {
+      "id": "re2_089",
+      "name": "I Don't Want to Lose You",
+      "desc": "Leon-B: Get back into the Turntable Cabin to check on Ada",
+      "icon": ""
+    },
+    {
+      "id": "re2_090",
+      "name": "I Can't Do It!",
+      "desc": "Claire-A: Collect the detonator and escape the office without harming Marvin",
+      "icon": ""
+    },
+    {
+      "id": "re2_091",
+      "name": "I Can Take Care of Myself!",
+      "desc": "Claire-A: Collect everything in the Sewage Disposal Facility while playing as Sherry and return to Claire",
+      "icon": ""
+    },
+    {
+      "id": "re2_092",
+      "name": "I Am So Smrt!",
+      "desc": "Leon-B: Take a shortcut back to the basement",
+      "icon": ""
+    },
+    {
+      "id": "re2_093",
+      "name": "I Am Into Bandage",
+      "desc": "Leon-A: Reunite with Ada",
+      "icon": ""
+    },
+    {
+      "id": "re2_094",
+      "name": "Hurry Back!",
+      "desc": "Complete Scenario B in less than 3 hours",
+      "icon": ""
+    },
+    {
+      "id": "re2_095",
+      "name": "How Knife of You to Drop In",
+      "desc": "Defeat G-Type 3 in the Laboratory Cargo Room using only the knife",
+      "icon": ""
+    },
+    {
+      "id": "re2_096",
+      "name": "Half the Man He Was",
+      "desc": "Claire-B: Meet Chief Irons again",
+      "icon": ""
+    },
+    {
+      "id": "re2_097",
+      "name": "Grim Reaper",
+      "desc": "Finish the 4th Survivor scenario with an A rank",
+      "icon": ""
+    },
+    {
+      "id": "re2_098",
+      "name": "Got Somethin' That Might Interest Ya!",
+      "desc": "Obtain all custom weapon parts",
+      "icon": ""
+    },
+    {
+      "id": "re2_099",
+      "name": "Good Second Day",
+      "desc": "Complete Extreme Battle Mode as Leon",
+      "icon": ""
+    },
+    {
+      "id": "re2_100",
+      "name": "Good First Day",
+      "desc": "Complete Leon Scenario B with an A Rank",
+      "icon": ""
+    },
+    {
+      "id": "re2_101",
+      "name": "Going Green",
+      "desc": "Complete Original Game: Scenario A without collecting any red herbs or using first aid sprays",
+      "icon": ""
+    },
+    {
+      "id": "re2_102",
+      "name": "Girl Talk",
+      "desc": "Leon-A: Chase down the shooter and make her talk",
+      "icon": ""
+    },
+    {
+      "id": "re2_103",
+      "name": "Gateway of Doom? Awesome! Let's Go!",
+      "desc": "Claire-A: Place all three stones",
+      "icon": ""
+    },
+    {
+      "id": "re2_104",
+      "name": "Game Over, Big Guy!",
+      "desc": "Avoid taking damage fighting Super-X until you get some help",
+      "icon": ""
+    },
+    {
+      "id": "re2_105",
+      "name": "Flare Up",
+      "desc": "Claire-B: Fire a flare",
+      "icon": ""
+    },
+    {
+      "id": "re2_106",
+      "name": "Final Xam",
+      "desc": "Defeat Super-X without healing or using any weapons other than the Rocket Launcher",
+      "icon": ""
+    },
+    {
+      "id": "re2_107",
+      "name": "Far From Finished",
+      "desc": "Complete Scenario A on Normal Difficulty",
+      "icon": ""
+    },
+    {
+      "id": "re2_108",
+      "name": "Ew, This Place Smells Like a... Oh",
+      "desc": "Claire-B: Reach the Septic Pool Walkway",
+      "icon": ""
+    },
+    {
+      "id": "re2_109",
+      "name": "Even the Zombies Won't Eat It",
+      "desc": "Reach the Main Hall playing as Tofu",
+      "icon": ""
+    },
+    {
+      "id": "re2_110",
+      "name": "Don't You Worry, Girlie!",
+      "desc": "Claire-A: Kendo's keepin' a close eye on things",
+      "icon": ""
+    },
+    {
+      "id": "re2_111",
+      "name": "Don't Go Chasing Waterfalls",
+      "desc": "Leon-B: Stop the water flow in the sewer",
+      "icon": ""
+    },
+    {
+      "id": "re2_112",
+      "name": "Don't Go Alone!",
+      "desc": "Claire-B: Find Sherry in the Sewage Disposal Facility",
+      "icon": ""
+    },
+    {
+      "id": "re2_113",
+      "name": "Documentary",
+      "desc": "Find all files in Scenario A",
+      "icon": ""
+    },
+    {
+      "id": "re2_114",
+      "name": "Dead People",
+      "desc": "Complete New Game: Scenario A & B without killing any zombies",
+      "icon": ""
+    },
+    {
+      "id": "re2_115",
+      "name": "Daddy's Little Girl",
+      "desc": "Claire-A: Find the wolf medal while playing as Sherry",
+      "icon": ""
+    },
+    {
+      "id": "re2_116",
+      "name": "Checkmate",
+      "desc": "Leon-A: Insert all chess plugs into the door",
+      "icon": ""
+    },
+    {
+      "id": "re2_117",
+      "name": "Catch Up Later",
+      "desc": "Leon-A: Collect everything in the sewage disposal plant while playing as Ada and return to Leon",
+      "icon": ""
+    },
+    {
+      "id": "re2_118",
+      "name": "Casual Friday",
+      "desc": "Change into one of Leon's alternate costumes",
+      "icon": ""
+    },
+    {
+      "id": "re2_119",
+      "name": "Can You Come Out Tonight?",
+      "desc": "Claire-A: Locate another survivor in the Office Corridor",
+      "icon": ""
+    },
+    {
+      "id": "re2_120",
+      "name": "Butterfly Effect",
+      "desc": "Complete Extreme Battle Mode as Ada",
+      "icon": ""
+    },
+    {
+      "id": "re2_121",
+      "name": "Be Back Soon",
+      "desc": "Leon-B: Get Sherry and take her to the train",
+      "icon": ""
+    },
+    {
+      "id": "re2_122",
+      "name": "Bad Security",
+      "desc": "Leon-B: Kill all the monsters and collect the item in the Culture Experiment Room",
+      "icon": ""
+    },
+    {
+      "id": "re2_123",
+      "name": "A Slice of Life",
+      "desc": "Defeat the G-Adult using only the knife",
+      "icon": ""
+    },
+    {
+      "id": "re2_124",
+      "name": "Apprentice of Unlocking",
+      "desc": "Unlock 4 locks with the lockpick",
+      "icon": ""
+    },
+    {
+      "id": "re2_125",
+      "name": "Appreciate the Little Things",
+      "desc": "Find and develop the hidden film",
+      "icon": ""
+    },
+    {
+      "id": "re2_126",
+      "name": "An Xtra Meeting",
+      "desc": "Leon-B: Defeat Mr. X in the Stuffed Tiger Corridor",
+      "icon": ""
+    },
+    {
+      "id": "re2_127",
+      "name": "Annoying Bird. I Am the Great LEON!",
+      "desc": "Leon-A: Kill all the crows",
+      "icon": ""
+    },
+    {
+      "id": "re2_128",
+      "name": "An Eyedeal Relationship",
+      "desc": "Defeat G-Type 3 in the Turntable Yard without taking damage",
+      "icon": ""
+    },
+    {
+      "id": "re2_129",
+      "name": "A Light Unto My Path",
+      "desc": "Leon-A: Enter Sewer Warehouse 2, light the lanterns, and loot it for all its worth",
+      "icon": ""
+    },
+    {
+      "id": "re2_130",
+      "name": "After While, Crocodile!",
+      "desc": "Kill the alligator in scenario B without taking damage and without using the gas tank",
+      "icon": ""
+    },
+    {
+      "id": "re2_131",
+      "name": "A Cut Above the Rest",
+      "desc": "Defeat G-Type 4 in the Laboratory Cargo Room using only the knife",
+      "icon": ""
+    }
+  ],
+  "re3": [
+    {
+      "id": "re3_001",
+      "name": "I'm Getting Tired of You!",
+      "desc": "Kill Nemesis six times or make him drop his item (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_002",
+      "name": "Get a Load of That!",
+      "desc": "Kill Nemesis twice or make him drop his item (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_003",
+      "name": "Stop Chasing Me!",
+      "desc": "Kill Nemesis once or make him drop his item (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_004",
+      "name": "The Lone Child",
+      "desc": "Unlock the 6th Epilogue",
+      "icon": ""
+    },
+    {
+      "id": "re3_005",
+      "name": "The Story of My Comrade",
+      "desc": "Unlock the 2nd Epilogue",
+      "icon": ""
+    },
+    {
+      "id": "re3_006",
+      "name": "The Daddy",
+      "desc": "Unlock the 3rd Epilogue",
+      "icon": ""
+    },
+    {
+      "id": "re3_007",
+      "name": "The Sister",
+      "desc": "Unlock the 5th Epilogue",
+      "icon": ""
+    },
+    {
+      "id": "re3_008",
+      "name": "The Officer",
+      "desc": "Unlock the 4th Epilogue",
+      "icon": ""
+    },
+    {
+      "id": "re3_009",
+      "name": "The Spy",
+      "desc": "Unlock the 7th Epilogue",
+      "icon": ""
+    },
+    {
+      "id": "re3_010",
+      "name": "The Soldier",
+      "desc": "Unlock the 8th Epilogue",
+      "icon": ""
+    },
+    {
+      "id": "re3_011",
+      "name": "We Dino Crisis Now!",
+      "desc": "Play as Regina (Hard)",
+      "icon": ""
+    },
+    {
+      "id": "re3_012",
+      "name": "So Good!",
+      "desc": "Get the A rank (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_013",
+      "name": "My Diary",
+      "desc": "Unlock Jill's Diary (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_014",
+      "name": "I'm in Good Shape!",
+      "desc": "Complete the game without ever healing (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_015",
+      "name": "I Knew It! DIE!",
+      "desc": "Kill Nicholai (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_016",
+      "name": "Moonlight Sonata Is Better",
+      "desc": "Complete the Music Puzzle in the Cog Room - Clock Tower 3F (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_017",
+      "name": "Sorry But... I'm Out of Date",
+      "desc": "Push both buttons in the sewers at the Lonsdale Yard - Downtown (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_018",
+      "name": "Froggy [Carlos] After you've completed the Synthesizer Puzzle in the Experiment Room - Hospital B3, kill both Hunter Gamma",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_019",
+      "name": "You Scared Me! This is not a police officer!",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_020",
+      "name": "Oh No... It's Hentai Again...",
+      "desc": "Kill Nemesis seven times or make him drop his item (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_021",
+      "name": "Handgun Expert In one session beat the game using only pistols and NEVER equip another weapon (Hard, Knife Banned, You Can Save, Carlos can shoot with everything | No Mercs. Unlocks)",
+      "desc": "",
+      "icon": ""
+    },
+    {
+      "id": "re3_022",
+      "name": "Ink Ribbons?",
+      "desc": "Complete the game without saving (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_023",
+      "name": "Crazy, I Am",
+      "desc": "Use the Kitchen against the Nemesis (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_024",
+      "name": "Time To Clean the Streets In the Barricaded Back Passage, kill all the zombies without leaving the room before you use the Lighter",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_025",
+      "name": "Guns?",
+      "desc": "Complete the game using your knife only. 15 initial bullets allowed, but making or picking up any HG Bullets and Weapons is NOT allowed. Carlos can shoot. (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_026",
+      "name": "Crow...ned the Queen of Crows!",
+      "desc": "Kill every single Crows in the Parking Area - Uptown when they burst out of the bus, without leaving (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_027",
+      "name": "Burn, Baby, Burn In the Barricaded Back Passage, open the closed door",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_028",
+      "name": "Grade Hunter",
+      "desc": "Get an A rank in the mercenaries mini game",
+      "icon": ""
+    },
+    {
+      "id": "re3_029",
+      "name": "Heart Attack",
+      "desc": "Get an Score Attack of 5 minutes in the mercenaries mini game",
+      "icon": ""
+    },
+    {
+      "id": "re3_030",
+      "name": "Speeeeed Merc",
+      "desc": "Beat the mercenaries mini game in under 3:30",
+      "icon": ""
+    },
+    {
+      "id": "re3_031",
+      "name": "Nemesis Hunter",
+      "desc": "Kill all Nemesis in a single run in the mercenaries mini game",
+      "icon": ""
+    },
+    {
+      "id": "re3_032",
+      "name": "Hidden Treasures",
+      "desc": "Find every extra time in the mercenaries mini game",
+      "icon": ""
+    },
+    {
+      "id": "re3_033",
+      "name": "The True Mercenary",
+      "desc": "Buy every weapon at The Mercenaries",
+      "icon": ""
+    },
+    {
+      "id": "re3_034",
+      "name": "The True Savior of the Earth",
+      "desc": "Everyone has to be saved when you complete the Mercenaries",
+      "icon": ""
+    },
+    {
+      "id": "re3_035",
+      "name": "Useful Against Enemies",
+      "desc": "Destroy every trap in the game",
+      "icon": ""
+    },
+    {
+      "id": "re3_036",
+      "name": "Be a Firefighter! This",
+      "desc": "Fire Hose is probably useful for something! (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_037",
+      "name": "Kill 'Em All!",
+      "desc": "Kill all the zombies at the Sub Station Entrance - Downtown before leaving the room (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_038",
+      "name": "Surprise, Nemmy! In the Office, hide",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_039",
+      "name": "Sorry Lady, I'm Not Into Hentai Carlos:",
+      "desc": "Kill Nemesis (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_040",
+      "name": "Let's Clean This Mess",
+      "desc": "Kill every zombies in both Sales Office and Sales Office Storage without leaving the building (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_041",
+      "name": "Chicken Seriously?",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_042",
+      "name": "Door Master",
+      "desc": "Open 50 doors in one session (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_043",
+      "name": "Minefield Time!",
+      "desc": "Find the Mine Thrower (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_044",
+      "name": "Sooooo Hot!",
+      "desc": "Complete the Puzzle at the Steam Room - Dead Factory 2F (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_045",
+      "name": "Why I Am Here? Carlos: In the Bedroom - Clock Tower 1F, kill all the monsters in a row",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_046",
+      "name": "I Missed You!",
+      "desc": "Kill all the spiders in a row the Main Hall Second Floor - Clock Tower 2F before Nemesis appears in the Clock Tower (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_047",
+      "name": "This is for Brad!",
+      "desc": "Kill your first Nemesis in the Courtyard - Police Station 1F (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_048",
+      "name": "Easiest Puzzle Ever!",
+      "desc": "Complete the Puzzle at the Water Control Room - Dead Factory 1F (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_049",
+      "name": "DIE!!!!!!! Completely kill Nemesis at the Balcony - Clock Tower 2F when you meet him, in this room",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_050",
+      "name": "Weird Guy...",
+      "desc": "Meet Nicholai in the Cable Car Rear Carriage - Downtown (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_051",
+      "name": "Will You Follow Me?",
+      "desc": "Jump or be pushed off the bridge (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_052",
+      "name": "Nice Mouth, Buddy",
+      "desc": "Kill the Worm at the Graveyard - Park (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_053",
+      "name": "Drain My Gun, Monster!",
+      "desc": "Kill the two first Drain Deimos you meet at the Maintenance Area - Downtown before you leave the room (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_054",
+      "name": "Zap!",
+      "desc": "Obtain the Power Cable (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_055",
+      "name": "Time to",
+      "desc": "Escape Choose to enter the police station against Nemesis at the Courtyard - Police Station 1F (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_056",
+      "name": "Are You Crazy?!",
+      "desc": "Witness Mikhail getting surrounded by zombies (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_057",
+      "name": "You Are So Shiny Mister Nemesis!",
+      "desc": "Find a way to blind the Nemesis (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_058",
+      "name": "What Is This Wizardry?!",
+      "desc": "Obtain the Battery (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_059",
+      "name": "Your Aim Is Impeckable... Again! In the City Hall Gate - Downtown, kill either the Crows or the Dogs when they break the glass without leaving the room",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_060",
+      "name": "Don't Invade This Place!",
+      "desc": "Kill all the zombies in a row in the Black Jack's Bar - Uptown later on the game (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_061",
+      "name": "SCUM! A guy is killing a zombie near the restaurant front entrance... Let's watch him do it!",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_062",
+      "name": "My Hero! [Carlos] Save Jill",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_063",
+      "name": "Dogs! No... Zombies!!!",
+      "desc": "Kill all the zombies without leaving in the Piano Room - Clock Tower 1F right when they break the windows (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_064",
+      "name": "Is That You?! An old friend came to save you from Raccoon City",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_065",
+      "name": "I'm Cooler Than Steve Burnside... Right?",
+      "desc": "Listen to Jill's last words before taking control of Carlos for the first time (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_066",
+      "name": "Over Here!",
+      "desc": "Hide into the basement at the Restaurant (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_067",
+      "name": "So Many to Read...",
+      "desc": "Obtain all the files with the Classified Photo File as the last one (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_068",
+      "name": "Carlos, My Love! Carlos has found a chopper to get out of Raccoon City",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_069",
+      "name": "Let's Break This Glass!",
+      "desc": "Jump out of the window against Nemesis (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_070",
+      "name": "This Will Be Fun!",
+      "desc": "Create enhanced Shotgun Shells (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_071",
+      "name": "Kill 'Em All 2!",
+      "desc": "Kill every zombie in both Sales Office and Sales Office Storage without using the pipes and leaving the building (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_072",
+      "name": "These Are Just Crates! Can you dodge the crates in the Garage - Downtown? Don't skip the cutscene",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_073",
+      "name": "Be Crazy Once in Your Life",
+      "desc": "Jump out of the window in the Cable Car (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_074",
+      "name": "This Seems Valuable...",
+      "desc": "Obtain the Machine Oil (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_075",
+      "name": "Nothing Bad Will Happen Down There... Right?",
+      "desc": "Jump in the Garage - Downtown (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_076",
+      "name": "Carlos the Warrior",
+      "desc": "Complete The Mercenaries with Carlos",
+      "icon": ""
+    },
+    {
+      "id": "re3_077",
+      "name": "You Want S.T.A.R.S? I'll",
+      "desc": "Give You S.T.A.R.S! Nemesis deserves more bullets (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_078",
+      "name": "I'M NOT LEAVING Try to speak with the crazy guy in the container",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_079",
+      "name": "Easy",
+      "desc": "Dodge once before you get to the Warehouse - Uptown (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_080",
+      "name": "Open Already! Place the two gems",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_081",
+      "name": "Say Hi to My New Friend",
+      "desc": "Obtain the Shotgun (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_082",
+      "name": "Mikhail the Poor Soul",
+      "desc": "Complete The Mercenaries with Mikhail",
+      "icon": ""
+    },
+    {
+      "id": "re3_083",
+      "name": "Very Clever... Mercenary? [Carlos]",
+      "desc": "Complete the synthetiser puzzle in the Experiment Room - Hospital B3 (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_084",
+      "name": "Should I Drink It?",
+      "desc": "Obtain the Oil Additive (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_085",
+      "name": "Please, Don't Shoot!",
+      "desc": "Negotiate with the white haired guy (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_086",
+      "name": "Stop, Please, Stop!",
+      "desc": "Kill Nemesis five times or make him drop his item (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_087",
+      "name": "Things Hardly Attained Are the Longer Retained",
+      "desc": "Complete the Clock Puzzle in the Clock Room - Clock Tower 1F (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_088",
+      "name": "No Time to Spare",
+      "desc": "Kill Nemesis at the Treatment Room - Dead Factory 2F with at least 2:40 left (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_089",
+      "name": "Why Is It Here?",
+      "desc": "Obtain the Fuse (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_090",
+      "name": "Die, Monster! You Don't Belong... Wait... [Carlos] In the Spider Corridor - Clock Tower 1F, kill all the monsters in a row",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_091",
+      "name": "Have Fun in Hell, Zombie In the Residential Street, kill the poor guy who has been eaten before you meet with Brad",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_092",
+      "name": "Time To",
+      "desc": "Kill Some Zombies! Obtain the weapon in the Sub Station - Downtown (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_093",
+      "name": "Nicholai the Friend You Want",
+      "desc": "Complete The Mercenaries with Nicholai",
+      "icon": ""
+    },
+    {
+      "id": "re3_094",
+      "name": "Wanna Dance?!",
+      "desc": "Dodge 25 times (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_095",
+      "name": "Being a Coward Can Be Great! In the Sub Station - Downtown, escape",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_096",
+      "name": "I Could Barbecue You!",
+      "desc": "Kill Nemesis three times or make him drop his item (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_097",
+      "name": "Mister Nemesis Wants to Dance? It seems Nemesis doesn't like electricity",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_098",
+      "name": "WE'RE GONNA CRASH!!!",
+      "desc": "Use the emergency brake in the Cable Car (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_099",
+      "name": "Master of Unlocking",
+      "desc": "Obtain the Lockpick (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_100",
+      "name": "This Guy Was an Idiot",
+      "desc": "Kill all the zombies in a row in the Warehouse - Uptown (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_101",
+      "name": "Headache [Carlos] Just after the cutscene in the Waiting Room - Hospital 1F, kill your new friends",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_102",
+      "name": "What Will I Get?",
+      "desc": "Obtain a new weapon in the RPD (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_103",
+      "name": "Fight With the Monster",
+      "desc": "Choose to fight against Nemesis at the Courtyard - Police Station 1F (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_104",
+      "name": "Say Hi to My New Weapon!",
+      "desc": "Find the Rocket Launcher (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_105",
+      "name": "I Love Secrets!",
+      "desc": "Open the shutter at the Private Backyard - Uptown (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_106",
+      "name": "Dancing Party! In the Sub Station - Downtown it seems you can electrify the zombies",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_107",
+      "name": "Sorry, I Couldn't Save You... Can you find Brad's Card?",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_108",
+      "name": "Sorry, I Need to Pass",
+      "desc": "Push Nemesis off the bridge (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_109",
+      "name": "Don't Hesitate... Carlos:",
+      "desc": "Listen to Jill's last wish before doing anything else (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_110",
+      "name": "Dishes",
+      "desc": "Kill every zombies in the Restaurant - Downtown without leaving the room (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_111",
+      "name": "Curiosity This Lighter seems empty...",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_112",
+      "name": "Get Out of Here!",
+      "desc": "Manage to damage Nemesis enough in the Cable Car - Downtown (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_113",
+      "name": "Eat Me Plenty",
+      "desc": "Kill the Grave Digger at the Lonsdale Yard - Downtown (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_114",
+      "name": "Tentacle Shower Kil Nemesis at the Treatment Room - Dead Factory 2F",
+      "desc": "(Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_115",
+      "name": "Jill the Plumber",
+      "desc": "Activate both pipes before leaving the room in the Sales Office Storeroom - Uptown (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_116",
+      "name": "Enginery",
+      "desc": "Complete the Puzzle at the Fountain - Park (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_117",
+      "name": "In Love With Your Nemesis",
+      "desc": "Kill Nemesis four times or make him drop his item (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_118",
+      "name": "Is This Better?",
+      "desc": "Create enhanced Hand Gun Bullets (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    },
+    {
+      "id": "re3_119",
+      "name": "I Need To Start Another Run Quickly",
+      "desc": "Beat the game in under 3 hours (Hard | No Mercs. Unlocks)",
+      "icon": ""
+    }
+  ]
+}

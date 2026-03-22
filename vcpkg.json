@@ -1,0 +1,8 @@
+{
+  "name": "re-classic-collection",
+  "version-string": "1.0.0",
+  "description": "Resident Evil Classic Collection Launcher",
+  "dependencies": [
+    "sdl2"
+  ]
+}

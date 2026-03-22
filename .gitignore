@@ -1,0 +1,38 @@
+# Build output
+build/
+out/
+*.exe
+*.obj
+*.lib
+*.pdb
+*.ilk
+*.exp
+
+# vcpkg local installs
+vcpkg_installed/
+
+# IDE / editor
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+CMakeSettings.json
+.cache/
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# GOG game installs (copyrighted content)
+GOG Games/
+
+# Reference code (third-party, not redistributable)
+.ref/
+
+# Agent transcripts
+.agent/
+
+# RE-Enhance mods (copyrighted mod binaries)
+reenhancemods/
