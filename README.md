@@ -1,352 +1,396 @@
 # Resident Evil - Classic Collection
 
-A standalone C++11 launcher/frontend for the GOG Resident Evil Classic Bundle (RE1, RE2, RE3). Inspired by the Metal Gear Solid Master Collection UI, this launcher provides a unified interface for launching all three classic Resident Evil titles with optional RE-Enhance mod support.
+A desktop launcher/frontend for the **GOG Resident Evil Classic Bundle** (RE1, RE2,
+RE3), rebuilt as an Electron + React application around a 1:1 recreation of the
+Figma concept — the same UI the original Metal Gear Solid Master Collection-inspired
+design called for, now driven by the design's own measured values instead of by
+hand-written draw calls. It launches all three titles with optional RE-Enhance mod
+support, per-version regional variants, RE2's player scenarios, a CRT filter and an
+achievement system.
 
 **Fan Concept by Julio CACKO**
 
 ---
 
+## What this is
+
+This is the second incarnation of the concept. The first was a C++11 / SDL2 /
+OpenGL launcher built around a fixed 1920x1080 offscreen framebuffer; that
+implementation has been replaced by Electron 44 + React 19 + Vite 7 + Tailwind CSS
+v4 + TypeScript, so the concept's own Tailwind classes could be transcribed into
+components rather than re-implemented as immediate-mode draw calls. Everything the
+launcher *does* — install detection, validation, RE-Enhance injection and restore,
+`config.ini` patching, the save format, the boot-to-install-status rule — is
+behaviourally the same as before, ported one function at a time from the code it
+replaces. What is new is how it is *drawn*, and how carefully that drawing is
+guarded: see `docs/DESIGN-FIDELITY.md` and `pnpm check:fidelity`.
+
+`docs/ARCHITECTURE.md` is the full tour: the process split, the IPC contract, the
+catalog, the launch pipeline, the mod algorithm, the config and save formats and the
+input pipeline.
+
+---
+
 ## Features
 
-- **Unified Game Selection** -- Browse all three Resident Evil titles from a single polished interface with animated card selection and dark grunge aesthetic
-- **Version Picker** -- Choose between regional variants (US, JP, Director's Cut) for each title with hero artwork and game descriptions
-- **RE-Enhance Mod Integration** -- Toggle between original and enhanced modes with automatic mod file injection and correct executable switching
-- **CRT Post-Processing** -- Optional scanline + curvature + chromatic aberration shader for authentic retro feel
-- **Achievement System** -- JSON-backed achievement definitions with save progress tracking
-- **GOG Auto-Detection** -- Automatically finds GOG installations via Windows registry
-- **Gamepad Support** -- Full controller navigation with on-screen button hints
-- **Smooth Animations** -- Fade-in transitions, card scale effects, glow interpolation, and SmoothStep screen transitions
+- **Unified game selection** — three cover cards on a fixed 1920x1080 stage, scaled
+  to fit any window without reflowing a single measured value
+- **Version picker** — 8 rows across three titles: regional variants (US / JP),
+  Director's Cut, RE2's two player scenarios as a per-row option, and the concept's
+  BIOHAZARD 1.5 row kept for documentation
+- **RE-Enhance integration** — enhanced/original mode per row, automatic file
+  injection with a reversible backup, correct executable switching, and pre-launch
+  `config.ini` patching so the RE-Enhance setup dialog never appears
+- **Achievements** — 365 definitions (RE1 115, RE2 131, RE3 119) with progress saved
+  in the old launcher's own format, so existing unlocks carry over
+- **GOG auto-detection** — local `GOG Games/` folder, then the Windows registry, then
+  the usual `C:\` roots, with an explicit override
+- **Gamepad, keyboard and mouse** — three input sources normalised into one set of six
+  actions, with on-screen key hints per screen
+- **CRT filter** — scanlines, phosphor mask, vignette, grain and barrel curvature,
+  all configurable
+- **No native modules** — nothing to rebuild per Electron version or per ABI
 
 ---
 
 ## Requirements
 
-### Build Dependencies
+### Development
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| CMake | >= 3.16 | Build system |
-| SDL2 | latest | Window, input, audio backend |
-| OpenGL | 3.3+ | GPU rendering |
-| vcpkg | latest | Package manager (optional) |
-| MSVC / GCC / Clang | C++11 | Compiler |
+| Requirement | Version | Why |
+|---|---|---|
+| Node.js | **20.19+ or 22.12+** (Vite 7's floor) | Build tooling |
+| pnpm | 9+ | The lockfile is `pnpm-lock.yaml`; `pnpm-workspace.yaml` is present |
+| Windows | 10 or 11, x64 | The only packaged target (`electron-builder.yml`); the code paths for macOS/Linux exist but are untested |
+
+Install with `pnpm install`; nothing else has to be built or downloaded.
 
 ### Runtime Dependencies (Not Included in Repository)
 
-The following are **not included** in this repository due to copyright and must be provided by the user:
+The following are **not** in this repository, for copyright reasons, and must be
+provided locally. Both folders are gitignored.
 
-- **GOG Resident Evil Bundle** -- Install RE1, RE2, RE3 via GOG. Place installs in a `GOG Games/` folder next to the launcher, or let the launcher auto-detect via the Windows registry.
-- **RE-Enhance mods** (optional) -- Download from their respective sources and place in a `reenhancemods/` folder next to the launcher.
+| What | Where it goes | How to obtain |
+|---|---|---|
+| The GOG Resident Evil Classic Bundle | `GOG Games/` next to the launcher (or anywhere the launcher can detect) | Purchase and install from GOG.com |
+| RE-Enhance mods (optional) | `reenhancemods/` next to the launcher | From their respective authors (see Credits) |
+| The `Resident Evil Classic Font` typeface | `assets/font/ResidentEvilClassic.ttf` (optional, then `pnpm assets:sync`) | **"Resident Evil Classic Game Font"** by Peter Jonca — his re-creation of the RE1/2/3 title lettering, free on [DeviantArt](https://www.deviantart.com/snakeyboy/art/Resident-Evil-Classic-Game-Font-842017934) under CC BY-ND 3.0 (credit him if you use it). Not bundled: the download needs a DeviantArt login. The `Classic Collection` badge otherwise uses **Metamorphous** (SIL OFL 1.1), an eroded carved serif standing in for it, and picks up the authentic face automatically if you have it installed |
 
 ---
 
-## Building
-
-### Windows (MSVC + vcpkg)
+## Quick start
 
 ```bash
-# Clone the repository
-git clone <repo-url> "Resident Evil - Classic Collection"
-cd "Resident Evil - Classic Collection"
-
-# Configure with vcpkg toolchain
-cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=[vcpkg-root]/scripts/buildsystems/vcpkg.cmake
-
-# Build
-cmake --build build --config Release
+pnpm install        # dependencies
+pnpm assets:sync    # build the bundled art from media/ and the design export
+pnpm dev            # run the launcher (main + preload + renderer, with HMR)
 ```
 
-The output executable is at `build/Release/re-launcher.exe`.
+`pnpm assets:sync` is not optional on a fresh clone: the art the renderer imports is
+generated into `src/renderer/src/assets/`, not committed.
 
-### Windows (Visual Studio)
-
-1. Open the project folder in Visual Studio
-2. CMake will auto-configure via `CMakeLists.txt`
-3. Select `re-launcher` as the startup target
-4. Build and run (F5)
-
-### Linux
+### Building
 
 ```bash
-# Install dependencies
-sudo apt install libsdl2-dev libgl-dev
-
-# Build
-cmake -B build -S .
-cmake --build build
+pnpm build          # typecheck -> compile -> Windows installer + portable exe (release/)
+pnpm build:dir      # compile -> unpacked build only (release/win-unpacked/)
+pnpm start          # preview a compiled build with electron-vite
 ```
+
+`pnpm build` produces an NSIS installer and a portable executable, both x64. The
+build output lands in `release/`.
+
+### Where the game folders must live
+
+Both folders belong **beside the executable you double-click** — the launcher's own
+directory, not `resources/`:
+
+```
+Resident Evil - Classic Collection.exe   (or the repo root, when running from source)
+GOG Games/
+├── Resident Evil/          RE1   -> ResidentEvil.exe, USA/, config.ini
+├── Resident Evil 2/        RE2   -> LeonU.exe, ClaireU.exe, config.ini
+└── Resident Evil 3/        RE3   -> ResidentEvil3.exe, config.ini
+reenhancemods/              (optional)
+├── RE-ENHANCE_RE1_v1.1_GOG/
+├── RE-ENHANCE_RE2_v2.0.1_GOG/
+└── RE-ENHANCE_RE3_v2.2_GOG/
+```
+
+The subfolder names are exact. Detection order is: an explicit install root
+override → `GOG Games/<folder>` beside the launcher → the GOG registry entry for the
+title → `C:\GOG Games`, `C:\Program Files (x86)\GOG Games`, `D:\GOG Games`. Every
+stage only wins if the directory actually exists, and a mod folder is only "available"
+if it exists and holds at least one entry.
 
 ---
 
-## What's in the Repository
+## Game catalog
 
-```
-Resident Evil - Classic Collection/
-|-- CMakeLists.txt              # Build configuration
-|-- vcpkg.json                  # vcpkg manifest (SDL2)
-|-- .gitignore                  # Excludes copyrighted / generated content
-|-- README.md                   # This file
-|-- ref.md                      # Architecture reference document
-|
-|-- src/                        # All launcher source code (C++11)
-|   |-- main.cpp                # Entry point
-|   |-- core/                   # App lifecycle, platform, logging
-|   |   |-- app.cpp/h           # Main loop (60fps, SDL event pump)
-|   |   |-- platform.cpp/h      # SDL2 window + OpenGL 3.3 context
-|   |   |-- log.cpp/h           # Debug logging to file/stdout
-|   |   +-- types.h             # Common types, color macros, design constants
-|   |-- renderer/               # OpenGL 3.3 rendering backend
-|   |   |-- renderer.cpp/h      # Quad drawing, textures, border, inner glow
-|   |   |-- shader.cpp/h        # GLSL shader program management
-|   |   |-- texture.cpp/h       # Image loading via stb_image
-|   |   |-- render_target.cpp/h # FBO render targets (RT_UI, RT_FINAL)
-|   |   +-- crt_filter.cpp/h    # CRT scanline post-process shader
-|   |-- input/                  # Input handling
-|   |   +-- input_manager.cpp/h # Keyboard + gamepad via SDL2
-|   |-- audio/                  # Sound system
-|   |   +-- audio_system.cpp/h  # WAV playback for UI sound effects
-|   |-- ui/                     # User interface
-|   |   |-- ui_system.cpp/h     # Screen stack manager (push/pop/replace)
-|   |   |-- ui_screen.h         # Base screen interface (virtual methods)
-|   |   |-- ui_element.cpp/h    # UI element base class
-|   |   |-- font.cpp/h          # TTF font rendering via stb_truetype
-|   |   |-- screens/
-|   |   |   |-- screen_title.*     # Main menu -- 3-card game selection
-|   |   |   |-- screen_version.*   # Version picker (US/JP/DC variants)
-|   |   |   |-- screen_launch.*    # Launch options (mode + CRT toggle)
-|   |   |   |-- screen_install.*   # First-run installation status
-|   |   |   +-- screen_error.*     # Error overlay dialog
-|   |   +-- components/
-|   |       |-- game_card.*        # Cover art card with glow effect
-|   |       |-- version_row.*      # Version selection row
-|   |       |-- sidebar_title.*    # Sidebar label
-|   |       |-- input_hints.*      # Bottom bar key/button hints
-|   |       +-- achievement_hud.*  # Achievement popup renderer
-|   |-- games/                  # Game management
-|   |   |-- game_catalog.cpp/h  # Game/version registry with all metadata
-|   |   |-- game_entry.h        # GameVersion + GameTitle data models
-|   |   |-- game_launcher.cpp/h # Process spawning (CreateProcess / fork)
-|   |   +-- mod_loader.cpp/h    # RE-Enhance mod file copy/injection
-|   |-- install/                # Installation detection
-|   |   |-- gog_detector.cpp/h  # GOG registry/config path lookup
-|   |   +-- install_validator.* # File manifest validation
-|   |-- achievements/           # Achievement system
-|   |   |-- achievement_db.*    # JSON achievement definitions + progress
-|   |   |-- achievement_hook.*  # Memory/save file hooks per game
-|   |   +-- achievement_overlay.* # Non-blocking popup renderer
-|   +-- config/                 # Configuration
-|       |-- config.cpp/h        # INI config persistence
-|       +-- paths.cpp/h         # Cross-platform path helpers
-|
-|-- assets/                     # Runtime assets (shipped with build)
-|   |-- shaders/
-|   |   |-- ui.vert / ui.frag   # Textured-quad UI shader
-|   |   +-- crt.vert / crt.frag # CRT post-process shader
-|   |-- fonts/                  # Actor font (OFL license)
-|   +-- achievements/
-|       +-- achievements.json   # Achievement definitions for RE1/2/3
-|
-|-- media/                      # UI images (cover art, logos, backgrounds)
-|   +-- main_bg.png             # Dark grunge background texture
-|
-+-- extern/                     # Vendored third-party (header-only / small)
-    |-- glad/                   # OpenGL 3.3 loader
-    |-- stb/                    # stb_image + stb_truetype
-    +-- nlohmann/               # JSON for Modern C++
-```
+Eight rows, three titles. The **Release shown** column is the date the concept draws
+on the row; **Originally released** is the concept's own `originally released in …`
+line, reproduced verbatim (`docs/DESIGN-FIDELITY.md` §7.3).
 
-### Not in the Repository (`.gitignore`)
+### Resident Evil (GOG id `1580232252`, folder `Resident Evil`)
 
-These folders are excluded from version control and must be provided locally:
+| # | Row | Region | Release shown | Originally released | Retail executable | Mod support |
+|---|---|---|---|---|---|---|
+| 0 | RESIDENT EVIL | US | July 24, 1998 | 30 March 1996 | `ResidentEvil.exe` | RE-Enhance v1.1 (`Biohazard.exe`) |
+| 1 | BIO HAZARD | JP | July 24, 1998 | 22 March 1996 | `ResidentEvil.exe` | **Requires** RE-Enhance v1.1 (`JapaneseEnable`) |
+| 2 | DIRECTOR'S CUT | US | July 24, 1998 | September 25, 1997 | `ResidentEvil.exe` | RE-Enhance v1.1 (`Biohazard.exe`) |
 
-| Folder | Reason | How to Obtain |
-|--------|--------|---------------|
-| `GOG Games/` | Copyrighted game installs | Purchase and install from GOG.com |
-| `.ref/` | Third-party reference code (powerslave_ex, design mockups) | Internal development reference |
-| `.agent/` | AI agent transcripts | Auto-generated during development |
-| `reenhancemods/` | Copyrighted mod binaries | Download from mod authors |
-| `build/` | CMake build output | Generated by `cmake --build` |
-| `vcpkg_installed/` | vcpkg package cache | Generated by vcpkg |
+### Resident Evil 2 (GOG id `1534123252`, folder `Resident Evil 2`)
 
----
+| # | Row | Region | Release shown | Originally released | Retail executable | Mod support |
+|---|---|---|---|---|---|---|
+| 0 | LEON S. KENNEDY | US | September 29, 1998 | 21 January 1998 | `LeonU.exe` / `ClaireU.exe` (scenario) | RE-Enhance v2.0.1 (`Resident Evil 2.exe`) |
+| 1 | BIOHAZARD 1.5 | US | September 29, 1998 | *never released* | — | — |
+| 2 | BIO HAZARD 2 | JP | September 29, 1998 | 29 January 1998 | `LeonU.exe` / `ClaireU.exe` (scenario) | RE-Enhance v2.0.1 (`Resident Evil 2.exe`) |
 
-## Game Catalog
+> **Row 1 cannot be launched.** BIOHAZARD 1.5 is the internal name of the Resident Evil
+> 2 prototype that was cancelled in early 1997 and rebuilt from scratch. The concept
+> devotes a row to it — with its own artwork, description and the note *"Planned
+> Release IN March 1997 (Scrapped and remade.)"* — so the row is kept and labelled
+> `CONCEPT — NEVER RELEASED`. It has no executable, its LAUNCH row is disabled, and
+> the launcher refuses it with `not-launchable` before it touches the disk.
 
-### Resident Evil 1
+### Resident Evil 3 (GOG id `1266089300`, folder `Resident Evil 3`)
 
-| Version | Executable | Region | Release Date | Mod Support |
-|---------|-----------|--------|--------------|-------------|
-| Resident Evil | `ResidentEvil.exe` | US | July 24, 1998 | RE-Enhance v1.1 |
-| Bio Hazard | `Biohazard.exe` | JP | March 22, 1996 | -- |
-| Director's Cut | `ResidentEvil.exe` | US | September 25, 1997 | RE-Enhance v1.1 |
+| # | Row | Region | Release shown | Originally released | Retail executable | Mod support |
+|---|---|---|---|---|---|---|
+| 0 | RESIDENT EVIL 3 | US | September 27, 1998 | 11 November 1999 | `ResidentEvil3.exe` | RE-Enhance v2.2 (`BIOHAZARD(R) 3 PC.exe`) |
+| 1 | BIO HAZARD 3: LAST ESCAPE | JP | September 27, 1998 | 22 September 1999 | `ResidentEvil3.exe` | RE-Enhance v2.2 (`BIOHAZARD(R) 3 PC.exe`) |
 
-### Resident Evil 2
+### The two player scenarios
 
-| Version | Executable | Region | Release Date | Mod Support |
-|---------|-----------|--------|--------------|-------------|
-| Resident Evil 2 | `LeonU.exe` | US | September 29, 1998 | RE-Enhance v2.0.1 |
-| Bio Hazard 2 | `LeonU.exe` | JP | January 29, 1998 | -- |
+RE2's Leon and Claire are not separate rows: the row carries both, and the launch
+panel offers a **SCENARIO** option on RE2 only. In original mode it selects the
+executable (`LeonU.exe` / `ClaireU.exe`); in enhanced mode RE-Enhance boots its own
+loader and reads the choice from its own configuration, so the launcher passes the
+scenario along and starts `Resident Evil 2.exe`.
 
-### Resident Evil 3
+### Enhanced mode
 
-| Version | Executable | Region | Release Date | Mod Support |
-|---------|-----------|--------|--------------|-------------|
-| Resident Evil 3 | `ResidentEvil3.exe` | US | September 27, 1998 | RE-Enhance v2.2 |
-| Bio Hazard 3: Last Escape | `ResidentEvil3.exe` | JP | November 11, 1999 | -- |
-
-### RE-Enhance Mod Executables
-
-When enhanced mode is active, the launcher uses different executables as required by the mods:
-
-| Game | Standard Executable | Enhanced Executable |
-|------|--------------------|--------------------|
-| RE1 | `ResidentEvil.exe` | `Biohazard.exe` |
-| RE2 | `LeonU.exe` | `Resident Evil 2.exe` |
-| RE3 | `ResidentEvil3.exe` | `BIOHAZARD(R) 3 PC.exe` |
+When a row is set to **ENHANCED**, the launcher injects the RE-Enhance tree over the
+retail install (backing up every file it is about to overwrite), then starts the
+mod's executable. Switching back to **ORIGINAL** restores the backups and deletes the
+files the mod added. Rows without a RE-Enhance folder on disk are locked to ORIGINAL,
+and RE1 JP is locked to ENHANCED because `JapaneseEnable` needs the RE-Enhance DLL.
 
 ---
 
 ## Controls
 
-| Action | Keyboard | Gamepad |
-|--------|----------|---------|
-| Navigate | Arrow Keys / WASD | D-Pad / Left Stick |
-| Confirm | Enter / E | A |
-| Back | Escape | B |
-| Change Option | Left / Right | D-Pad Left / Right |
+Keyboard, mouse and gamepad all produce the same six actions, and each screen
+interprets them the way the design's helper bar promises.
+
+| Screen | Left / Right | Up / Down | Confirm | Back |
+|---|---|---|---|---|
+| **Main menu** | move between the three cards | — | open the selected title | quit the launcher |
+| **Game Version** | move between rows | move between rows (wraps) | open the launch panel | back to the main menu |
+| **Launch panel** | ↑↓ move rows; ←→ change the highlighted value | move rows | start the game (on LAUNCH) / change the value | close the panel |
+| **Gameplay** | — | — | — | back to the version list |
+| **Install Status** | — | — | continue to the main menu | — |
+| **Error dialog** | — | — | dismiss | dismiss |
+
+| Input | Binding |
+|---|---|
+| Keyboard | Arrow keys or **WASD** to navigate; **Enter**, **Numpad Enter** or **E** to confirm; **Esc** to go back |
+| Mouse | Hover a card or row to select it, click to activate it; the dialog dismisses on a click |
+| Gamepad | D-pad or left stick (0.5 deadzone) to navigate; **A** to confirm; **B** to go back |
+
+Repeats are throttled: 140 ms for a held key, 220 ms for the pad, and the two devices
+are briefly locked apart so one gesture cannot arrive twice.
 
 ---
 
 ## Configuration
 
-Settings are stored in `config.ini` next to the executable:
+Settings live in a JSON file the launcher owns, **not** beside the executable
+(`Program Files` is not writable for a standard user):
 
-```ini
-[display]
-crt_enabled=0
-scanline_intensity=0.3
-curvature=0.08
-
-[audio]
-master_volume=1.0
-
-[game]
-last_selected=re1
 ```
+%APPDATA%\re-classic-collection\config.json
+```
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `crtEnabled` | boolean | `false` | Draw the CRT overlay |
+| `scanlineIntensity` | number | `0.3` | Scanline darkening |
+| `curvature` | number | `0.08` | Barrel curvature (`0` disables the warp) |
+| `crtVignette` | number | `0.35` | Edge darkening |
+| `crtGrain` | number | `0.04` | Noise amount |
+| `masterVolume` | number | `1` | Master audio level |
+| `sfxVolume` | number | `1` | UI cue level |
+| `musicVolume` | number | `1` | Reserved |
+| `lastSelectedTitle` | `"re1" \| "re2" \| "re3"` | `"re1"` | Which card the menu opens on |
+| `modes` | object | `{}` | Per-version `enhanced` / `original`; a missing entry uses the detected state |
+| `scenarios` | object | `{}` | Per-version `leon` / `claire`; a missing entry uses the row's default |
+| `gogPathOverride` | string | `""` | Explicit GOG root; empty means auto-detect |
+| `keepLauncherVisible` | boolean | `true` | Keep the launcher window up while a game runs |
+
+Writes are atomic (temp file + rename) and a failed write is logged rather than
+fatal, so a read-only profile keeps working for the session. Malformed values fall
+back to their defaults instead of breaking the launcher.
+
+**Upgrading from the old launcher:** the first run reads the legacy
+`config.ini` beside the executable and migrates it once — `[display] crt_enabled`,
+`scanline_intensity`, `curvature`, `vignette` / `noise_amount`, `[audio]
+master_volume`, `[game] last_selected` and `gog_path_override` are all recognised in
+both their section-qualified and bare spellings, using the old tolerant boolean and
+numeric parsing. The full mapping is in `docs/ARCHITECTURE.md` §8. The old file is
+only ever read, never written.
 
 ---
 
-## RE-Enhance Mod Setup
+## Achievements
 
-1. Download the RE-Enhance mods for your games from their official sources:
-   - [RE1 -- Classic REbirth](https://classicrebirth.com/index.php/downloads/resident-evil-classic-rebirth/)
-   - [RE2 -- Classic REbirth](https://classicrebirth.com/index.php/downloads/resident-evil-2-classic-rebirth/)
-   - [RE3 -- Classic Rebirth](https://classicrebirth.com/index.php/downloads/resident-evil-3-classic-rebirth/)
-2. Place them in a `reenhancemods/` folder next to the launcher with these exact directory names:
-   - `RE-ENHANCE_RE1_v1.1_GOG/`
-   - `RE-ENHANCE_RE2_v2.0.1_GOG/`
-   - `RE-ENHANCE_RE3_v2.2_GOG/`
-3. In the launcher, select a game version and set **Mode** to **ENHANCED**
-4. The launcher will automatically:
-   - Copy mod files into the game install directory
-   - Launch the correct mod-specific executable
+365 definitions ship with the launcher: **115** for RE1, **131** for RE2 and **119**
+for RE3, in `assets/achievements/achievements.json`:
 
-> **Note:** RE-Enhance for RE2 and RE3 requires the GOG games to be installed with the **Japanese language option**. See each mod's readme for details.
+```json
+{
+  "re1": [
+    { "id": "re1_001", "name": "A Member of S.T.A.R.S.", "desc": "Complete the game as Jill on Standard", "icon": "" }
+  ],
+  "re2": [ "... 131 entries ..." ],
+  "re3": [ "... 119 entries ..." ]
+}
+```
+
+You can override or extend it without rebuilding, because the last readable file in
+this order wins:
+
+1. the bundled `assets/achievements/achievements.json` (baseline),
+2. `<launcher folder>/assets/achievements/achievements.json` (shipped loose by the
+   installer),
+3. `%APPDATA%\re-classic-collection\achievements.json` (yours — this one wins).
+
+An override that cannot be parsed, is not keyed by `re1`/`re2`/`re3`, or yields no
+achievements at all is ignored, so a truncated file can never wipe the list.
+
+Progress is saved in the **old launcher's own format**, so existing unlocks carry
+over:
+
+```
+%APPDATA%\re-classic-collection\achievements.sav
+
+# Resident Evil Classic Collection - achievement progress
+re1_001=1|2025-03-04T18:22:09.114Z
+re1_002=0|
+```
+
+One line per achievement, `id=<flag>|<date>`: `1` unlocked, `0` locked, and a locked
+row carries no date. Blank lines, `#`/`;` comments and malformed rows are skipped; a
+duplicate id keeps the last row. On first run the launcher adopts a legacy
+`achievements.sav` found beside the executable and writes it to the new location
+exactly once. Only ids the current definitions know about are applied, so a save from
+a different catalog cannot resurrect a row that no longer exists.
 
 ---
 
-## Architecture
+## Media and the asset pipeline
 
-The launcher follows a singleton-based architecture inspired by the KEX engine (powerslave_ex):
+`pnpm assets:sync` (`tools/sync-design-assets.mjs`) produces every image, video and
+sound the renderer imports. It is a build step, not a manual one, and it is the only
+thing that writes into `src/renderer/src/assets/`.
 
-| System | Responsibility |
-|--------|---------------|
-| **App** | Main lifecycle: Init -> Run (60fps capped loop) -> Shutdown |
-| **Platform** | SDL2 window creation + OpenGL 3.3 context |
-| **Renderer** | Orthographic 2D rendering at 1920x1080 design resolution, FBO-based upscale |
-| **UISystem** | Screen stack with push/pop/replace + per-screen input/update/draw |
-| **InputManager** | Unified keyboard + gamepad input with navigation helpers |
-| **AudioSystem** | WAV sound effect playback via SDL2 audio |
-| **GameCatalog** | Registry of all game titles, versions, and install paths |
-| **GOGDetector** | Windows registry lookup for GOG install paths |
-| **ModLoader** | File-copy mod injection from `reenhancemods/` to game directory |
-| **AchievementDB** | JSON-backed achievement definitions with binary save progress |
+- **Sources.** Game art comes from `media/` — the art the previous launcher shipped,
+  verified as the 1x twin of the Figma export's @2x/@4x originals by dimension (for
+  example `media/RE1Logo.png` is 263x70 against a 262.686x70 design box, and the
+  region art is 1068x1080 against a 1068x1080 mask). The handful of assets the export
+  has and `media/` does not — the Unsplash backdrop, the three cover portraits, the
+  two gameplay stills — come from `.ref/designref/src/assets/`.
+- **Re-encoding.** Everything becomes WebP (`sharp`) so the renderer stays small;
+  heroes are resized to 1600 wide and region art to 1068 wide, and the logos are kept
+  at native size because each one's pixel width already equals its design box. Videos
+  are copied verbatim (re-encoding a trailer costs quality for no real saving), and so
+  are the three WAV cues and the Actor font.
+- **Records.** `src/renderer/src/assets/MANIFEST.json` lists every output with its
+  source path and size; `design-map.json` maps the export's `figma:asset/<hash>`
+  specifiers to converted files. Neither is hand-edited.
+- `node tools/sync-design-assets.mjs --check` reports what would be missing without
+  writing anything.
 
-### Render Pipeline
-
-```
-App::Run()  (60fps)
-  |
-  +-- InputManager::Poll()
-  +-- UISystem::Update(dt)        -- animations, transitions
-  +-- AchievementOverlay::Update(dt)
-  |
-  +-- Renderer::BeginFrame()
-  |     +-- Bind RT_UI (1920x1080 FBO)
-  |     +-- glClear
-  |
-  +-- UISystem::Draw()            -- all screens in stack order
-  +-- AchievementOverlay::Draw()
-  |
-  +-- Renderer::EndFrame()
-  |     +-- CRTFilter::Apply()    -- RT_UI -> RT_FINAL (if enabled)
-  |     +-- glBlitFramebuffer     -- upscale to window resolution
-  |
-  +-- Platform::SwapBuffers()
-```
+The input folders are `media/`, `.ref/designref/src/assets/` and `assets/`
+(`assets/videos`, `assets/audio`, `assets/fonts`); the renderer never reads any of
+them at runtime — it reads the generated files under `src/renderer/src/assets/`.
 
 ---
 
-## Media Assets
+## Testing
 
-The `media/` folder should contain UI images referenced by the launcher. Currently included:
+```bash
+pnpm test           # unit tests (vitest, Node environment)
+pnpm test:watch     # the same, in watch mode
+pnpm typecheck      # tsc over the main/preload project and the renderer project
+pnpm compile        # build main, preload and renderer into out/
+pnpm test:e2e       # compile, then run the Playwright specs from tests/e2e/
+pnpm check:fidelity # the design-drift guard: the live UI vs the Figma export
+```
 
-- `main_bg.png` -- Dark grunge background texture used on all screens
-
-The following are referenced by the game catalog but must be provided by the user (from GOG install artwork or custom assets):
-
-| File | Used By |
-|------|---------|
-| `mainlogo.png` | Title screen header logo |
-| `game_re1_version_default.png` | RE1 cover card + hero image |
-| `game_re1_version_jp.png` | Bio Hazard hero image |
-| `game_re1_version_alt.png` | Director's Cut hero image |
-| `game_re2_version_default.png` | RE2 cover card + hero image |
-| `game_re2_version_jp.png` | Bio Hazard 2 hero image |
-| `game_re3_version_default.png` | RE3 cover card + hero image |
-| `game_re3_version_jp.png` | Bio Hazard 3 hero image |
-| `RE1Logo.png` | RE1 game logo (version picker) |
-| `game_2_type_default.png` | RE2 game logo (version picker) |
-| `game_3_type_default.png` | RE3 game logo (version picker) |
+`pnpm check:fidelity` is the one to run after touching any component, any measured
+value or the catalog: it reads the vendored Figma export and fails if a design class
+string, measured number, gradient stop or mask offset is no longer present in the
+renderer. It verifies the vendored copy is still byte-identical to
+`.ref/designref/src/imports/`, and it can run in `--strict` mode, which also fails
+when a value has moved to a different file. The three-step fidelity procedure — the
+guard, the Playwright geometry spec and the human side-by-side against the export —
+is written up in `docs/DESIGN-FIDELITY.md` §8.
 
 ---
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Game not detected | Verify GOG installation; check `HKLM\SOFTWARE\WOW6432Node\GOG.com\Games\{id}` registry keys |
-| RE2/RE3 opens settings dialog | Update to latest code -- launcher now uses game executables directly (`LeonU.exe`, `ResidentEvil3.exe`) instead of GOG's config launchers |
-| Mods not loading | Ensure `reenhancemods/` folder is next to the launcher exe with correct subfolder names |
-| Enhanced mode wrong exe | The launcher switches to mod-specific executables (`Biohazard.exe`, `Resident Evil 2.exe`, `BIOHAZARD(R) 3 PC.exe`) automatically |
-| Black screen on launch | Verify OpenGL 3.3 driver support; check that `assets/shaders/` contains `ui.vert`, `ui.frag` |
-| Missing cover art | Place game cover/hero images in `media/` folder (see Media Assets section above) |
-| No sound effects | Place WAV files in `assets/audio/` (`DECIDE.wav`, `Cancel (2).wav`, `CURSOR (2).wav`) |
-| Build fails on vcpkg | Run `vcpkg install sdl2:x64-windows` or use the manifest mode with `-DCMAKE_TOOLCHAIN_FILE` |
+| Symptom | Cause / fix |
+|---|---|
+| **Game not detected** | The launcher boots to Install Status and shows where each title was expected. Put `GOG Games/<exact folder name>/` beside the executable, or install through GOG so the registry entry exists, or set `gogPathOverride` in `config.json` to the folder that *contains* `Resident Evil/` |
+| **Install Status says PARTIAL** | The install root was found but a probe failed — the row lists the reason (`Executable not found`, `Game data incomplete`). Re-verify the GOG install files |
+| **The RE-Enhance setup dialog appears on launch** | The game's own `config.ini` could not be patched. Check the install folder is writable; the launcher writes `[DLL] BootConfig=0` before every launch |
+| **Wrong language / US-JP mix-up** | Language is driven by `[DLL] JapaneseEnable`, set from the row you launched. Launch the JP row for Japanese, the US row for English |
+| **Mods are not applied** | `reenhancemods/` must be beside the executable with the exact folder names in *Where the game folders must live*. A row with no mod folder is locked to ORIGINAL mode |
+| **Enhanced mode starts the retail game** | The row's mod executable was not found after injection, so the launcher fell back to retail instead of failing the launch. Re-download the RE-Enhance release for that title |
+| **The wrong executable / a second launch refused** | One game at a time is deliberate: a second launch answers `game-already-running` instead of silently killing the running game. Close the game (or quit the launcher, which stops it) first |
+| **Files left behind after switching to ORIGINAL** | Restoring removes the mod's files and the `.mod_backup/` folder. Empty directories the mod created are deliberately left in place; a stray `.mod_backup/` without a manifest is cleaned up on the next injection |
+| **No sound** | Audio starts only after a real gesture (browser policy). Press a key or click once; then check `sfxVolume` and `masterVolume` in `config.json` |
+| **CRT filter looks wrong / too strong** | `scanlineIntensity`, `curvature`, `crtVignette` and `crtGrain` are all live settings. Set `curvature` to `0` to disable the warp filter |
+| **Art or videos are missing after a fresh clone** | `pnpm assets:sync` has not run. It generates everything under `src/renderer/src/assets/` |
+| **The window is smaller than 1920x1080** | The launcher renders a fixed 1920x1080 canvas and scales it to fit, letterboxing the remainder. Nothing reflows; a 1920x1080 window simply shows it at 1:1 |
+| **Where are the logs?** | `%APPDATA%\re-classic-collection\re-log.txt` (also stdout in development). `RE_LOG_LEVEL=debug` turns on debug lines |
 
 ---
 
 ## Credits
 
 - **Concept & Development**: Julio CACKO
-- **RE-Enhance Mods**: Classic REbirth, Seamless HD Project, TeamX HD
-- **Engine Reference**: powerslave_ex (KEX engine)
-- **Games**: CAPCOM CO., LTD. 1996-1999
+- **RE-Enhance mods**: Classic REbirth, Seamless HD Project, TeamX HD
+- **Game art and trailers**: CAPCOM CO., LTD. — used here as a fan concept
+- **Actor typeface**: released under the SIL Open Font License; see
+  `assets/fonts/OFL.txt`
+- **Engine reference for the original implementation**: `powerslave_ex` (KEX engine)
 
 ---
 
-## License
+## Legal notice
 
-This is a fan project / concept. Resident Evil is a registered trademark of CAPCOM CO., LTD.
-All game assets, trademarks, and copyrighted content belong to their respective owners.
-This repository contains only the launcher source code and does not distribute any copyrighted game files.
+This is a **fan concept**. It is not affiliated with, endorsed by or sponsored by
+CAPCOM CO., LTD.
+
+Resident Evil, BIOHAZARD and all related names, characters, artwork and trademarks
+are the property of CAPCOM CO., LTD. All game assets, logos, cover art and trailer
+footage belong to their respective owners.
+
+**This repository ships no copyrighted game files.** The `GOG Games/` folder, the
+`reenhancemods/` folder and the development-only `.ref/` reference tree are all
+gitignored and must be supplied by the user. What the repository contains is
+launcher source code, the concept's own generated art (derived from the design
+export), and achievement definitions.
+
+Two typefaces are bundled and both are redistributable: **Actor** (SIL OFL 1.1) for
+the whole interface, and **Metamorphous** (SIL OFL 1.1) as the `Classic Collection`
+badge's stand-in — licence texts sit beside them in `assets/fonts/` and
+`assets/font/vendor/`. The concept's actual badge face is Peter Jonca's
+**"Resident Evil Classic Game Font"** (CC BY-ND 3.0); it is not redistributed here
+because its download requires a DeviantArt login, but the badge uses it
+automatically when it is installed on the machine or dropped into
+`assets/font/ResidentEvilClassic.ttf`. **If you use his font, credit Peter Jonca.**
