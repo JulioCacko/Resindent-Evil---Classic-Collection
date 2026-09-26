@@ -3,9 +3,9 @@
  * "Classic Collection" badge underneath it.
  *
  * Every class string, percentage inset, filter primitive and gradient stop here
- * is transcribed from the Figma export â€” `.ref/designref/src/imports/MainMenu.tsx`
+ * is transcribed from the Figma export — `.ref/designref/src/imports/MainMenu.tsx`
  * (`Frame()` is the badge, `Frame1()` is the wordmark) and
- * `.ref/designref/src/imports/svg-2gfz0znw1n.ts` (the twelve glyph paths) â€”
+ * `.ref/designref/src/imports/svg-2gfz0znw1n.ts` (the twelve glyph paths) —
  * rather than re-derived. The export is the ground truth for geometry, so the
  * numbers are copied so the lockup is identical to the design on the fixed
  * 1920x1080 canvas and the geometry test can assert the exported values.
@@ -25,7 +25,7 @@ import { BADGE_ART } from '@renderer/data/design'
 
 /**
  * The twelve wordmark glyphs, in export order. Index i is painted with
- * `re-logo-wordmark-paint{i}`, matching `paint{i}_linear_1_248` in the export â€” the
+ * `re-logo-wordmark-paint{i}`, matching `paint{i}_linear_1_248` in the export — the
  * gradient and the path it fills are paired by position, so the order of this
  * array is part of the design and must not be sorted or edited.
  */
@@ -59,7 +59,7 @@ const WORDMARK_PATHS: readonly string[] = [
 /**
  * The `filter0_dd_1_248` drop shadow, ported primitive for primitive. The two
  * shadows are: black at 40% alpha offset by dy 8.00915, then a solid #848484
- * (the export writes it as the colour matrix row `0.519445 â€¦ 1`, i.e.
+ * (the export writes it as the colour matrix row `0.519445 … 1`, i.e.
  * 0.519445 * 255 = 132.46 = 0x84) offset by dy 3.43249. The extra colour matrix
  * and `feComposite operator="out"` pair is how Figma builds the shadow alpha
  * from `SourceAlpha`; it is kept exactly as exported.
@@ -81,7 +81,7 @@ export function LogoBlock({ className }: LogoBlockProps) {
     // animate the lockup (the main menu only positions it in flow) without
     // having to restate the 625.021 x 250 box.
     <div className={twMerge('h-[250px] relative shrink-0 w-[625.021px]', className)}>
-      {/* Badge â€” export `Frame()`. It is the first child, exactly as exported.
+      {/* Badge — export `Frame()`. It is the first child, exactly as exported.
           The box, its inset, its 4.786px radius and its two-offset drop shadow are
           the export's; the face and lettering inside it are the concept's own
           texture, cropped from `assets/textures/main-logo.png` by
@@ -97,7 +97,7 @@ export function LogoBlock({ className }: LogoBlockProps) {
         />
       </div>
 
-      {/* Wordmark â€” export `Frame1()`. The outer layer reserves the band the
+      {/* Wordmark — export `Frame1()`. The outer layer reserves the band the
           wordmark occupies inside the 250px box, and the inner layer then
           overhangs its bottom edge by 5.22% so the descender row of the
           glyph paths is not clipped. */}

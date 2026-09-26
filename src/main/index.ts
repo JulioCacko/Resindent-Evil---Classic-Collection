@@ -1,5 +1,5 @@
 /**
- * index.ts â€” the Electron entry point.
+ * index.ts — the Electron entry point.
  *
  * Its whole job is window and process lifecycle: create the one window the
  * launcher has, load the renderer into it, hand the IPC surface to `ipc.ts`,
@@ -23,8 +23,8 @@ import { log } from './logger'
 import { APP_NAME } from './paths'
 
 /**
- * The Figma frame is a fixed 1920x1080 canvas â€” `.ref/designref/src/imports/
- * MainMenu.tsx` gives `body` `w-[1920px]` and each screen `h-[1080px]` â€” so the
+ * The Figma frame is a fixed 1920x1080 canvas — `.ref/designref/src/imports/
+ * MainMenu.tsx` gives `body` `w-[1920px]` and each screen `h-[1080px]` — so the
  * window asks for exactly that and scales down when the display cannot oblige.
  */
 const DESIGN_WIDTH = 1920
@@ -312,7 +312,7 @@ function onBeforeQuit(): void {
 
 function onActivate(): void {
   // macOS only in practice: the app stays alive with no window, and the dock icon
-  // reopens it. The IPC layer is not re-registered â€” only the window is gone.
+  // reopens it. The IPC layer is not re-registered — only the window is gone.
   if (mainWindow === null) {
     void openMainWindow().catch((error: unknown) => {
       log.error('could not reopen the launcher window', error)
@@ -327,7 +327,7 @@ function start(): void {
    * Electron derives `app.getPath('userData')` from the app's name, and it can only
    * read a name out of a `package.json` it finds next to the entry script. In
    * development the entry is `out/main/index.js`, which has none, so Electron falls
-   * back to its own default and the whole profile lands in `%APPDATA%\Electron` â€”
+   * back to its own default and the whole profile lands in `%APPDATA%\Electron` —
    * the directory every unpackaged Electron app on the machine shares. The launcher
    * was therefore reading and writing its `config.json`, achievement save and log
    * beside unrelated applications' state, which is how a stale `modes` entry from

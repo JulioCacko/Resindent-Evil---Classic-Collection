@@ -6,7 +6,7 @@
  * `out/renderer/font/` on build.
  *
  * There are two declarations for what the design calls one family, and the second
- * is not redundant â€” see the `Actor:Regular` face below. The concept's other face,
+ * is not redundant — see the `Actor:Regular` face below. The concept's other face,
  * the one it draws "Classic Collection" in, needs no declaration at all: the badge
  * is rendered from the designer's own texture, not from live text (see BADGE_ART in
  * data/design.ts).
@@ -28,10 +28,10 @@
  * Every label in the concept is classed `font-['Actor:Regular',sans-serif]`
  * (`.ref/designref/src/imports/MainMenu.tsx` and the other frames). Tailwind v4
  * compiles an arbitrary family verbatim, so that class emits
- * `font-family: Actor\:Regular, sans-serif` â€” and the `:Regular` suffix is Figma's
+ * `font-family: Actor\:Regular, sans-serif` — and the `:Regular` suffix is Figma's
  * own `Family:Style` notation, not a valid family name. All 115 occurrences in the
  * export (27 in the shipped components) therefore fell through to the system sans
- * â€” Segoe UI on Windows â€” instead of Actor, so letterforms and metrics were wrong
+ * — Segoe UI on Windows — instead of Actor, so letterforms and metrics were wrong
  * everywhere the design specifies a label.
  *
  * Declaring the name *including* the suffix fixes that without editing a single

@@ -2,7 +2,7 @@
  * One full-width hero row of the Game Version screen's left panel.
  *
  * Geometry is transcribed from the Figma export, which draws the exact same row
- * three times in its two states Ã¢â‚¬â€ `.ref/designref/src/imports/MainMenuRe1.tsx`
+ * three times in its two states — `.ref/designref/src/imports/MainMenuRe1.tsx`
  * (`Menu`, rows carrying `data-name="btn/menu"`) and
  * `.ref/designref/src/imports/MainMenuRe2.tsx` (`Menu`):
  *
@@ -60,7 +60,7 @@ export function VersionRow({ version, selected, onHover, onActivate }: VersionRo
   /**
    * The hero lane: full panel width, framed at 1600/740 (`VERSION_SCREEN
    * .heroAspect`), vertically centred on the row. Being wider than the row is
-   * tall is the point of the design Ã¢â‚¬â€ the `overflow-clip` around it crops the
+   * tall is the point of the design — the `overflow-clip` around it crops the
    * art rather than letterboxing it.
    */
   const hero =
