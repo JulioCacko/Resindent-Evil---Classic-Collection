@@ -17,7 +17,7 @@ import type { GameVersion, GameplayMedia, TitleId } from './types'
 export type AssetKey = string
 
 export interface GameVersionSeed
-  extends Omit<GameVersion, 'state' | 'stateReason' | 'hasMod' | 'titleId'> {
+  extends Omit<GameVersion, 'state' | 'stateReason' | 'hasMod' | 'modInstalled' | 'titleId'> {
   titleId: TitleId
 }
 

@@ -153,6 +153,7 @@ function useInstallContext(overrides: Partial<InstallContext>): void {
     state: 'installed',
     stateReason: null,
     hasMod: false,
+    modInstalled: false,
     ...overrides
   }))
 }
@@ -289,7 +290,7 @@ describe('prepareLaunch', () => {
     const seen: string[] = []
     setInstallContextResolver(async (version) => {
       seen.push(version.id)
-      return { installPath: installDir, state: 'installed', stateReason: null, hasMod: false }
+      return { installPath: installDir, state: 'installed', stateReason: null, hasMod: false, modInstalled: false }
     })
 
     const prepared = expectPrepared(await prepareLaunch(request('re1_us')))

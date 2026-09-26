@@ -13,11 +13,21 @@ import type { DerivedVersion, LauncherState } from '../contracts'
  * The mode a version actually uses. `requiresMod` versions are locked to
  * enhanced (the legacy launcher forced this, because JapaneseEnable needs the
  * RE-Enhance DLL). Rows without mod files available are locked to original.
+ *
+ * An unset mode falls back to what is already on disk, not to ORIGINAL: the
+ * legacy launcher opened its launch screen with
+ * `useEnhanced = ModLoader::HasBackup(installPath)`, so a machine with the overlay
+ * injected keeps it injected. Defaulting to ORIGINAL would instead *restore* the
+ * retail files on the next launch, silently undoing a working mod setup.
  */
-export function resolveMode(config: { modes: Record<string, LaunchMode> } | null, version: GameVersion): LaunchMode {
+export function resolveMode(
+  config: { modes: Record<string, LaunchMode> } | null,
+  version: GameVersion
+): LaunchMode {
+
   if (version.requiresMod) return 'enhanced'
   if (!version.hasMod) return 'original'
-  return config?.modes?.[version.id] ?? 'original'
+  return config?.modes?.[version.id] ?? (version.modInstalled ? 'enhanced' : 'original')
 }
 
 /** The RE2 scenario a version uses; null for versions that have no scenario. */
@@ -93,7 +103,8 @@ export function seedTitle(id: string): GameTitle | null {
       // reports what is actually on disk.
       state: 'missing' as const,
       stateReason: null,
-      hasMod: false
+      hasMod: false,
+      modInstalled: false
     })),
     installPath: '',
     hasAnyInstalled: false

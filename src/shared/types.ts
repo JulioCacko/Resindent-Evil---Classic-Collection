@@ -57,6 +57,13 @@ export interface GameVersion {
   modPath: string
   /** RE-Enhance files are present on disk for this version. */
   hasMod: boolean
+  /**
+   * RE-Enhance files are already sitting in this install (a `.mod_backup/`
+   * manifest exists), so ORIGINAL would mean restoring them rather than leaving
+   * them alone. `derive.resolveMode` uses this to default the launch mode, which
+   * is what the legacy launcher did with `ModLoader::HasBackup`.
+   */
+  modInstalled: boolean
   /** Version is only playable with the mod (legacy: RE1 JP). */
   requiresMod: boolean
   /** Sets `[DLL] JapaneseEnable=1` before launch. */

@@ -55,6 +55,7 @@ import { createConfigStore } from './config-store'
 import type { LaunchDeps, PreparedLaunch } from './contracts'
 import { detectInstallPath } from './detect/gog'
 import { patchIniFile } from './ini'
+import { hasBackup } from './mods'
 import { getMainPaths } from './paths'
 import { modsAvailable, probeVersion, stateFromProbe } from './validate'
 
@@ -154,6 +155,8 @@ export interface InstallContext {
   stateReason: string | null
   /** RE-Enhance files are available for this row (the catalog's `hasMod`). */
   hasMod: boolean
+  /** RE-Enhance files are already applied to this install (the catalog's `modInstalled`). */
+  modInstalled: boolean
 }
 
 export type InstallContextResolver = (version: GameVersionSeed) => Promise<InstallContext>
@@ -175,7 +178,7 @@ async function resolveLocalInstallContext(version: GameVersionSeed): Promise<Ins
   const title = findTitle(version.titleId)
   if (title === undefined) {
     // Unreachable for the static catalog, where every version belongs to a title.
-    return { installPath: '', state: 'missing', stateReason: FOLDER_MISSING_REASON, hasMod: false }
+    return { installPath: '', state: 'missing', stateReason: FOLDER_MISSING_REASON, hasMod: false, modInstalled: false }
   }
 
   const paths = getMainPaths()
@@ -189,14 +192,14 @@ async function resolveLocalInstallContext(version: GameVersionSeed): Promise<Ins
   )
 
   if (installPath === '') {
-    return { installPath: '', state: 'missing', stateReason: FOLDER_MISSING_REASON, hasMod: false }
+    return { installPath: '', state: 'missing', stateReason: FOLDER_MISSING_REASON, hasMod: false, modInstalled: false }
   }
 
   // `probeVersion` and `modsAvailable` answer different questions and both are
   // needed: the probe's `modOk` only reports whether a `requiresMod` row's
   // requirement is met, while `hasMod` is "RE-Enhance files exist for this row"
   // (the same pair `catalog-state` computes per version).
-  const [probe, hasMod] = await Promise.all([
+  const [probe, hasMod, modInstalled] = await Promise.all([
     probeVersion({
       titleId: version.titleId,
       installPath,
@@ -205,7 +208,8 @@ async function resolveLocalInstallContext(version: GameVersionSeed): Promise<Ins
       modPath: version.modPath,
       modsDir: paths.modsDir
     }),
-    modsAvailable(paths.modsDir, version.modPath)
+    modsAvailable(paths.modsDir, version.modPath),
+    hasBackup(installPath)
   ])
 
   const state = stateFromProbe(probe)
@@ -216,7 +220,8 @@ async function resolveLocalInstallContext(version: GameVersionSeed): Promise<Ins
     // partial) needs no explanation, and `missing` is always the 0/3 case where
     // the install root itself failed to probe.
     stateReason: state === 'missing' ? FOLDER_MISSING_REASON : null,
-    hasMod
+    hasMod,
+    modInstalled
   }
 }
 
@@ -351,7 +356,8 @@ export async function prepareLaunch(request: LaunchRequest): Promise<PrepareOutc
     ...row,
     state: context.state,
     stateReason: context.stateReason,
-    hasMod: context.hasMod
+    hasMod: context.hasMod,
+    modInstalled: context.modInstalled
   }
 
   const scenario = resolveScenario(row, request.scenario)

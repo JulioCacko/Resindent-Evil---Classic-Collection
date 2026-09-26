@@ -192,6 +192,7 @@ function titleWithStates(states: InstallState[]): GameTitle {
       id: `re1_row_${index}`,
       state,
       stateReason: null,
+    modInstalled: false,
       hasMod: false
     }))
   }

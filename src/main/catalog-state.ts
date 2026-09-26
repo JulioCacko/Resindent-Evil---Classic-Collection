@@ -28,6 +28,7 @@ import type {
   VersionProbeInput
 } from './contracts'
 import { detectAllInstallPaths } from './detect/gog'
+import { hasBackup } from './mods'
 import { modsAvailable, probeVersion, stateFromProbe } from './validate'
 
 /** The three injected functions, read off the frozen options type. */
@@ -136,8 +137,9 @@ async function buildVersion(
     modsDir: paths.modsDir
   }
 
-  const [hasMod, resolved] = await Promise.all([
+  const [hasMod, modInstalled, resolved] = await Promise.all([
     resolveHasMod(modsAvailableFn, paths.modsDir, seed.modPath),
+    resolveModInstalled(installPath),
     resolveInstallState(probe, input)
   ])
 
@@ -150,7 +152,30 @@ async function buildVersion(
     // "Planned Release IN March 1997 (Scrapped and remade.)", is drawn in
     // `.ref/designref/src/imports/Frame219.tsx`.)
     stateReason: seed.launchable ? resolved.stateReason : seed.unavailableReason,
-    hasMod
+    hasMod,
+    modInstalled
+  }
+}
+
+/**
+ * Whether RE-Enhance files are already sitting in the install.
+ *
+ * This is what makes an unset launch mode default correctly. The legacy launcher
+ * opened the launch screen with `useEnhanced = ModLoader::HasBackup(installPath)`
+ * (`src/ui/screens/screen_launch.cpp`), i.e. "the mod is injected, so keep it
+ * injected" — and the renderer's `resolveMode` now reproduces that from this flag.
+ * Without it, a machine with the overlay already applied defaulted to ORIGINAL,
+ * and pressing LAUNCH *restored* the retail files instead of starting the modded
+ * game: the launcher would have silently undone a working mod setup.
+ */
+async function resolveModInstalled(installPath: string): Promise<boolean> {
+  if (installPath === '') return false
+  try {
+    return await hasBackup(installPath)
+  } catch {
+    // An unreadable install is reported by the probe; the mode just falls back to
+    // ORIGINAL rather than the catalog failing to build.
+    return false
   }
 }
 
