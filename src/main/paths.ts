@@ -48,10 +48,18 @@ const LEGACY_CONFIG_FILE_NAME = 'config.ini'
 /** Progress file name, used in both the legacy and the new location. */
 const PROGRESS_FILE_NAME = 'achievements.sav'
 /**
- * `name` in package.json. Electron appends it to `appData` to build `userData`,
- * so the plain-Node fallback below reproduces exactly that join.
+ * The application name, and therefore the profile directory name.
+ *
+ * Electron appends this to `appData` to build `userData`, and it is what
+ * `app.setName` is given in `src/main/index.ts` so a development run and a
+ * packaged build land in the same place. It matches the `productName` in
+ * `electron-builder.yml` on purpose: the packaged build derives its profile from
+ * that, and two names would mean two profiles.
+ *
+ * The plain-Node fallback below reproduces the same join, so a unit test and the
+ * running app agree about where the config lives.
  */
-const APP_NAME = 're-classic-collection'
+export const APP_NAME = 'Resident Evil - Classic Collection'
 
 /**
  * `app.getAppPath()`, or null when this module is loaded outside Electron.
