@@ -1,24 +1,22 @@
-# Build output
-build/
+# Node / build output
+node_modules/
 out/
-*.exe
-*.obj
-*.lib
-*.pdb
-*.ilk
-*.exp
+dist/
+release/
+.vite/
+*.tsbuildinfo
 
-# vcpkg local installs
-vcpkg_installed/
+# Test output
+test-results/
+playwright-report/
+coverage/
 
 # IDE / editor
 .vs/
 .vscode/
 *.user
 *.suo
-*.sln.docstates
-CMakeSettings.json
-.cache/
+.idea/
 
 # OS
 Thumbs.db
@@ -36,3 +34,15 @@ GOG Games/
 
 # RE-Enhance mods (copyrighted mod binaries)
 reenhancemods/
+
+# Large media inputs to `pnpm assets:sync`. The converted copies the launcher
+# actually renders are committed under src/renderer/src/assets/, so a fresh clone
+# builds and runs without these; only re-running the sync needs them. RE2.wav is
+# not consumed by anything — the legacy `PlayMusic` was a no-op and the new
+# launcher has no music playback.
+assets/videos/
+assets/audio/RE2.wav
+
+# Local launcher runtime state
+config.ini
+achievements.sav

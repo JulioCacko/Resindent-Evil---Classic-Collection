@@ -1,0 +1,50 @@
+{
+  "name": "re-classic-collection",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Resident Evil - Classic Collection launcher (Electron + React)",
+  "author": {
+    "name": "Julio CACKO",
+    "email": ""
+  },
+  "license": "SEE LICENSE IN README.md",
+  "main": "out/main/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "compile": "electron-vite build",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.e2e.json --noEmit",
+    "assets:sync": "node tools/sync-design-assets.mjs",
+    "check:fidelity": "node tools/check-fidelity.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "npm run compile && playwright test",
+    "build": "npm run typecheck && npm run compile && electron-builder --win --publish never",
+    "build:dir": "npm run compile && electron-builder --win --dir --publish never"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "motion": "^13.4.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwind-merge": "^3.2.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.1.4",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "sharp": "^0.35.4",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^5.0.2"
+  }
+}

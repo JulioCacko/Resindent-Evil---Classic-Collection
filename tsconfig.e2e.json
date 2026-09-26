@@ -1,0 +1,33 @@
+{
+  "include": [
+    "tests/e2e/**/*",
+    "playwright.config.ts",
+    "src/shared/**/*",
+    "src/renderer/src/contracts.ts",
+    "src/renderer/src/global.d.ts",
+    "src/renderer/src/data/**/*",
+    "src/renderer/src/env.d.ts"
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["src/shared/*"],
+      "@renderer/*": ["src/renderer/src/*"]
+    }
+  }
+}

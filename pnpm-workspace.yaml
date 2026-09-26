@@ -1,0 +1,12 @@
+# pnpm 11 reads build-script approval from here, not from package.json.
+# Electron needs its postinstall to download the runtime binary; sharp needs its
+# postinstall to link the prebuilt native binary; esbuild links its platform binary.
+allowBuilds:
+  electron: true
+  electron-builder: true
+  electron-winstaller: true
+  esbuild: true
+  sharp: true
+
+minimumReleaseAgeExclude:
+  - '@types/node@26.6.3'

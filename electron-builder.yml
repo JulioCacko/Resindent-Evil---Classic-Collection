@@ -1,0 +1,46 @@
+appId: com.cackostudio.reclassiccollection
+productName: Resident Evil - Classic Collection
+copyright: Fan concept by Julio CACKO. Resident Evil is a trademark of CAPCOM CO., LTD.
+
+directories:
+  output: release
+  buildResources: build-resources
+
+files:
+  - out/**
+  - package.json
+
+# Only the achievement definitions are shipped as loose files, so a user can
+# override them next to the executable. `extraFiles` (not `extraResources`) puts
+# them in the app's own root, which is `dirname(process.execPath)` — the directory
+# `getMainPaths()` calls `appDir` and the place the launcher looks for
+# `assets/achievements/achievements.json`. `extraResources` would land them one
+# level down in `resources/`, where nothing looks. Everything else the UI renders
+# is bundled into out/renderer by Vite.
+extraFiles:
+  - from: assets/achievements
+    to: assets/achievements
+  - from: README.md
+    to: README.md
+
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  icon: media/icon.png
+  artifactName: ${productName} ${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Resident Evil - Classic Collection
+
+portable:
+  artifactName: ${productName} ${version} portable.${ext}
