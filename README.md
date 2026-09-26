@@ -43,8 +43,10 @@ input pipeline.
   `config.ini` patching so the RE-Enhance setup dialog never appears
 - **Achievements** — 365 definitions (RE1 115, RE2 131, RE3 119) with progress saved
   in the old launcher's own format, so existing unlocks carry over
-- **GOG auto-detection** — local `GOG Games/` folder, then the Windows registry, then
-  the usual `C:\` roots, with an explicit override
+- **GOG and Steam auto-detection** — GOG first (local `GOG Games/`, then the Windows
+  registry, then the usual roots, with an explicit override), then Steam (its registry
+  entry, every library in `libraryfolders.vdf`, and each app's own `appmanifest`), so
+  a title installed from either store is found
 - **Gamepad, keyboard and mouse** — three input sources normalised into one set of six
   actions, with on-screen key hints per screen
 - **CRT filter** — scanlines, phosphor mask, vignette, grain and barrel curvature,
@@ -72,9 +74,31 @@ provided locally. Both folders are gitignored.
 
 | What | Where it goes | How to obtain |
 |---|---|---|
-| The GOG Resident Evil Classic Bundle | `GOG Games/` next to the launcher (or anywhere the launcher can detect) | Purchase and install from GOG.com |
+| The Resident Evil Classic Bundle, **GOG or Steam** | GOG: `GOG Games/` next to the launcher, or anywhere the launcher can detect. Steam: install it normally and the launcher finds it | Purchase from GOG.com or Steam |
 | RE-Enhance mods (optional) | `reenhancemods/` next to the launcher | From their respective authors (see Credits) |
 | The concept's textures (optional, only to re-run `pnpm assets:sync`) | `assets/textures/` | **Included in the repository.** Figma's own exports for the eight info-panel logos and the main-menu lockup. Their converted copies are committed under `src/renderer/src/assets/`, so a clone builds without them |
+
+### GOG or Steam
+
+Both are supported and **GOG wins when you have both** — it is where the RE-Enhance
+overlay and the `config.ini` the launcher patches belong. Steam is used when GOG has
+nothing for that row.
+
+Steam's layout is very different: each localization is a *complete copy* of the game
+in its own folder, so a row's install root is the localization folder itself —
+`4249100_Biohazard\english` for RE1 US and `…\japanese` for RE1 JP, which is why the
+two rows of one title can live in two places. The row then runs the executable Steam
+ships there, and RE2's Japanese copy names its executables `LeonJ.exe` / `ClaireJ.exe`
+rather than the `LeonU.exe` / `ClaireU.exe` a GOG install uses.
+
+Two consequences worth knowing:
+
+- **RE-Enhance is a GOG feature.** The launcher injects nothing into a Steam install,
+  so a Steam row always launches in ORIGINAL mode. If you have applied RE-Enhance to
+  a Steam copy yourself, the language executable you would run is already the patched
+  one.
+- **Two rows have no Steam equivalent** and stay GOG-only: DIRECTOR'S CUT (Steam's RE1
+  app is the 1996 original) and BIOHAZARD 1.5, which was never released.
 
 ---
 

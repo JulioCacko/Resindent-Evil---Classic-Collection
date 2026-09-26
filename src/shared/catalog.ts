@@ -11,14 +11,19 @@
  * since reproducing the concept 1:1 is the requirement. See
  * docs/DESIGN-FIDELITY.md for the reconciliation notes.
  */
-import type { GameVersion, GameplayMedia, TitleId } from './types'
+import type { GameVersion, GameplayMedia, Re2Scenario, TitleId } from './types'
 
 /** Asset keys are resolved to bundled URLs by the renderer's asset map. */
 export type AssetKey = string
 
 export interface GameVersionSeed
-  extends Omit<GameVersion, 'state' | 'stateReason' | 'hasMod' | 'modInstalled' | 'titleId'> {
+  extends Omit<
+    GameVersion,
+    'state' | 'stateReason' | 'hasMod' | 'modInstalled' | 'installSource' | 'installPath' | 'titleId'
+  > {
   titleId: TitleId
+  /** Where the Steam release keeps this row, or null when it has none. */
+  steam: SteamRow | null
 }
 
 export interface GameTitleSeed {
@@ -27,7 +32,49 @@ export interface GameTitleSeed {
   cardAsset: AssetKey
   gogGameId: string
   gogFolderName: string
+  /**
+   * The Steam app id, or '' when the Steam release has no equivalent app.
+   *
+   * These are the Classic Collection's three apps — Resident Evil (1996), Resident
+   * Evil 2 (1998) and Resident Evil 3 Nemesis (1999) — and they are what the launcher
+   * reads `appmanifest_<id>.acf` for, so the install folder name comes from Valve
+   * rather than from a guess at how Valve named it.
+   */
+  steamAppId: string
   versions: GameVersionSeed[]
+}
+
+/**
+ * Where a row lives inside a Steam install.
+ *
+ * Steam ships each localization as a complete copy of the game in its own folder, so
+ * a row is a folder plus the executable inside it. The executable names are NOT
+ * GOG's: RE2's Japanese build runs `LeonJ.exe` / `ClaireJ.exe` where the GOG install
+ * runs `LeonU.exe` / `ClaireU.exe`, which is why the scenario mapping is per source
+ * instead of shared.
+ */
+export interface SteamRow {
+  /** The localization folder under the app's install dir. */
+  locale: string
+  /** The executable inside that folder. */
+  exec: string
+  /** RE2 only: the executable per player scenario. */
+  scenarioExec?: Record<'leon' | 'claire', string>
+}
+
+/**
+ * The executable a row runs in ORIGINAL mode.
+ *
+ * The single place that answers this, because the validator and the launcher both
+ * need it: RE2 routes a scenario to its own executable, and every other row runs the
+ * one the catalog names.
+ */
+export function retailExecutable(version: GameVersionSeed, scenario: Re2Scenario | null): string {
+  if (scenario !== null) {
+    const scoped = RE2_SCENARIO_EXEC[scenario]
+    if (scoped !== undefined && scoped !== '') return scoped
+  }
+  return version.execRelPath
 }
 
 export const BACKDROP_ASSET: AssetKey = 'game/backdrop-unsplash'
@@ -64,9 +111,11 @@ export const TITLES: GameTitleSeed[] = [
     cardAsset: 'game/card-re1',
     gogGameId: '1580232252',
     gogFolderName: 'Resident Evil',
+    steamAppId: '4249100',
     versions: [
       {
         id: 're1_us',
+        steam: { locale: 'english', exec: 'ResidentEvil.exe' },
         titleId: 're1',
         row: 0,
         displayName: 'RESIDENT EVIL',
@@ -96,6 +145,7 @@ export const TITLES: GameTitleSeed[] = [
       },
       {
         id: 're1_jp',
+        steam: { locale: 'japanese', exec: 'Biohazard.exe' },
         titleId: 're1',
         row: 1,
         displayName: 'BIO HAZARD',
@@ -125,6 +175,8 @@ export const TITLES: GameTitleSeed[] = [
       },
       {
         id: 're1_dc',
+        // No Steam equivalent: the Steam app is the 1996 original, not the Director's Cut.
+        steam: null,
         titleId: 're1',
         row: 2,
         displayName: "DIRECTOR'S CUT",
@@ -160,9 +212,11 @@ export const TITLES: GameTitleSeed[] = [
     cardAsset: 'game/card-re2',
     gogGameId: '1534123252',
     gogFolderName: 'Resident Evil 2',
+    steamAppId: '4249110',
     versions: [
       {
         id: 're2_leon_us',
+        steam: { locale: 'english', exec: 'LeonU.exe', scenarioExec: { leon: 'LeonU.exe', claire: 'ClaireU.exe' } },
         titleId: 're2',
         row: 0,
         displayName: 'LEON S. KENNEDY',
@@ -194,6 +248,8 @@ export const TITLES: GameTitleSeed[] = [
         // The concept devotes RE2's middle row to the cancelled BIOHAZARD 1.5
         // prototype, so there is no executable behind it.
         id: 're2_proto',
+        // Never released, so no store has it.
+        steam: null,
         titleId: 're2',
         row: 1,
         displayName: 'BIOHAZARD 1.5',
@@ -223,6 +279,7 @@ export const TITLES: GameTitleSeed[] = [
       },
       {
         id: 're2_jp',
+        steam: { locale: 'japanese', exec: 'LeonJ.exe', scenarioExec: { leon: 'LeonJ.exe', claire: 'ClaireJ.exe' } },
         titleId: 're2',
         row: 2,
         displayName: 'BIO HAZARD 2',
@@ -258,9 +315,11 @@ export const TITLES: GameTitleSeed[] = [
     cardAsset: 'game/card-re3',
     gogGameId: '1266089300',
     gogFolderName: 'Resident Evil 3',
+    steamAppId: '4249120',
     versions: [
       {
         id: 're3_us',
+        steam: { locale: 'english', exec: 'ResidentEvil3.exe' },
         titleId: 're3',
         row: 0,
         displayName: 'RESIDENT EVIL 3',
@@ -290,6 +349,19 @@ export const TITLES: GameTitleSeed[] = [
       },
       {
         id: 're3_jp',
+        steam: {
+          locale: 'japanese',
+          /**
+           * Not `ResidentEvil3.exe`, which is the English copy's name: the Steam
+           * Japanese folder holds no such file. `BIOHAZARD(R) 3 PC.exe` is the
+           * executable Steam itself ships there - 6,098,944 bytes dated 2023-11-04,
+           * byte-identical in size to the app's own `4249120_Launcher.exe` - while
+           * the folder's other executables (`Bio3_PC.exe`, `Bio3_PC_Mercenaries.exe`)
+           * all carry the RE-Enhance install date, and RE-Enhance's own readme says
+           * "Launch game by clicking on 'BIOHAZARD(R) 3 PC.exe'".
+           */
+          exec: 'BIOHAZARD(R) 3 PC.exe'
+        },
         titleId: 're3',
         row: 1,
         displayName: 'BIO HAZARD 3: LAST ESCAPE',
@@ -330,7 +402,11 @@ export const RE2_SCENARIO_EXEC: Record<'leon' | 'claire', string> = {
 /** Per-title probe used by install validation, mirroring the legacy validator. */
 export const TITLE_DATA_PROBES: Record<TitleId, string[]> = {
   re1: ['USA', 'USA/Data'],
-  re2: ['ClaireU.exe', 'LeonU.exe'],
+  // RE2's data marker IS one of the scenario executables, and a Steam localization
+  // names them differently per language: the Japanese copy has `LeonJ.exe` and
+  // `ClaireJ.exe` where the GOG install has `…U.exe`. Without the J names a Steam
+  // Japanese row probes as partial while the game is sitting right there.
+  re2: ['ClaireU.exe', 'LeonU.exe', 'ClaireJ.exe', 'LeonJ.exe'],
   re3: ['ResidentEvil3.exe']
 }
 

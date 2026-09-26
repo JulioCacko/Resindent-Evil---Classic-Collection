@@ -36,7 +36,8 @@ import { spawn, spawnSync } from 'node:child_process'
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { RE2_SCENARIO_EXEC, findTitle, findVersion } from '@shared/catalog'
+import { findTitle, findVersion } from '@shared/catalog'
+import { retailExecutableFor } from './detect/install'
 import type { GameVersionSeed } from '@shared/catalog'
 import type {
   GameExitEvent,
@@ -53,7 +54,8 @@ import type {
 
 import { createConfigStore } from './config-store'
 import type { LaunchDeps, PreparedLaunch } from './contracts'
-import { detectInstallPath } from './detect/gog'
+import { resolveVersionInstall } from './detect/install'
+import type { ResolvedSource } from './detect/install'
 import { patchIniFile } from './ini'
 import { hasBackup } from './mods'
 import { getMainPaths } from './paths'
@@ -148,8 +150,12 @@ export function setLaunchDeps(deps: LaunchDeps | null): void {
  * RE-Enhance overlay is on disk for the row.
  */
 export interface InstallContext {
-  /** Detected install root, `''` when the title was not found. */
+  /** The game root: the folder holding the executable and its data. */
   installPath: string
+  /** Which store it came from; `'none'` when the row was not found at all. */
+  source: ResolvedSource
+  /** The row's retail executable inside `installPath`, per the detected layout. */
+  execRelPath: string
   state: InstallState
   /** Human reason for a non-installed state; `null` when the row is complete. */
   stateReason: string | null
@@ -178,43 +184,42 @@ async function resolveLocalInstallContext(version: GameVersionSeed): Promise<Ins
   const title = findTitle(version.titleId)
   if (title === undefined) {
     // Unreachable for the static catalog, where every version belongs to a title.
-    return { installPath: '', state: 'missing', stateReason: FOLDER_MISSING_REASON, hasMod: false, modInstalled: false }
+    return missingInstall('gog', version.execRelPath)
   }
 
   const paths = getMainPaths()
-  const installPath = await detectInstallPath(
-    { id: title.id, gogGameId: title.gogGameId, gogFolderName: title.gogFolderName },
-    {
-      appDir: paths.appDir,
-      gogPathOverride: await readGogPathOverride(paths.configPath, paths.legacyConfigPath),
-      platform: process.platform
-    }
-  )
+  const install = await resolveVersionInstall(title, version, {
+    appDir: paths.appDir,
+    gogPathOverride: await readGogPathOverride(paths.configPath, paths.legacyConfigPath),
+    platform: process.platform
+  })
 
-  if (installPath === '') {
-    return { installPath: '', state: 'missing', stateReason: FOLDER_MISSING_REASON, hasMod: false, modInstalled: false }
-  }
+  if (install === null) return missingInstall('none', version.execRelPath)
 
   // `probeVersion` and `modsAvailable` answer different questions and both are
   // needed: the probe's `modOk` only reports whether a `requiresMod` row's
   // requirement is met, while `hasMod` is "RE-Enhance files exist for this row"
-  // (the same pair `catalog-state` computes per version).
+  // (the same pair `catalog-state` computes per version). A Steam row never has
+  // one: RE-Enhance is a GOG payload and the launcher does not inject it into a
+  // Steam localization folder.
   const [probe, hasMod, modInstalled] = await Promise.all([
     probeVersion({
       titleId: version.titleId,
-      installPath,
-      execRelPath: version.execRelPath,
+      installPath: install.path,
+      execRelPath: install.execRelPath,
       requiresMod: version.requiresMod,
       modPath: version.modPath,
       modsDir: paths.modsDir
     }),
-    modsAvailable(paths.modsDir, version.modPath),
-    hasBackup(installPath)
+    install.source === 'gog' ? modsAvailable(paths.modsDir, version.modPath) : Promise.resolve(false),
+    hasBackup(install.path)
   ])
 
   const state = stateFromProbe(probe)
   return {
-    installPath,
+    installPath: install.path,
+    source: install.source,
+    execRelPath: install.execRelPath,
     state,
     // Only `missing` is ever reported to the user: a launchable row (installed or
     // partial) needs no explanation, and `missing` is always the 0/3 case where
@@ -222,6 +227,19 @@ async function resolveLocalInstallContext(version: GameVersionSeed): Promise<Ins
     stateReason: state === 'missing' ? FOLDER_MISSING_REASON : null,
     hasMod,
     modInstalled
+  }
+}
+
+/** The context for a row nothing was found for. */
+function missingInstall(source: ResolvedSource, execRelPath: string): InstallContext {
+  return {
+    installPath: '',
+    source,
+    execRelPath,
+    state: 'missing',
+    stateReason: FOLDER_MISSING_REASON,
+    hasMod: false,
+    modInstalled: false
   }
 }
 
@@ -357,11 +375,18 @@ export async function prepareLaunch(request: LaunchRequest): Promise<PrepareOutc
     state: context.state,
     stateReason: context.stateReason,
     hasMod: context.hasMod,
-    modInstalled: context.modInstalled
+    modInstalled: context.modInstalled,
+    installSource: context.source,
+    installPath: context.installPath
   }
 
   const scenario = resolveScenario(row, request.scenario)
-  const relativeExecutable = await chooseExecutable(version, request.mode, scenario, context.installPath)
+  // Resolved here rather than inside `chooseExecutable`, because the *scenario* and
+  // the *source* both change the answer and both are already in hand: RE2 routes a
+  // scenario to its own executable, and a Steam install names it differently from a
+  // GOG one (`LeonJ.exe` against `LeonU.exe`).
+  const retailExecRelPath = retailExecutableFor(row, context.source, scenario)
+  const relativeExecutable = await chooseExecutable(version, request.mode, retailExecRelPath, context.installPath)
   const executable = join(context.installPath, relativeExecutable)
   // `relativeExecutable === ''` is tested first on purpose: `join(root, '')` is a
   // real path (the install root itself), which would otherwise look like a file.
@@ -418,7 +443,7 @@ function resolveScenario(row: GameVersionSeed, requested: Re2Scenario | null): R
 async function chooseExecutable(
   version: GameVersion,
   mode: LaunchMode,
-  scenario: Re2Scenario | null,
+  retailExecRelPath: string,
   installPath: string
 ): Promise<string> {
   const modExecutable = version.modExecRelPath
@@ -427,10 +452,9 @@ async function chooseExecutable(
   if (enhancedOverlay && (await isFile(join(installPath, modExecutable)))) {
     return modExecutable
   }
-  if (version.titleId === 're2' && scenario !== null) {
-    return RE2_SCENARIO_EXEC[scenario]
-  }
-  return version.execRelPath
+  // The retail name arrives already resolved for the row's source and scenario, so
+  // the only decision left here is mod-or-retail.
+  return retailExecRelPath
 }
 
 /**

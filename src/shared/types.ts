@@ -64,6 +64,17 @@ export interface GameVersion {
    * is what the legacy launcher did with `ModLoader::HasBackup`.
    */
   modInstalled: boolean
+  /**
+   * Which store this row's files came from, and where they are.
+   *
+   * Per *row*, not per title: Steam ships one app per game but a complete copy of it
+   * per localization, so two rows of the same title resolve to different folders -
+   * RE1 US is `4249100_Biohazard\english` and RE1 JP is `…\japanese`. `'none'` means
+   * nothing was found for this row.
+   */
+  installSource: 'gog' | 'steam' | 'none'
+  /** The game root: the folder holding this row's executable and its data. */
+  installPath: string
   /** Version is only playable with the mod (legacy: RE1 JP). */
   requiresMod: boolean
   /** Sets `[DLL] JapaneseEnable=1` before launch. */
@@ -91,6 +102,8 @@ export interface GameTitle {
   gogGameId: string
   /** Folder name used inside a `GOG Games/` directory. */
   gogFolderName: string
+  /** The Steam app id, or '' when the Steam release has no equivalent app. */
+  steamAppId: string
   versions: GameVersion[]
   /** Detected install root, '' when not found. */
   installPath: string

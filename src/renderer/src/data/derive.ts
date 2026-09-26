@@ -96,6 +96,7 @@ export function seedTitle(id: string): GameTitle | null {
     cardAsset: seed.cardAsset,
     gogGameId: seed.gogGameId,
     gogFolderName: seed.gogFolderName,
+    steamAppId: seed.steamAppId,
     versions: seed.versions.map((version) => ({
       ...version,
       titleId: seed.id,
@@ -104,7 +105,11 @@ export function seedTitle(id: string): GameTitle | null {
       state: 'missing' as const,
       stateReason: null,
       hasMod: false,
-      modInstalled: false
+      modInstalled: false,
+      // Nothing has been resolved against either store yet, which is what 'none'
+      // means on a row.
+      installSource: 'none' as const,
+      installPath: ''
     })),
     installPath: '',
     hasAnyInstalled: false

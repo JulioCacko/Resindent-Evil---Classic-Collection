@@ -25,6 +25,7 @@ import type {
   Re2Scenario,
   TitleId
 } from '@shared/types'
+import type { GameTitleSeed, GameVersionSeed } from '@shared/catalog'
 
 // ---------------------------------------------------------------------------
 // paths
@@ -298,6 +299,17 @@ export interface CatalogBuildOptions {
   paths: MainPaths
   config: LauncherConfig
   detect?: typeof detectAllInstallPaths
+  /**
+   * Resolves one row's install: GOG preferred, then Steam.
+   *
+   * The seam a test uses when it needs per-row control, which `detect` cannot give -
+   * that one answers per *title*, which is what a GOG install is and is not what
+   * Steam is, where two rows of the same title live in different locale folders.
+   */
+  resolveInstall?: (
+    title: GameTitleSeed,
+    version: GameVersionSeed
+  ) => Promise<{ path: string; source: 'gog' | 'steam'; execRelPath: string } | null>
   probe?: typeof probeVersion
   modsAvailableFn?: typeof modsAvailable
 }

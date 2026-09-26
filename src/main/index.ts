@@ -174,7 +174,10 @@ async function loadRenderer(window: BrowserWindow): Promise<void> {
 interface SelfTestRow {
   id: string
   state: InstallState
+  /** This row's game root: the folder holding its executable and its data. */
   installPath: string
+  /** Which store it came from, so a GOG/Steam mix is visible in one line. */
+  source: 'gog' | 'steam' | 'none'
 }
 
 /**
@@ -221,7 +224,12 @@ async function reportSelfTest(reason: string): Promise<void> {
       title.versions.map((version) => ({
         id: version.id,
         state: version.state,
-        installPath: title.installPath
+        // Per row, not per title: RE1's two rows can resolve to two different
+        // folders, which is exactly what a Steam install does (`english\` and
+        // `japanese\`), so reporting the title's path would hide the thing worth
+        // checking.
+        installPath: version.installPath,
+        source: version.installSource
       }))
     )
     await emitSelfTestLine({ ok: true, needsInstallScreen: snapshot.needsInstallScreen, rows })

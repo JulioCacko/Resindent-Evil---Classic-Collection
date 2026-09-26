@@ -185,6 +185,7 @@ function titleWithStates(states: InstallState[]): GameTitle {
     cardAsset: seed.cardAsset,
     gogGameId: seed.gogGameId,
     gogFolderName: seed.gogFolderName,
+    steamAppId: seed.steamAppId,
     installPath: INSTALL_ROOTS.re1,
     hasAnyInstalled: states.includes('installed'),
     versions: states.map((state, index) => ({
@@ -192,8 +193,10 @@ function titleWithStates(states: InstallState[]): GameTitle {
       id: `re1_row_${index}`,
       state,
       stateReason: null,
-    modInstalled: false,
-      hasMod: false
+      modInstalled: false,
+      hasMod: false,
+      installSource: 'gog',
+      installPath: INSTALL_ROOTS.re1
     }))
   }
 }

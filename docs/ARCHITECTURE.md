@@ -147,7 +147,9 @@ src/
 │   ├── paths.ts                 appDir vs configDir -> MainPaths / AppPaths
 │   ├── logger.ts                stdout + re-log.txt, 200-line ring for error context
 │   ├── ini.ts                   line-based config.ini patcher (spacing preserved)
-│   ├── detect/gog.ts            install-root detection: override -> local -> registry -> roots
+│   ├── detect/gog.ts            GOG install-root detection: override -> local -> registry -> roots
+│   ├── detect/steam.ts          Steam root, libraries and app folders (registry + VDF + manifests)
+│   ├── detect/install.ts        which store a row runs from: GOG first, then Steam
 │   ├── validate.ts              3-probe validation, case-insensitive name resolution
 │   ├── mods.ts                  inject/restore the RE-Enhance overlay + .mod_backup
 │   ├── launch.ts                prepareLaunch -> performLaunch -> exit tracking
@@ -324,17 +326,64 @@ Per-row extras:
 | `re3_us` | no | no | — | `originally released in 11 November 1999` |
 | `re3_jp` | no | yes | — | `originally released in 22 September 1999` |
 
+### Which install a row runs from: GOG first, then Steam
+
+`src/main/detect/install.ts` is the single answer to "where is this row", and the rule
+is **GOG preferred**. Both stores can be installed at once, and when they are, GOG is
+the one the rest of the app understands: it is where the RE-Enhance overlay and the
+`config.ini` the launcher patches belong. Steam is used when GOG has nothing.
+
+The two layouts have almost nothing in common, which is why the resolver exists:
+
+| | GOG | Steam |
+|---|---|---|
+| Install root | `<appDir>/GOG Games/<gogFolderName>/` | `<library>\steamapps\common\<installdir>` |
+| Folder name | the title, e.g. `Resident Evil` | Valve's, e.g. `4249100_Biohazard` |
+| Executables | in the install root | one complete copy per localization, in `english\`, `japanese\`, … |
+| RE2 JP | `LeonU.exe` / `ClaireU.exe` + the `JapaneseEnable` flag | `LeonJ.exe` / `ClaireJ.exe` |
+| RE-Enhance | yes | no — a Steam row is always `ORIGINAL` and injects nothing |
+
+What comes out is a **game root**: the folder holding the executable *and* its data.
+For GOG that is the install root; for Steam it is the locale folder, which is
+self-contained (RE1's `english\` carries its own `USA\Data`). Because that subtree is
+what everything downstream works against, probing, the working directory and the
+`config.ini` patch all work on a Steam row unchanged.
+
+Three facts are read from Valve rather than guessed at a folder name:
+
+1. the Steam root, from the registry (`SteamPath` under HKCU, else `InstallPath` under
+   HKLM, both spellings of the WOW64 view);
+2. the libraries, from `<root>\steamapps\libraryfolders.vdf` — five drives on the
+   machine this was built against;
+3. the app's folder, from `appmanifest_<appid>.acf`, whose `installdir` is the
+   authority. `findSteamAppDir` looks in the libraries Valve lists the app in first,
+   then in every other known library, so an install Valve has not rewritten its `apps`
+   block for is still found.
+
+The three app ids are `4249100`, `4249110` and `4249120` (Resident Evil 1996, Resident
+Evil 2 1998, Resident Evil 3 Nemesis 1999). Two rows have no Steam equivalent and stay
+GOG-only: `re1_dc`, because the Steam app is the 1996 original rather than the
+Director's Cut, and `re2_proto`, which was never released.
+
+**Rows are resolved individually, not per title.** That is the whole reason
+`GameVersion.installPath` exists alongside `GameTitle.installPath`: RE1 US resolves to
+`…\english` and RE1 JP to `…\japanese`, and a title-level path could only ever describe
+one of them. The title-level field is a summary for the install gate and the "where is
+it" line; nothing launches from it.
+
 ### Install validation: three probes, then the RE-Enhance veto
 
 `validate.ts` reproduces the legacy `InstallValidator::ValidateTitle` in two
 steps, and the split matters for what the user is told to fix:
 
-1. **Three probes against the disk.** `installOk` (the install root exists),
-   `exeOk` (`execRelPath` resolves inside it), `dataOk` (the title's own marker
-   from `TITLE_DATA_PROBES`: `USA/` or `USA/Data` for RE1, `ClaireU.exe` or
-   `LeonU.exe` for RE2, `ResidentEvil3.exe` for RE3). Name resolution is
-   case-insensitive because Windows is. Scoring is the legacy one: 3/3 →
-   `installed`, 0/3 → `missing`, anything else → `partial`.
+1. **Three probes against the disk.** `installOk` (the game root exists),
+   `exeOk` (the row's executable resolves inside it), `dataOk` (the title's own
+   marker from `TITLE_DATA_PROBES`: `USA/` or `USA/Data` for RE1; for RE2 one of
+   `ClaireU.exe`, `LeonU.exe`, `ClaireJ.exe`, `LeonJ.exe`, because RE2's data marker
+   *is* a scenario executable and a Steam Japanese copy names those differently; for
+   RE3 `ResidentEvil3.exe`). Name resolution is case-insensitive because Windows is.
+   Scoring is the legacy one: 3/3 → `installed`, 0/3 → `missing`, anything else →
+   `partial`.
 2. **The veto.** A fourth field, `modOk`, reports whether the row's *requirement*
    is met — `true` for every row except the `requiresMod` ones, which need a
    non-empty `reenhancemods/<modPath>`. `stateFromProbe` demotes a would-be

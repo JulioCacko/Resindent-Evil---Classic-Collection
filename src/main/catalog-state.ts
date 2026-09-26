@@ -27,7 +27,8 @@ import type {
   VersionProbe,
   VersionProbeInput
 } from './contracts'
-import { detectAllInstallPaths } from './detect/gog'
+import { resolveVersionInstall } from './detect/install'
+import type { InstallResolutionOptions, ResolvedInstall, ResolvedSource } from './detect/install'
 import { hasBackup } from './mods'
 import { modsAvailable, probeVersion, stateFromProbe } from './validate'
 
@@ -56,16 +57,13 @@ const REASON = {
 
 export async function buildCatalogSnapshot(options: CatalogBuildOptions): Promise<CatalogSnapshot> {
   const { paths, config } = options
-  const detect = options.detect ?? detectAllInstallPaths
   const probe = options.probe ?? probeVersion
   const modsAvailableFn = options.modsAvailableFn ?? modsAvailable
 
-  // One detection pass for the whole catalog, exactly as the legacy
-  // `DetectAllGames` walked every title before validation started.
-  const detected = await detectInstallPaths(detect, paths, config)
+  const resolveFor = makeVersionResolver(options, paths, config)
 
   const titles = await Promise.all(
-    TITLES.map((seed) => buildTitle(seed, detected, paths, probe, modsAvailableFn))
+    TITLES.map((seed) => buildTitle(seed, resolveFor, paths, probe, modsAvailableFn))
   )
 
   return {
@@ -76,6 +74,55 @@ export async function buildCatalogSnapshot(options: CatalogBuildOptions): Promis
     configPath: paths.configPath,
     progressPath: paths.progressPath
   }
+}
+
+/** Resolves one row's install: GOG preferred, then Steam. */
+type VersionResolver = (
+  title: GameTitleSeed,
+  version: GameVersionSeed
+) => Promise<ResolvedInstall | null>
+
+/**
+ * The resolver the snapshot builder uses.
+ *
+ * Three cases, in order of precedence, and the middle one is why this exists rather
+ * than the builder calling the detectors directly:
+ *
+ *  1. `options.resolveInstall` — injected, and the seam the tests use.
+ *  2. `options.detect` — the older injected seam, which only knew about GOG and
+ *     answered per *title*. It is adapted here rather than removed so that a
+ *     per-title detector still composes: the path comes back for every row of that
+ *     title, which is what a GOG install is.
+ *  3. the real thing: `resolveVersionInstall`, which asks GOG then Steam per row.
+ *     A title is detected once and its result reused, so three rows cost one GOG
+ *     probe plus one Steam lookup.
+ */
+function makeVersionResolver(
+  options: CatalogBuildOptions,
+  paths: MainPaths,
+  config: LauncherConfig
+): VersionResolver {
+  if (options.resolveInstall !== undefined) return options.resolveInstall
+
+  const detectionOptions: InstallResolutionOptions = {
+    appDir: paths.appDir,
+    gogPathOverride: config.gogPathOverride,
+    platform: process.platform
+  }
+
+  if (options.detect !== undefined) {
+    const detect = options.detect
+    let perTitle: Promise<Record<string, string>> | null = null
+    return async (title, version) => {
+      perTitle ??= detectInstallPaths(detect, paths, config)
+      const detected = await perTitle
+      const path = resolveInstallPath(detected, title)
+      if (path === '') return null
+      return { path, source: 'gog', execRelPath: version.execRelPath }
+    }
+  }
+
+  return (title, version) => resolveVersionInstall(title, version, detectionOptions)
 }
 
 /**
@@ -93,18 +140,19 @@ export function needsInstallScreen(titles: CatalogSnapshot['titles']): boolean {
 
 async function buildTitle(
   seed: GameTitleSeed,
-  detected: Record<string, string>,
+  resolveFor: VersionResolver,
   paths: MainPaths,
   probe: ProbeFn,
   modsAvailableFn: ModsFn
 ): Promise<GameTitle> {
-  const installPath = resolveInstallPath(detected, seed)
-
-  // All versions of a title share one install root (the legacy validator used
-  // `title.installPath` for every row), but each row probes its own executable.
   const versions = await Promise.all(
-    seed.versions.map((version) => buildVersion(version, installPath, paths, probe, modsAvailableFn))
+    seed.versions.map((version) => buildVersion(version, resolveFor(seed, version), paths, probe, modsAvailableFn))
   )
+
+  // A row resolves to its own game root, so the title-level path is a summary rather
+  // than a fact: it is the first row that found anything, which is what the install
+  // gate and the "where is it" line need. Nothing reads it to launch.
+  const installPath = versions.find((version) => version.installPath !== '')?.installPath ?? ''
 
   return {
     id: seed.id,
@@ -112,6 +160,7 @@ async function buildTitle(
     cardAsset: seed.cardAsset,
     gogGameId: seed.gogGameId,
     gogFolderName: seed.gogFolderName,
+    steamAppId: seed.steamAppId,
     versions,
     installPath,
     // Only a fully validated row counts. A partial install is still launchable
@@ -123,15 +172,24 @@ async function buildTitle(
 
 async function buildVersion(
   seed: GameVersionSeed,
-  installPath: string,
+  installPromise: Promise<ResolvedInstall | null>,
   paths: MainPaths,
   probe: ProbeFn,
   modsAvailableFn: ModsFn
 ): Promise<GameVersion> {
+  const install = await installPromise
+  const installPath = install?.path ?? ''
+  const source: ResolvedSource = install?.source ?? 'none'
+  // The executable the row runs in ORIGINAL mode, which for a Steam row is the one
+  // inside its locale folder - RE2's Japanese build is `LeonJ.exe`, not the
+  // `LeonU.exe` a GOG install uses, so probing the wrong name would call a good
+  // install missing.
+  const execRelPath = install?.execRelPath ?? seed.execRelPath
+
   const input: VersionProbeInput = {
     titleId: seed.titleId,
     installPath,
-    execRelPath: seed.execRelPath,
+    execRelPath,
     requiresMod: seed.requiresMod,
     modPath: seed.modPath,
     modsDir: paths.modsDir
@@ -153,7 +211,9 @@ async function buildVersion(
     // `.ref/designref/src/imports/Frame219.tsx`.)
     stateReason: seed.launchable ? resolved.stateReason : seed.unavailableReason,
     hasMod,
-    modInstalled
+    modInstalled,
+    installSource: source,
+    installPath
   }
 }
 

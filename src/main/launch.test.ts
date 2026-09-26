@@ -150,6 +150,10 @@ function createFakeSpawn(): FakeSpawn {
 function useInstallContext(overrides: Partial<InstallContext>): void {
   setInstallContextResolver(async () => ({
     installPath: installDir,
+    // The fixture install is a GOG one: its executables sat in the root, which is
+    // why `execRelPath` is the catalog's own name and not a locale-folder path.
+    source: 'gog',
+    execRelPath: 'ResidentEvil.exe',
     state: 'installed',
     stateReason: null,
     hasMod: false,
@@ -290,7 +294,15 @@ describe('prepareLaunch', () => {
     const seen: string[] = []
     setInstallContextResolver(async (version) => {
       seen.push(version.id)
-      return { installPath: installDir, state: 'installed', stateReason: null, hasMod: false, modInstalled: false }
+      return {
+        installPath: installDir,
+        source: 'gog',
+        execRelPath: 'ResidentEvil.exe',
+        state: 'installed',
+        stateReason: null,
+        hasMod: false,
+        modInstalled: false
+      }
     })
 
     const prepared = expectPrepared(await prepareLaunch(request('re1_us')))
