@@ -62,8 +62,8 @@
       "bytes": 51840
     },
     {
-      "key": "game/hero-re2-claire",
-      "file": "game/hero-re2-claire.webp",
+      "key": "game/hero-re2-proto",
+      "file": "game/hero-re2-proto.webp",
       "source": "media/game_re2_version_alt.png",
       "bytes": 32256
     },
@@ -110,8 +110,8 @@
       "bytes": 187798
     },
     {
-      "key": "game/region-re2-claire",
-      "file": "game/region-re2-claire.webp",
+      "key": "game/region-re2-proto",
+      "file": "game/region-re2-proto.webp",
       "source": "media/game_re2_region_alt.png",
       "bytes": 152418
     },
@@ -136,50 +136,50 @@
     {
       "key": "game/logo-re1-us",
       "file": "game/logo-re1-us.webp",
-      "source": "media/RE1Logo.png",
-      "bytes": 8704
+      "source": "assets/textures/Game=1, Type=Default.png",
+      "bytes": 13904
     },
     {
       "key": "game/logo-re1-jp",
       "file": "game/logo-re1-jp.webp",
-      "source": "media/game_1_type_jp.png",
-      "bytes": 8280
+      "source": "assets/textures/Game=1, Type=JP.png",
+      "bytes": 12666
     },
     {
       "key": "game/logo-re1-dc",
       "file": "game/logo-re1-dc.webp",
-      "source": "media/re1_dc_logo.png",
-      "bytes": 15716
+      "source": "assets/textures/Game=1, Type=Alt.png",
+      "bytes": 24914
     },
     {
       "key": "game/logo-re2-leon",
       "file": "game/logo-re2-leon.webp",
-      "source": "media/game_2_type_default.png",
-      "bytes": 9732
+      "source": "assets/textures/Game=2, Type=Default.png",
+      "bytes": 14982
     },
     {
-      "key": "game/logo-re2-claire",
-      "file": "game/logo-re2-claire.webp",
-      "source": "media/game_2_type_alt.png",
-      "bytes": 8814
+      "key": "game/logo-re2-proto",
+      "file": "game/logo-re2-proto.webp",
+      "source": "assets/textures/Game=2, Type=Alt.png",
+      "bytes": 13068
     },
     {
       "key": "game/logo-re2-jp",
       "file": "game/logo-re2-jp.webp",
-      "source": "media/game_2_type_jp.png",
-      "bytes": 9434
+      "source": "assets/textures/Game=2, Type=JP.png",
+      "bytes": 14412
     },
     {
       "key": "game/logo-re3-us",
       "file": "game/logo-re3-us.webp",
-      "source": "media/game_3_type_default.png",
-      "bytes": 9804
+      "source": "assets/textures/Game=3, Type=Default.png",
+      "bytes": 14862
     },
     {
       "key": "game/logo-re3-jp",
       "file": "game/logo-re3-jp.webp",
-      "source": "media/game_3_type_jp.png",
-      "bytes": 7960
+      "source": "assets/textures/Game=3, Type=JP.png",
+      "bytes": 12176
     }
   ],
   "copies": [
@@ -239,5 +239,5 @@
       "bytes": 135740
     }
   ],
-  "designMapCount": 15
+  "designMapCount": 20
 }

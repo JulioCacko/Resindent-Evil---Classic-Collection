@@ -16,7 +16,7 @@ import heroRe1Us from '../assets/game/hero-re1-us.webp'
 import heroRe1Jp from '../assets/game/hero-re1-jp.webp'
 import heroRe1Dc from '../assets/game/hero-re1-dc.webp'
 import heroRe2Leon from '../assets/game/hero-re2-leon.webp'
-import heroRe2Claire from '../assets/game/hero-re2-claire.webp'
+import heroRe2Proto from '../assets/game/hero-re2-proto.webp'
 import heroRe2Jp from '../assets/game/hero-re2-jp.webp'
 import heroRe3Us from '../assets/game/hero-re3-us.webp'
 import heroRe3Jp from '../assets/game/hero-re3-jp.webp'
@@ -24,7 +24,7 @@ import regionRe1Us from '../assets/game/region-re1-us.webp'
 import regionRe1Jp from '../assets/game/region-re1-jp.webp'
 import regionRe1Dc from '../assets/game/region-re1-dc.webp'
 import regionRe2Leon from '../assets/game/region-re2-leon.webp'
-import regionRe2Claire from '../assets/game/region-re2-claire.webp'
+import regionRe2Proto from '../assets/game/region-re2-proto.webp'
 import regionRe2Jp from '../assets/game/region-re2-jp.webp'
 import regionRe3Us from '../assets/game/region-re3-us.webp'
 import regionRe3Jp from '../assets/game/region-re3-jp.webp'
@@ -32,7 +32,7 @@ import logoRe1Us from '../assets/game/logo-re1-us.webp'
 import logoRe1Jp from '../assets/game/logo-re1-jp.webp'
 import logoRe1Dc from '../assets/game/logo-re1-dc.webp'
 import logoRe2Leon from '../assets/game/logo-re2-leon.webp'
-import logoRe2Claire from '../assets/game/logo-re2-claire.webp'
+import logoRe2Proto from '../assets/game/logo-re2-proto.webp'
 import logoRe2Jp from '../assets/game/logo-re2-jp.webp'
 import logoRe3Us from '../assets/game/logo-re3-us.webp'
 import logoRe3Jp from '../assets/game/logo-re3-jp.webp'
@@ -62,7 +62,7 @@ export const ASSET_URLS: Record<string, string> = {
   'game/hero-re1-jp': heroRe1Jp,
   'game/hero-re1-dc': heroRe1Dc,
   'game/hero-re2-leon': heroRe2Leon,
-  'game/hero-re2-claire': heroRe2Claire,
+  'game/hero-re2-proto': heroRe2Proto,
   'game/hero-re2-jp': heroRe2Jp,
   'game/hero-re3-us': heroRe3Us,
   'game/hero-re3-jp': heroRe3Jp,
@@ -71,7 +71,7 @@ export const ASSET_URLS: Record<string, string> = {
   'game/region-re1-jp': regionRe1Jp,
   'game/region-re1-dc': regionRe1Dc,
   'game/region-re2-leon': regionRe2Leon,
-  'game/region-re2-claire': regionRe2Claire,
+  'game/region-re2-proto': regionRe2Proto,
   'game/region-re2-jp': regionRe2Jp,
   'game/region-re3-us': regionRe3Us,
   'game/region-re3-jp': regionRe3Jp,
@@ -80,7 +80,7 @@ export const ASSET_URLS: Record<string, string> = {
   'game/logo-re1-jp': logoRe1Jp,
   'game/logo-re1-dc': logoRe1Dc,
   'game/logo-re2-leon': logoRe2Leon,
-  'game/logo-re2-claire': logoRe2Claire,
+  'game/logo-re2-proto': logoRe2Proto,
   'game/logo-re2-jp': logoRe2Jp,
   'game/logo-re3-us': logoRe3Us,
   'game/logo-re3-jp': logoRe3Jp,

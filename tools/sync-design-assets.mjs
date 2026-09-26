@@ -26,6 +26,15 @@ import sharp from 'sharp'
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const mediaDir = join(repoRoot, 'media')
 const designDir = join(repoRoot, '.ref', 'designref', 'src', 'assets')
+/**
+ * The design's own texture exports, named the way Figma names its layers
+ * (`Game=1, Type=Default.png`). These are the authoritative logos: 8 files, one
+ * per catalog row, all RGBA, each ~1.55x the size of the `media/` copy the
+ * previous launcher shipped. Verified per row by aspect ratio against the design's
+ * own logo box - `Game=1, Type=Default` is 409x109, aspect 3.752, against a
+ * 262.686x70 box, aspect 3.753.
+ */
+const texturesDir = join(repoRoot, 'assets', 'textures')
 const outRoot = join(repoRoot, 'src', 'renderer', 'src', 'assets')
 
 // --- design asset hashes (from the Figma export's `figma:asset/...` specifiers) ---
@@ -62,7 +71,7 @@ const IMAGES = [
   { source: 'media', id: 'game_re1_version_jp.png', out: 'game/hero-re1-jp', width: 1600, quality: 86 },
   { source: 'media', id: 'game_re1_version_alt.png', out: 'game/hero-re1-dc', width: 1600, quality: 86 },
   { source: 'media', id: 'game_re2_version_default.png', out: 'game/hero-re2-leon', width: 1600, quality: 86 },
-  { source: 'media', id: 'game_re2_version_alt.png', out: 'game/hero-re2-claire', width: 1600, quality: 86 },
+  { source: 'media', id: 'game_re2_version_alt.png', out: 'game/hero-re2-proto', width: 1600, quality: 86 },
   { source: 'media', id: 'game_re2_version_jp.png', out: 'game/hero-re2-jp', width: 1600, quality: 86 },
   { source: 'media', id: 'game_re3_version_default.png', out: 'game/hero-re3-us', width: 1600, quality: 86 },
   { source: 'media', id: 'game_re3_version_jp.png', out: 'game/hero-re3-jp', width: 1600, quality: 86 },
@@ -72,21 +81,29 @@ const IMAGES = [
   { source: 'media', id: 'game_re1_region_jp.png', out: 'game/region-re1-jp', width: 1068, quality: 86 },
   { source: 'media', id: 'game_re1_region_alt.png', out: 'game/region-re1-dc', width: 1068, quality: 86 },
   { source: 'media', id: 'game_re2_region_default.png', out: 'game/region-re2-leon', width: 1068, quality: 86 },
-  { source: 'media', id: 'game_re2_region_alt.png', out: 'game/region-re2-claire', width: 1068, quality: 86 },
+  { source: 'media', id: 'game_re2_region_alt.png', out: 'game/region-re2-proto', width: 1068, quality: 86 },
   { source: 'media', id: 'game_re2_region_jp.png', out: 'game/region-re2-jp', width: 1068, quality: 86 },
   { source: 'media', id: 'game_re3_region_default.png', out: 'game/region-re3-us', width: 1068, quality: 86 },
   { source: 'media', id: 'game_re3_region_jp.png', out: 'game/region-re3-jp', width: 1068, quality: 86 },
 
-  // Info-panel logos. Kept at native size: each one's pixel width already equals
-  // the design's logo box width for that version.
-  { source: 'media', id: 'RE1Logo.png', out: 'game/logo-re1-us', quality: 92 },
-  { source: 'media', id: 'game_1_type_jp.png', out: 'game/logo-re1-jp', quality: 92 },
-  { source: 'media', id: 're1_dc_logo.png', out: 'game/logo-re1-dc', quality: 92 },
-  { source: 'media', id: 'game_2_type_default.png', out: 'game/logo-re2-leon', quality: 92 },
-  { source: 'media', id: 'game_2_type_alt.png', out: 'game/logo-re2-claire', quality: 92 },
-  { source: 'media', id: 'game_2_type_jp.png', out: 'game/logo-re2-jp', quality: 92 },
-  { source: 'media', id: 'game_3_type_default.png', out: 'game/logo-re3-us', quality: 92 },
-  { source: 'media', id: 'game_3_type_jp.png', out: 'game/logo-re3-jp', quality: 92 }
+  // Info-panel logos, taken from the design's own texture exports at their native
+  // size rather than from `media/`. The export renders each one into a box only
+  // 64% of its pixel width (`Game=1, Type=Default` is 409px wide into a 262.686px
+  // box), so this is the same downscale the concept performs and every pixel the
+  // design has to offer is kept. The `media/` copies of these eight are the
+  // previous launcher's own downscales of the same art.
+  //
+  // The filenames are the design's: Type=Default / Type=JP / Type=Alt per game.
+  // Note that RE2's `Alt` is the BIOHAZARD 1.5 prototype row, which the catalog
+  // calls `re2_proto` - the key follows the catalog row id, not the old C++ name.
+  { source: 'texture', id: 'Game=1, Type=Default.png', out: 'game/logo-re1-us', quality: 92 },
+  { source: 'texture', id: 'Game=1, Type=JP.png', out: 'game/logo-re1-jp', quality: 92 },
+  { source: 'texture', id: 'Game=1, Type=Alt.png', out: 'game/logo-re1-dc', quality: 92 },
+  { source: 'texture', id: 'Game=2, Type=Default.png', out: 'game/logo-re2-leon', quality: 92 },
+  { source: 'texture', id: 'Game=2, Type=Alt.png', out: 'game/logo-re2-proto', quality: 92 },
+  { source: 'texture', id: 'Game=2, Type=JP.png', out: 'game/logo-re2-jp', quality: 92 },
+  { source: 'texture', id: 'Game=3, Type=Default.png', out: 'game/logo-re3-us', quality: 92 },
+  { source: 'texture', id: 'Game=3, Type=JP.png', out: 'game/logo-re3-jp', quality: 92 }
 ]
 
 /** Videos copied verbatim (re-encoding would cost quality for no real saving). */
@@ -133,6 +150,10 @@ const BADGE_FONT_AUTHENTIC = 'assets/font/ResidentEvilClassic.ttf'
 const BADGE_FONT_FALLBACK = 'assets/font/vendor/Metamorphous-Regular.ttf'
 
 function resolveSource(source, id) {
+  if (source === 'texture') {
+    const candidate = join(texturesDir, id)
+    return existsSync(candidate) ? candidate : null
+  }
   const candidates =
     source === 'design'
       ? [join(designDir, `${id}.png`), join(designDir, `${id}.webp`), join(designDir, `${id}.jpg`)]
@@ -212,6 +233,11 @@ async function main() {
   designMap['58d40011eaef29d1d44ec90e8ed08041d5b0c468'] = 'game/region-re3-us.webp'
   designMap['33e66c27f8da095f0102a73b1c0d2fee8e68b3a9'] = 'game/logo-re3-us.webp'
   designMap['9b6e0e65ba185590981bf00e804ba7d696a9dd40'] = 'game/logo-re1-us.webp'
+  designMap['15fba969ce9619062d27c8c68dfe61e78e470509'] = 'game/logo-re2-proto.webp'
+  designMap['224a236631d0ee6393b92aab293e54d48973ad00'] = 'game/logo-re1-jp.webp'
+  designMap['57406ca19408bbace2755440946d0fa49a246ca9'] = 'game/logo-re1-dc.webp'
+  designMap['ac6158854fda777638c9d097f999b5b7cecd91c1'] = 'game/logo-re2-jp.webp'
+  designMap['fda2f63964de51029878d3049d5b6c523bb68bb0'] = 'game/logo-re3-jp.webp'
   designMap['6b9a2a4e71fbacbbc6a27673c927df64c2a179a0'] = 'game/region-re1-us.webp'
   designMap['352e234e9a1deb048b8d66078d298fc88e109d56'] = 'game/hero-re1-us.webp'
   designMap['a31c3aa8e8999bc7e1fdc31433ce7385ad05dcbf'] = 'game/hero-re1-jp.webp'

@@ -317,7 +317,7 @@ and every consumer treats that as "draw nothing" rather than as a broken image.
 | `game/backdrop-unsplash` | `game/backdrop-unsplash.webp` | every screen's `Backdrop` |
 | `game/card-re1` / `-re2` / `-re3` | `game/card-re*.webp` | main-menu covers |
 | `game/gameplay-re1` / `-re3` | `game/gameplay-re*.webp` | gameplay card still (RE1, RE3) |
-| `game/hero-re1-us` / `-re1-jp` / `-re1-dc` / `-re2-leon` / `-re2-claire` / `-re2-jp` / `-re3-us` / `-re3-jp` | `game/hero-*.webp` | version-row hero art |
+| `game/hero-re1-us` / `-re1-jp` / `-re1-dc` / `-re2-leon` / `-re2-proto` / `-re2-jp` / `-re3-us` / `-re3-jp` | `game/hero-*.webp` | version-row hero art |
 | `game/region-re1-us` … `game/region-re3-jp` (8) | `game/region-*.webp` | info-panel region-art lane, gameplay lane |
 | `game/logo-re1-us` … `game/logo-re3-jp` (8) | `game/logo-*.webp` | info-panel logo box, gameplay rotated logo |
 | `video/video-re1` / `-re1-jp` / `-re2` / `-re2-jp` / `-re3` / `-re3-jp` | `video/video-*.mp4` | info-panel video window; `video/video-re2` also fills the RE2 gameplay card |
