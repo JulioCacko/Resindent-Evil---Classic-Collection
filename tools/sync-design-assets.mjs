@@ -44,7 +44,20 @@ const H = {
   cardRe2: '541c500672b5c6658760e12f28531a7b2b01f3f7',
   cardRe3: '5aa35917a70c6c21e8e6cb31cc8d7918f96df093',
   gameplayRe1: '4e4dca1d6a087479654cb2498612efc7376dd481',
-  gameplayRe3: '1ce77847797f861cb5cbac51dc257a06b4435c07'
+  gameplayRe3: '1ce77847797f861cb5cbac51dc257a06b4435c07',
+  // The info panel's lane art, one asset per catalog row. Taken from the design's
+  // own frames rather than from `media/`: the export's lanes place these at their
+  // exact aspect (the RE2 US lane is `aspect-[1016/1132]` and its art IS
+  // 1016x1132), while the `media/game_re*_region_*.png` files are all near-square
+  // 1068x1080 - a different image in a different shape in every lane.
+  laneRe1Us: '6b9a2a4e71fbacbbc6a27673c927df64c2a179a0',
+  laneRe1Jp: '876ae37e572fddf5d603bfd671c5b90df4cfa4f5',
+  laneRe1Dc: 'e736a17d4422ba825408c34032b5d7d3c6d4076c',
+  laneRe2Leon: '8c48435db9d52dd5b04c9234227dd601baa2cbbf',
+  laneRe2Proto: '2a4dea96a06159267f83ecc8efc454778d1e68a4',
+  laneRe2Jp: 'b12c50123899f890436f2efdbde5b2a090e9d3e1',
+  laneRe3Us: '58d40011eaef29d1d44ec90e8ed08041d5b0c468',
+  laneRe3Jp: 'cf21968f1c075e671f72eb879de346b6729865b9'
 }
 
 /**
@@ -66,6 +79,22 @@ const IMAGES = [
   { source: 'design', id: H.gameplayRe1, out: 'game/gameplay-re1', quality: 90 },
   { source: 'design', id: H.gameplayRe3, out: 'game/gameplay-re3', quality: 90 },
 
+  // The info panel's lane art, one per catalog row.
+  //
+  // Each is sized to what its lane can actually show, and never upscaled: the lane
+  // is 860px wide, so 1720px is 2x for a HiDPI display, and a source narrower than
+  // that is left alone. RE1 JP is the extreme case - the design puts a 640x480
+  // image in a 1254x940.5 box, i.e. it is upscaled on purpose by the concept, and
+  // it stays a 640x480 asset here rather than being invented at a larger size.
+  { source: 'design', id: H.laneRe1Us, out: 'game/lane-re1-us', quality: 88 },
+  { source: 'design', id: H.laneRe1Jp, out: 'game/lane-re1-jp', quality: 88 },
+  { source: 'design', id: H.laneRe1Dc, out: 'game/lane-re1-dc', width: 1720, quality: 86 },
+  { source: 'design', id: H.laneRe2Leon, out: 'game/lane-re2-leon', quality: 88 },
+  { source: 'design', id: H.laneRe2Proto, out: 'game/lane-re2-proto', width: 1720, quality: 86 },
+  { source: 'design', id: H.laneRe2Jp, out: 'game/lane-re2-jp', quality: 88 },
+  { source: 'design', id: H.laneRe3Us, out: 'game/lane-re3-us', quality: 88 },
+  { source: 'design', id: H.laneRe3Jp, out: 'game/lane-re3-jp', width: 1720, quality: 86 },
+
   // Version-row heroes: design aspect 1600/740.
   { source: 'media', id: 'game_re1_version_default.png', out: 'game/hero-re1-us', width: 1600, quality: 86 },
   { source: 'media', id: 'game_re1_version_jp.png', out: 'game/hero-re1-jp', width: 1600, quality: 86 },
@@ -77,14 +106,6 @@ const IMAGES = [
   { source: 'media', id: 'game_re3_version_jp.png', out: 'game/hero-re3-jp', width: 1600, quality: 86 },
 
   // Info-panel region art: design mask-size 1068x1080.
-  { source: 'media', id: 'game_re1_region_default.png', out: 'game/region-re1-us', width: 1068, quality: 86 },
-  { source: 'media', id: 'game_re1_region_jp.png', out: 'game/region-re1-jp', width: 1068, quality: 86 },
-  { source: 'media', id: 'game_re1_region_alt.png', out: 'game/region-re1-dc', width: 1068, quality: 86 },
-  { source: 'media', id: 'game_re2_region_default.png', out: 'game/region-re2-leon', width: 1068, quality: 86 },
-  { source: 'media', id: 'game_re2_region_alt.png', out: 'game/region-re2-proto', width: 1068, quality: 86 },
-  { source: 'media', id: 'game_re2_region_jp.png', out: 'game/region-re2-jp', width: 1068, quality: 86 },
-  { source: 'media', id: 'game_re3_region_default.png', out: 'game/region-re3-us', width: 1068, quality: 86 },
-  { source: 'media', id: 'game_re3_region_jp.png', out: 'game/region-re3-jp', width: 1068, quality: 86 },
 
   // Info-panel logos, taken from the design's own texture exports at their native
   // size rather than from `media/`. The export renders each one into a box only
@@ -324,9 +345,7 @@ async function main() {
   // the sync's own naming cannot infer, written out so the vendored Figma JSX could
   // be imported unedited. Each maps to the row whose art it is - `logo-re2-proto` is
   // the RE2 Alt logo, which is the BIOHAZARD 1.5 row, not a Claire scenario.
-  designMap['8c48435db9d52dd5b04c9234227dd601baa2cbbf'] = 'game/region-re2-leon.webp'
   designMap['18fb9a00f28d573818b95bd7ae1d1ecab2df9883'] = 'game/logo-re2-leon.webp'
-  designMap['58d40011eaef29d1d44ec90e8ed08041d5b0c468'] = 'game/region-re3-us.webp'
   designMap['33e66c27f8da095f0102a73b1c0d2fee8e68b3a9'] = 'game/logo-re3-us.webp'
   designMap['9b6e0e65ba185590981bf00e804ba7d696a9dd40'] = 'game/logo-re1-us.webp'
   designMap['15fba969ce9619062d27c8c68dfe61e78e470509'] = 'game/logo-re2-proto.webp'
@@ -334,7 +353,6 @@ async function main() {
   designMap['57406ca19408bbace2755440946d0fa49a246ca9'] = 'game/logo-re1-dc.webp'
   designMap['ac6158854fda777638c9d097f999b5b7cecd91c1'] = 'game/logo-re2-jp.webp'
   designMap['fda2f63964de51029878d3049d5b6c523bb68bb0'] = 'game/logo-re3-jp.webp'
-  designMap['6b9a2a4e71fbacbbc6a27673c927df64c2a179a0'] = 'game/region-re1-us.webp'
   designMap['352e234e9a1deb048b8d66078d298fc88e109d56'] = 'game/hero-re1-us.webp'
   designMap['a31c3aa8e8999bc7e1fdc31433ce7385ad05dcbf'] = 'game/hero-re1-jp.webp'
   designMap['2f63ca4ce622c7012e112295b12b584723394c01'] = 'game/hero-re1-dc.webp'

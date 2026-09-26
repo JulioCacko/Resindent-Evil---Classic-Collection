@@ -21,14 +21,14 @@ import heroRe2Proto from '../assets/game/hero-re2-proto.webp'
 import heroRe2Jp from '../assets/game/hero-re2-jp.webp'
 import heroRe3Us from '../assets/game/hero-re3-us.webp'
 import heroRe3Jp from '../assets/game/hero-re3-jp.webp'
-import regionRe1Us from '../assets/game/region-re1-us.webp'
-import regionRe1Jp from '../assets/game/region-re1-jp.webp'
-import regionRe1Dc from '../assets/game/region-re1-dc.webp'
-import regionRe2Leon from '../assets/game/region-re2-leon.webp'
-import regionRe2Proto from '../assets/game/region-re2-proto.webp'
-import regionRe2Jp from '../assets/game/region-re2-jp.webp'
-import regionRe3Us from '../assets/game/region-re3-us.webp'
-import regionRe3Jp from '../assets/game/region-re3-jp.webp'
+import laneRe1Us from '../assets/game/lane-re1-us.webp'
+import laneRe1Jp from '../assets/game/lane-re1-jp.webp'
+import laneRe1Dc from '../assets/game/lane-re1-dc.webp'
+import laneRe2Leon from '../assets/game/lane-re2-leon.webp'
+import laneRe2Proto from '../assets/game/lane-re2-proto.webp'
+import laneRe2Jp from '../assets/game/lane-re2-jp.webp'
+import laneRe3Us from '../assets/game/lane-re3-us.webp'
+import laneRe3Jp from '../assets/game/lane-re3-jp.webp'
 import logoRe1Us from '../assets/game/logo-re1-us.webp'
 import logoRe1Jp from '../assets/game/logo-re1-jp.webp'
 import logoRe1Dc from '../assets/game/logo-re1-dc.webp'
@@ -71,14 +71,14 @@ export const ASSET_URLS: Record<string, string> = {
   'game/hero-re3-us': heroRe3Us,
   'game/hero-re3-jp': heroRe3Jp,
 
-  'game/region-re1-us': regionRe1Us,
-  'game/region-re1-jp': regionRe1Jp,
-  'game/region-re1-dc': regionRe1Dc,
-  'game/region-re2-leon': regionRe2Leon,
-  'game/region-re2-proto': regionRe2Proto,
-  'game/region-re2-jp': regionRe2Jp,
-  'game/region-re3-us': regionRe3Us,
-  'game/region-re3-jp': regionRe3Jp,
+  'game/lane-re1-us': laneRe1Us,
+  'game/lane-re1-jp': laneRe1Jp,
+  'game/lane-re1-dc': laneRe1Dc,
+  'game/lane-re2-leon': laneRe2Leon,
+  'game/lane-re2-proto': laneRe2Proto,
+  'game/lane-re2-jp': laneRe2Jp,
+  'game/lane-re3-us': laneRe3Us,
+  'game/lane-re3-jp': laneRe3Jp,
 
   'game/logo-re1-us': logoRe1Us,
   'game/logo-re1-jp': logoRe1Jp,

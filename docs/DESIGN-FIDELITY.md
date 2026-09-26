@@ -318,16 +318,52 @@ and every consumer treats that as "draw nothing" rather than as a broken image.
 | `game/card-re1` / `-re2` / `-re3` | `game/card-re*.webp` | main-menu covers |
 | `game/gameplay-re1` / `-re3` | `game/gameplay-re*.webp` | gameplay card still (RE1, RE3) |
 | `game/hero-re1-us` / `-re1-jp` / `-re1-dc` / `-re2-leon` / `-re2-proto` / `-re2-jp` / `-re3-us` / `-re3-jp` | `game/hero-*.webp` | version-row hero art |
-| `game/region-re1-us` … `game/region-re3-jp` (8) | `game/region-*.webp` | info-panel region-art lane, gameplay lane |
+| `game/lane-re1-us` / `-re1-jp` / `-re1-dc` / `-re2-leon` / `-re2-proto` / `-re2-jp` / `-re3-us` / `-re3-jp` | `game/lane-*.webp` | info-panel lane art (one per row) |
 | `game/logo-re1-us` … `game/logo-re3-jp` (8) | `game/logo-*.webp` | info-panel logo box, gameplay rotated logo |
 | `video/video-re1` / `-re1-jp` / `-re2` / `-re2-jp` / `-re3` / `-re3-jp` | `video/video-*.mp4` | info-panel video window; `video/video-re2` also fills the RE2 gameplay card |
 | — | `audio/{confirm,back,cursor}.wav` | `audio/useSfx.ts` (`SFX_URLS`, not catalog keys) |
 | — | `font/Actor-Regular.ttf` | `styles/fonts.css` (`ACTOR_FONT_URL`) |
 
-The two rows that share art on purpose: `re2_proto` (BIOHAZARD 1.5) reuses the
-Claire hero/region/logo art, because the concept draws its middle RE2 row with the
-second version screen's assets, and `re1_dc` has its own key but is drawn on the
-RE1 JP lane (§2).
+**Every lane has its own art, and it is the design's own file.** The lanes were the
+last place the app used `media/` art instead of the export's: `media/game_re*_region_*.png`
+are all near-square 1068×1080, while the export frames each lane at the *art's* aspect
+(the RE2 US lane is `aspect-[1016/1132]` and its asset is 1016×1132; RE3 US is
+`aspect-[1920/1441]` and its asset is 1920×1441). Seven of the eight match exactly;
+RE1 US is the exception, and there the art is deliberately oversized inside the lane
+(`h-[163.67%] w-[120.62%]`) so it keeps its own aspect while the lane crops it.
+
+The eight lane arts, with the frame each comes from and the asset hash:
+
+| Row | Frame | Asset | Native size |
+|---|---|---|---|
+| `re1_us` | `MainMenuRe1.tsx:85` | `6b9a2a4e…` | 1470×2366 |
+| `re1_jp` | `MainMenuRe4.tsx:85` | `876ae37e…` | 640×480 |
+| `re1_dc` | `Frame219.tsx:285` | `e736a17d…` | 4096×2340 |
+| `re2_leon_us` | `MainMenuRe2.tsx:85` | `8c48435d…` | 1016×1132 |
+| `re2_proto` | `Frame219.tsx:632` | `2a4dea96…` | 3537×2662 |
+| `re2_jp` | `MainMenuRe5.tsx:74` | `b12c5012…` | 1664×2046 |
+| `re3_us` | `MainMenuRe3.tsx:74` | `58d40011…` | 1920×1441 |
+| `re3_jp` | `Frame219.tsx:862` | `cf21968f…` | 3840×2160 |
+
+Two of those frames are not screens: `Frame219.tsx` is the export's consolidated
+reference sheet of all eight info panels. It is what settles the rows the vendored
+screen switcher cannot, because the switcher clamps each title's three rows onto two
+screens (`.ref/designref/src/app/components/VersionSelectPage.tsx:18-22`, `:86`) — so
+an earlier revision drew RE1 DIRECTOR'S CUT on the RE1 JP lane, RE2 BIOHAZARD 1.5 on
+the RE2 JP lane, and both RE3 rows on the RE3 US lane. The reference sheet gives all
+three their own lane, and `MainMenuRe6` (the frame the switcher clamps onto for RE3
+JP) is the one that does not, so the sheet wins.
+
+`tests/e2e/geometry.spec.ts` asserts the result with a derived invariant rather than
+a restated number: for every row, the *rendered* box of the art element must have the
+art file's own aspect. That holds for the seven 1:1 lanes and for RE1 US's oversized
+crop alike, and it is exactly what the old near-square art broke — verified by
+pointing a row at the wrong asset and watching it fail
+(`rendered aspect 1.3333 vs the file's 0.6213`).
+
+One asset is still shared on purpose: `re2_proto` (BIOHAZARD 1.5) reuses the RE2
+Alt **hero and logo** art, because the concept draws its middle RE2 row with those
+`Type=Alt` textures — but its *lane* is its own, as the table above shows.
 
 ---
 

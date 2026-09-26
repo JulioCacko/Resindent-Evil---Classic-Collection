@@ -38,6 +38,54 @@
       "bytes": 19814
     },
     {
+      "key": "game/lane-re1-us",
+      "file": "game/lane-re1-us.webp",
+      "source": ".ref/designref/src/assets/6b9a2a4e71fbacbbc6a27673c927df64c2a179a0.png",
+      "bytes": 780146
+    },
+    {
+      "key": "game/lane-re1-jp",
+      "file": "game/lane-re1-jp.webp",
+      "source": ".ref/designref/src/assets/876ae37e572fddf5d603bfd671c5b90df4cfa4f5.png",
+      "bytes": 8690
+    },
+    {
+      "key": "game/lane-re1-dc",
+      "file": "game/lane-re1-dc.webp",
+      "source": ".ref/designref/src/assets/e736a17d4422ba825408c34032b5d7d3c6d4076c.png",
+      "bytes": 34596
+    },
+    {
+      "key": "game/lane-re2-leon",
+      "file": "game/lane-re2-leon.webp",
+      "source": ".ref/designref/src/assets/8c48435db9d52dd5b04c9234227dd601baa2cbbf.png",
+      "bytes": 247492
+    },
+    {
+      "key": "game/lane-re2-proto",
+      "file": "game/lane-re2-proto.webp",
+      "source": ".ref/designref/src/assets/2a4dea96a06159267f83ecc8efc454778d1e68a4.png",
+      "bytes": 157150
+    },
+    {
+      "key": "game/lane-re2-jp",
+      "file": "game/lane-re2-jp.webp",
+      "source": ".ref/designref/src/assets/b12c50123899f890436f2efdbde5b2a090e9d3e1.png",
+      "bytes": 322442
+    },
+    {
+      "key": "game/lane-re3-us",
+      "file": "game/lane-re3-us.webp",
+      "source": ".ref/designref/src/assets/58d40011eaef29d1d44ec90e8ed08041d5b0c468.png",
+      "bytes": 348936
+    },
+    {
+      "key": "game/lane-re3-jp",
+      "file": "game/lane-re3-jp.webp",
+      "source": ".ref/designref/src/assets/cf21968f1c075e671f72eb879de346b6729865b9.png",
+      "bytes": 150486
+    },
+    {
       "key": "game/hero-re1-us",
       "file": "game/hero-re1-us.webp",
       "source": "media/game_re1_version_default.png",
@@ -84,54 +132,6 @@
       "file": "game/hero-re3-jp.webp",
       "source": "media/game_re3_version_jp.png",
       "bytes": 148578
-    },
-    {
-      "key": "game/region-re1-us",
-      "file": "game/region-re1-us.webp",
-      "source": "media/game_re1_region_default.png",
-      "bytes": 287806
-    },
-    {
-      "key": "game/region-re1-jp",
-      "file": "game/region-re1-jp.webp",
-      "source": "media/game_re1_region_jp.png",
-      "bytes": 105564
-    },
-    {
-      "key": "game/region-re1-dc",
-      "file": "game/region-re1-dc.webp",
-      "source": "media/game_re1_region_alt.png",
-      "bytes": 99570
-    },
-    {
-      "key": "game/region-re2-leon",
-      "file": "game/region-re2-leon.webp",
-      "source": "media/game_re2_region_default.png",
-      "bytes": 187798
-    },
-    {
-      "key": "game/region-re2-proto",
-      "file": "game/region-re2-proto.webp",
-      "source": "media/game_re2_region_alt.png",
-      "bytes": 152418
-    },
-    {
-      "key": "game/region-re2-jp",
-      "file": "game/region-re2-jp.webp",
-      "source": "media/game_re2_region_jp.png",
-      "bytes": 134152
-    },
-    {
-      "key": "game/region-re3-us",
-      "file": "game/region-re3-us.webp",
-      "source": "media/game_re3_region_default.png",
-      "bytes": 167784
-    },
-    {
-      "key": "game/region-re3-jp",
-      "file": "game/region-re3-jp.webp",
-      "source": "media/game_re3_region_jp.png",
-      "bytes": 133408
     },
     {
       "key": "game/logo-re1-us",
@@ -247,5 +247,5 @@
       "bytes": 64944
     }
   ],
-  "designMapCount": 20
+  "designMapCount": 25
 }

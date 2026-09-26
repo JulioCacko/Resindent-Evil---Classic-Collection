@@ -12,19 +12,33 @@
  *   :160-167      `Main` draws `Body1` first and `Info` last, which is why the
  *                 text block is the last layer painted here
  *
- * The export repeats that stack once per version row and only the region-art
- * lane changes:
+ * The export repeats that stack once per version row and only the lane changes.
+ * Six rows have a screen of their own; the other two (RE1 DIRECTOR'S CUT and RE2
+ * BIOHAZARD 1.5) are only drawn in `Frame219.tsx`, the export's consolidated
+ * reference sheet of all eight info panels. One lane each:
  *
- *   RE1 US   MainMenuRe1.tsx:85   `aspect-[1218.7529296875/1445.560546875]` box,
- *                                 art cropped by `h-[163.67%] left-[-20.62%] …`
- *   RE1 JP   MainMenuRe4.tsx:85   a 1254x940.5 box centred on the lane
- *   RE2 US   MainMenuRe2.tsx:85   `aspect-[1016/1132]`, art filling the box
- *   RE2 JP   MainMenuRe5.tsx:74   `aspect-[1664/2046]` hung off `bottom-[-116.59px]`
- *   RE3      MainMenuRe3.tsx:74   `aspect-[1920/1441]` hung off `top-[-22.19%]`
+ *   RE1 US     MainMenuRe1.tsx:85   `aspect-[1218.7529296875/1445.560546875]` box,
+ *                                   art cropped by `h-[163.67%] left-[-20.62%] …`
+ *   RE1 JP     MainMenuRe4.tsx:85   a 1254x940.5 box centred on the lane
+ *   RE1 DC     Frame219.tsx:285     `aspect-[4096/2340]`, `top/bottom-[1.82%]`
+ *   RE2 US     MainMenuRe2.tsx:85   `aspect-[1016/1132]`, art filling the box
+ *   RE2 1.5    Frame219.tsx:632     `aspect-[3537/2662]` hung off `bottom-[-3%]`
+ *   RE2 JP     MainMenuRe5.tsx:74   `aspect-[1664/2046]` hung off `bottom-[-116.59px]`
+ *   RE3 US     MainMenuRe3.tsx:74   `aspect-[1920/1441]` hung off `top-[-22.19%]`
+ *   RE3 JP     Frame219.tsx:862     `aspect-[3840/2160]` hung off `left-[-79.78%]`
  *
- * Masks are `MASKS` in data/design.ts — the export's four inline SVG gradients
+ * The lane's *art* is per row too, and comes from the design's own export rather
+ * than from `media/`: each lane frames its art at that art's exact aspect (the RE2
+ * US lane is `aspect-[1016/1132]` and its asset is 1016x1132), while
+ * `media/game_re*_region_*.png` are all near-square 1068x1080 - a different image
+ * in a different shape in every lane.
+ *
+ * Masks are `MASKS` in data/design.ts — the export's inline SVG gradients
  * (`.ref/designref/src/imports/svg-xcltc.tsx:1-4`) written as plain CSS — and are
- * applied as inline styles because they are CSS gradients, not utilities.
+ * applied as inline styles because they are CSS gradients, not utilities. Every
+ * row uses the same one: `svg-xcltc`'s `imgImage15` and `svg-dgiaf`'s `imgImage14`
+ * are the same `#080808` fade at the same two stops, differing only in a 1px
+ * viewBox width, so the per-row masks collapse to a single gradient.
  *
  * Class strings are kept literal. Tailwind only sees candidate classes that
  * appear as complete text in the source, so nothing here is interpolated; the
@@ -97,7 +111,7 @@ const OVERLAY_PATH =
 const OVERLAY_FILTER_ID = 'info-panel-ellipse-blur'
 
 /**
- * Where the art sits inside the region-art lane: the lane's own box classes and
+ * Where the art sits inside the info panel's lane: the lane's own box classes and
  * the classes for the image inside it, both spelled exactly as the export writes
  * them.
  */
@@ -108,86 +122,104 @@ interface RegionLane {
   art: string
 }
 
-/** Every lane but RE1 US leaves the image at `inset-0` and lets `object-cover` crop. */
+/** Every lane but RE1 US fills its box and lets `object-cover` crop. */
 const ART_FILL = 'absolute inset-0 max-w-none object-cover pointer-events-none size-full'
 
 /**
- * RE1 US: the art box is 860x1019.98 (the aspect of the design's `image 15`) hung
- * at `top-[-109.94px]`, and the image is the export's oversized crop
- * (`MainMenuRe1.tsx:87`). `object-cover` is added to that crop: the export leaves
- * the image unfitted because its own `image 16` already has the crop's aspect,
- * while this app feeds the same lane the 1068x1080 region art
- * (tools/sync-design-assets.mjs:70-78) — without the fit, the art would stretch.
+ * RE1 US — `MainMenuRe1.tsx:85`. The box is the export's `image 15`: a 860x1020
+ * aspect box hung at `top-[-109.94px]`, holding the export's oversized crop of its
+ * `image 16`.
+ *
+ * `object-cover` stays on the oversized image even though that asset is already
+ * this lane's exact aspect, so a replacement of a different shape is cropped rather
+ * than stretched.
  */
 const LANE_RE1_US: RegionLane = {
   box: 'absolute aspect-[1218.7529296875/1445.560546875] left-0 right-0 top-[-109.94px]',
   art: 'absolute h-[163.67%] left-[-20.62%] max-w-none object-cover pointer-events-none top-[-27.26%] w-[120.62%]'
 }
 
-/** RE1 JP: a fixed 1254x940.5 box, centred on the lane (`MainMenuRe4.tsx:85`). */
+/** RE1 JP — `MainMenuRe4.tsx:85`: a fixed 1254x940.5 box centred on the lane. */
 const LANE_RE1_JP: RegionLane = {
   box: '-translate-x-1/2 -translate-y-1/2 absolute h-[940.5px] left-1/2 top-1/2 w-[1254px]',
   art: ART_FILL
 }
 
 /**
- * RE2 US: `left-[-0.05%] right-0` only, so the box is 860.43 wide and its height
- * falls out of the aspect (`MainMenuRe2.tsx:85`).
+ * RE1 DC — `Frame219.tsx:285`.
+ *
+ * This row has no screen of its own in the export: the vendored switcher clamps
+ * RE1's three rows onto two screens (`.ref/designref/src/app/components/
+ * VersionSelectPage.tsx:18-22`, `:86`), so an earlier revision gave it the RE1 JP
+ * lane. `Frame219.tsx` is the export's consolidated reference sheet and carries all
+ * eight rows' info panels side by side, so the real lane for both rows that lack a
+ * screen — this one and RE2's BIOHAZARD 1.5 — comes from there.
+ */
+const LANE_RE1_DC: RegionLane = {
+  box: '-translate-x-1/2 absolute aspect-[4096/2340] bottom-[1.82%] left-[calc(50%-87.87px)] top-[1.82%]',
+  art: ART_FILL
+}
+
+/**
+ * RE2 US — `MainMenuRe2.tsx:85`: `left-[-0.05%] right-0` only, so the box is 860.43
+ * wide and its height falls out of the aspect.
  */
 const LANE_RE2_US: RegionLane = {
   box: 'absolute aspect-[1016/1132] left-[-0.05%] right-0 top-0',
   art: ART_FILL
 }
 
-/** RE2 JP: the box is hung off the lane's bottom edge (`MainMenuRe5.tsx:74`). */
+/** RE2 BIOHAZARD 1.5 — `Frame219.tsx:632`, the second reference-sheet lane. */
+const LANE_RE2_PROTO: RegionLane = {
+  box: 'absolute aspect-[3537/2662] bottom-[-3%] right-0 top-0',
+  art: ART_FILL
+}
+
+/** RE2 JP — `MainMenuRe5.tsx:74`: the box is hung off the lane's bottom edge. */
 const LANE_RE2_JP: RegionLane = {
   box: 'absolute aspect-[1664/2046] bottom-[-116.59px] left-0 right-0',
   art: ART_FILL
 }
 
-/**
- * RE3: `left-0` with `top-[-22.19%]` and `bottom-0` — no width is given, so the
- * 790.57-tall box takes its 1053.4 width from the aspect (`MainMenuRe3.tsx:74`).
- * MainMenuRe6 (the second RE3 screen) draws the identical lane, so both RE3 rows
- * carry it.
- */
-const LANE_RE3: RegionLane = {
+/** RE3 US — `MainMenuRe3.tsx:74`: `top-[-22.19%]` and `bottom-0`, width from the aspect. */
+const LANE_RE3_US: RegionLane = {
   box: 'absolute aspect-[1920/1441] bottom-0 left-0 top-[-22.19%]',
   art: ART_FILL
 }
 
 /**
- * The lane per version id.
- *
- * Two catalog rows have no frame of their own in the export. The vendored screen
- * switcher resolves them by clamping the row index onto its title's screens —
- * `.ref/designref/src/app/components/VersionSelectPage.tsx:18-22` lists two
- * screens for each title and `:86` is `Math.min(versionIndex, screens.length - 1)`
- * — so RE1's third row (DIRECTOR'S CUT) and RE2's second row (BIOHAZARD 1.5) are
- * drawn on the RE1 JP and RE2 JP lanes respectively. That clamp is the only
- * authoritative statement the design makes about those rows, so it is what they
- * get rather than an invented geometry.
+ * RE3 JP — `Frame219.tsx:862`, and deliberately NOT the same lane as RE3 US, which
+ * an earlier revision assumed because `MainMenuRe6` (the RE3 JP screen) draws the
+ * RE3 US lane. The reference sheet gives this row its own 3840x2160 art hung at
+ * `left-[-79.78%]`, and it wins: `MainMenuRe6` is the frame the switcher clamps
+ * onto, not the row's own info panel.
  */
+const LANE_RE3_JP: RegionLane = {
+  box: 'absolute aspect-[3840/2160] left-[-79.78%] right-0 top-0',
+  art: ART_FILL
+}
+
+/** The lane per catalog row — all eight, one each. */
 const REGION_LANES: Record<string, RegionLane> = {
   re1_us: LANE_RE1_US,
   re1_jp: LANE_RE1_JP,
-  re1_dc: LANE_RE1_JP,
+  re1_dc: LANE_RE1_DC,
   re2_leon_us: LANE_RE2_US,
-  re2_proto: LANE_RE2_JP,
+  re2_proto: LANE_RE2_PROTO,
   re2_jp: LANE_RE2_JP,
-  re3_us: LANE_RE3,
-  re3_jp: LANE_RE3
+  re3_us: LANE_RE3_US,
+  re3_jp: LANE_RE3_JP
 }
 
 /**
  * Fallback for a version id the table above does not carry: the lane of that
- * title's first screen. The table is data-driven, so a renamed or added catalog
- * row must still render a lane instead of crashing on an undefined lookup.
+ * title's first row. The table is data-driven, so a renamed or added catalog row
+ * must still render a lane instead of crashing on an undefined lookup.
  */
 const TITLE_LANES: Record<TitleId, RegionLane> = {
   re1: LANE_RE1_US,
   re2: LANE_RE2_US,
-  re3: LANE_RE3
+  re3: LANE_RE3_US
 }
 
 function regionLane(version: GameVersion): RegionLane {
@@ -329,8 +361,8 @@ export function InfoPanel({ version, children }: InfoPanelProps) {
           style={mask(MASKS.regionArt)}
         >
           {regionSrc === '' ? null : (
-            <div className={lane.box} data-name="region-art">
-              <img alt="" className={lane.art} src={regionSrc} />
+            <div className={lane.box} data-name="region-art" data-figma-node="info-lane">
+              <img alt="" className={lane.art} data-figma-node="info-lane-art" src={regionSrc} />
             </div>
           )}
           {/*

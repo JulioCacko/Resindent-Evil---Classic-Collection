@@ -372,11 +372,26 @@ const TRACKED = [
     ]
   },
   {
-    // RE1 JP's lane, which DIRECTOR'S CUT is also drawn on (the vendored
-    // screen switcher clamps a third row onto the title's second screen).
+    // RE1 JP's lane. DIRECTOR'S CUT is no longer mapped onto it: the export's
+    // consolidated reference sheet carries that row's own lane, checked below.
     export: 'MainMenuRe4.tsx',
     live: LIVE.infoPanel,
     tokens: ['h-[940.5px]', 'w-[1254px]']
+  },
+  {
+    // The two rows with no screen of their own, plus RE3 JP, whose screen
+    // (`MainMenuRe6`) draws the RE3 US lane instead of the row's own. All three
+    // real lanes live in the export's reference sheet of eight info panels.
+    export: 'Frame219.tsx',
+    live: LIVE.infoPanel,
+    tokens: [
+      'aspect-[4096/2340]',
+      'left-[calc(50%-87.87px)]',
+      'aspect-[3537/2662]',
+      'bottom-[-3%]',
+      'aspect-[3840/2160]',
+      'left-[-79.78%]'
+    ]
   },
 
   // -------------------------------------------------------------------------

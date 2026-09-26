@@ -47,6 +47,7 @@ import {
   rects,
   rotationDegrees,
   selectedCardIndex,
+  selectedVersionRowIndex,
   setDesignWindow,
   stageMetrics,
   styles,
@@ -354,6 +355,44 @@ test.describe('the launcher frame matches the Figma export', () => {
     expectWithin(infoBlock.height, VERSION_SCREEN.info.blockHeight, TOLERANCE, 'info block height')
     expectWithin(infoBlock.width, VERSION_SCREEN.rightPanelWidth, TOLERANCE, 'info block width')
     expectWithin(infoBlock.y + infoBlock.height, CANVAS.height, TOLERANCE, 'info block bottom edge')
+
+    // The info panel's lane art, row by row.
+    //
+    // The invariant is derived rather than restated: in every row the export either
+    // fills the lane with the art or sizes the art by percentages of it, and either
+    // way the *rendered* box of the art element ends up with the art file's own
+    // aspect. RE1 US is the one row where that is not obvious - its art is cropped
+    // into a lane of a different aspect (`h-[163.67%] … w-[120.62%]` of it) - but the
+    // percentages are chosen so the crop keeps the art's aspect, so the invariant
+    // still holds.
+    //
+    // It is exactly the assertion that catches the bug this replaced: the panel used
+    // to be fed `media/`'s near-square 1068x1080 region files, which would have made
+    // the rendered box disagree with the file in every lane.
+    const laneAspectOf = async (): Promise<{ rendered: number; natural: number }> => {
+      const art = page.locator('[data-figma-node="info-lane-art"]').first()
+      expect(await art.count(), 'the info panel renders a lane art element').toBe(1)
+      const natural = await art.evaluate((element) => {
+        const image = element as HTMLImageElement
+        return { width: image.naturalWidth, height: image.naturalHeight }
+      })
+      expect(natural.width, 'the lane art decoded').toBeGreaterThan(0)
+      const box = await rect(page, 'info-lane-art')
+      return { rendered: box.width / box.height, natural: natural.width / natural.height }
+    }
+
+    for (let index = 0; index < rows.length; index += 1) {
+      if (index > 0) await press(page, 'ArrowDown')
+      await waitUntil(() => selectedVersionRowIndex(page), (selected) => selected === index, {
+        label: `row ${index} to hold the selection`
+      })
+      const lane = await laneAspectOf()
+      expect(
+        Math.abs(lane.rendered - lane.natural),
+        `the lane art is the design's own file for row ${index}: rendered aspect ` +
+          `${lane.rendered.toFixed(4)} vs the file's ${lane.natural.toFixed(4)}`
+      ).toBeLessThanOrEqual(0.01)
+    }
 
     // Back to the menu, so the next test starts from a fresh screen whether or not
     // it runs after this one.
