@@ -966,7 +966,38 @@ export async function ensureMenu(page: Page, options: { timeoutMs?: number } = {
   if (state.screen !== 'menu') {
     throw new Error(`the main menu did not appear: ${describe(state)}`)
   }
+  await settleInput(page)
   return state
+}
+
+/**
+ * Waits until the app can actually receive a key.
+ *
+ * The window's `keydown` listener is attached in an effect (`input/useActions.ts`),
+ * which React runs after the commit that put the first screen in the DOM. A spec
+ * that presses a key as soon as the menu is *visible* can therefore have that press
+ * land on a page with no listener yet and be dropped — which shows up as a slow
+ * timeout several steps later rather than as a lost keystroke. Two animation frames
+ * after the screen appears is past the commit and past the effect, and it costs a
+ * few milliseconds.
+ *
+ * This was a genuine intermittent failure, not a theoretical one: the keyboard spec
+ * failed once in two full-suite runs with a lost first Enter, and passed in
+ * isolation every time.
+ */
+async function settleInput(page: Page): Promise<void> {
+  await page
+    .evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              resolve()
+            })
+          })
+        })
+    )
+    .catch(() => undefined)
 }
 
 /** Waits for the launch panel to be mounted. */
