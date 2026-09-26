@@ -1,0 +1,243 @@
+{
+  "generatedBy": "tools/sync-design-assets.mjs",
+  "images": [
+    {
+      "key": "game/backdrop-unsplash",
+      "file": "game/backdrop-unsplash.webp",
+      "source": ".ref/designref/src/assets/e6746d9b64d4f1fe99adc0b88f3edf7822719e12.png",
+      "bytes": 1370634
+    },
+    {
+      "key": "game/card-re1",
+      "file": "game/card-re1.webp",
+      "source": ".ref/designref/src/assets/ecc806a21aeffd027d985a3da9ff383c45871820.png",
+      "bytes": 27032
+    },
+    {
+      "key": "game/card-re2",
+      "file": "game/card-re2.webp",
+      "source": ".ref/designref/src/assets/541c500672b5c6658760e12f28531a7b2b01f3f7.png",
+      "bytes": 24146
+    },
+    {
+      "key": "game/card-re3",
+      "file": "game/card-re3.webp",
+      "source": ".ref/designref/src/assets/5aa35917a70c6c21e8e6cb31cc8d7918f96df093.png",
+      "bytes": 23490
+    },
+    {
+      "key": "game/gameplay-re1",
+      "file": "game/gameplay-re1.webp",
+      "source": ".ref/designref/src/assets/4e4dca1d6a087479654cb2498612efc7376dd481.png",
+      "bytes": 19820
+    },
+    {
+      "key": "game/gameplay-re3",
+      "file": "game/gameplay-re3.webp",
+      "source": ".ref/designref/src/assets/1ce77847797f861cb5cbac51dc257a06b4435c07.png",
+      "bytes": 19814
+    },
+    {
+      "key": "game/hero-re1-us",
+      "file": "game/hero-re1-us.webp",
+      "source": "media/game_re1_version_default.png",
+      "bytes": 56726
+    },
+    {
+      "key": "game/hero-re1-jp",
+      "file": "game/hero-re1-jp.webp",
+      "source": "media/game_re1_version_jp.png",
+      "bytes": 37258
+    },
+    {
+      "key": "game/hero-re1-dc",
+      "file": "game/hero-re1-dc.webp",
+      "source": "media/game_re1_version_alt.png",
+      "bytes": 31308
+    },
+    {
+      "key": "game/hero-re2-leon",
+      "file": "game/hero-re2-leon.webp",
+      "source": "media/game_re2_version_default.png",
+      "bytes": 51840
+    },
+    {
+      "key": "game/hero-re2-claire",
+      "file": "game/hero-re2-claire.webp",
+      "source": "media/game_re2_version_alt.png",
+      "bytes": 32256
+    },
+    {
+      "key": "game/hero-re2-jp",
+      "file": "game/hero-re2-jp.webp",
+      "source": "media/game_re2_version_jp.png",
+      "bytes": 39350
+    },
+    {
+      "key": "game/hero-re3-us",
+      "file": "game/hero-re3-us.webp",
+      "source": "media/game_re3_version_default.png",
+      "bytes": 38560
+    },
+    {
+      "key": "game/hero-re3-jp",
+      "file": "game/hero-re3-jp.webp",
+      "source": "media/game_re3_version_jp.png",
+      "bytes": 148578
+    },
+    {
+      "key": "game/region-re1-us",
+      "file": "game/region-re1-us.webp",
+      "source": "media/game_re1_region_default.png",
+      "bytes": 287806
+    },
+    {
+      "key": "game/region-re1-jp",
+      "file": "game/region-re1-jp.webp",
+      "source": "media/game_re1_region_jp.png",
+      "bytes": 105564
+    },
+    {
+      "key": "game/region-re1-dc",
+      "file": "game/region-re1-dc.webp",
+      "source": "media/game_re1_region_alt.png",
+      "bytes": 99570
+    },
+    {
+      "key": "game/region-re2-leon",
+      "file": "game/region-re2-leon.webp",
+      "source": "media/game_re2_region_default.png",
+      "bytes": 187798
+    },
+    {
+      "key": "game/region-re2-claire",
+      "file": "game/region-re2-claire.webp",
+      "source": "media/game_re2_region_alt.png",
+      "bytes": 152418
+    },
+    {
+      "key": "game/region-re2-jp",
+      "file": "game/region-re2-jp.webp",
+      "source": "media/game_re2_region_jp.png",
+      "bytes": 134152
+    },
+    {
+      "key": "game/region-re3-us",
+      "file": "game/region-re3-us.webp",
+      "source": "media/game_re3_region_default.png",
+      "bytes": 167784
+    },
+    {
+      "key": "game/region-re3-jp",
+      "file": "game/region-re3-jp.webp",
+      "source": "media/game_re3_region_jp.png",
+      "bytes": 133408
+    },
+    {
+      "key": "game/logo-re1-us",
+      "file": "game/logo-re1-us.webp",
+      "source": "media/RE1Logo.png",
+      "bytes": 8704
+    },
+    {
+      "key": "game/logo-re1-jp",
+      "file": "game/logo-re1-jp.webp",
+      "source": "media/game_1_type_jp.png",
+      "bytes": 8280
+    },
+    {
+      "key": "game/logo-re1-dc",
+      "file": "game/logo-re1-dc.webp",
+      "source": "media/re1_dc_logo.png",
+      "bytes": 15716
+    },
+    {
+      "key": "game/logo-re2-leon",
+      "file": "game/logo-re2-leon.webp",
+      "source": "media/game_2_type_default.png",
+      "bytes": 9732
+    },
+    {
+      "key": "game/logo-re2-claire",
+      "file": "game/logo-re2-claire.webp",
+      "source": "media/game_2_type_alt.png",
+      "bytes": 8814
+    },
+    {
+      "key": "game/logo-re2-jp",
+      "file": "game/logo-re2-jp.webp",
+      "source": "media/game_2_type_jp.png",
+      "bytes": 9434
+    },
+    {
+      "key": "game/logo-re3-us",
+      "file": "game/logo-re3-us.webp",
+      "source": "media/game_3_type_default.png",
+      "bytes": 9804
+    },
+    {
+      "key": "game/logo-re3-jp",
+      "file": "game/logo-re3-jp.webp",
+      "source": "media/game_3_type_jp.png",
+      "bytes": 7960
+    }
+  ],
+  "copies": [
+    {
+      "file": "video/video-re1.mp4",
+      "source": "assets/videos/Resident Evil 1.mp4",
+      "bytes": 5295174
+    },
+    {
+      "file": "video/video-re1-jp.mp4",
+      "source": "assets/videos/BIOHAZARD 1 .mp4",
+      "bytes": 3946226
+    },
+    {
+      "file": "video/video-re2.mp4",
+      "source": "assets/videos/Resident Evil 2 Demo Trailer.mp4",
+      "bytes": 4484170
+    },
+    {
+      "file": "video/video-re2-jp.mp4",
+      "source": "assets/videos/RESIDENT EVIL 2： Live Action Trailer 1998 ｜JP. mp4.mp4",
+      "bytes": 1393589
+    },
+    {
+      "file": "video/video-re3.mp4",
+      "source": "assets/videos/Resident Evil 3： Nemesis Trailer 1999.mp4",
+      "bytes": 833720
+    },
+    {
+      "file": "video/video-re3-jp.mp4",
+      "source": "assets/videos/BIOHAZARD 3 LAST ESCAPE Promotional Trailer_1.mp4",
+      "bytes": 3983777
+    },
+    {
+      "file": "audio/confirm.wav",
+      "source": "assets/audio/DECIDE.wav",
+      "bytes": 45194
+    },
+    {
+      "file": "audio/back.wav",
+      "source": "assets/audio/Cancel (2).wav",
+      "bytes": 46110
+    },
+    {
+      "file": "audio/cursor.wav",
+      "source": "assets/audio/CURSOR (2).wav",
+      "bytes": 37726
+    },
+    {
+      "file": "font/Actor-Regular.ttf",
+      "source": "assets/fonts/Actor-Regular.ttf",
+      "bytes": 64944
+    },
+    {
+      "file": "font/badge-display.ttf",
+      "source": "assets/font/vendor/Metamorphous-Regular.ttf",
+      "bytes": 135740
+    }
+  ],
+  "designMapCount": 15
+}
