@@ -1,0 +1,37 @@
+/**
+ * Tailwind v4 entry point for the renderer.
+ *
+ * Ported from the Figma export's pair of stylesheets,
+ * `.ref/designref/src/styles/tailwind.css` and `.ref/designref/src/styles/index.css`.
+ * The order of the three rules is the export's and matters:
+ *
+ *   1. `source(none)` switches off automatic content detection, so the theme
+ *      below cannot accidentally scan node_modules or the vendored export.
+ *   2. `@source` then names the only place class names come from — every .tsx
+ *      under src/renderer/src. The design-export folder (src/renderer/design-export)
+ *      is deliberately outside it: it is vendored reference material that is
+ *      never rendered, so its class strings must not be compiled into the bundle.
+ *   3. The two `@import`s pull the design tokens and the typefaces in. Tailwind
+ *      inlines them here, exactly as the export did for its own imports.
+ *
+ * The export's third import, `tw-animate-css`, is intentionally dropped: it is
+ * not in package.json (the allowed dependency set is react, react-dom, zustand,
+ * motion, clsx, tailwind-merge and sharp), and the concept's transitions are
+ * driven by `motion` in the components rather than by animation utilities.
+ */
+@import 'tailwindcss' source(none);
+@source '../**/*.{js,ts,jsx,tsx}';
+
+@import './theme.css';
+@import './fonts.css';
+
+/**
+ * Every clickable menu surface in the export carries `data-name="btn/menu"` and
+ * the export declares the affordance once, here — see the tail end of
+ * `.ref/designref/src/styles/index.css`. Keeping it in the entry sheet is what
+ * lets components transcribe the export's `data-name` attributes verbatim and
+ * still show a pointer cursor, instead of each one adding a `cursor-pointer`.
+ */
+[data-name='btn/menu'] {
+  cursor: pointer;
+}

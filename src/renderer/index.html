@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" style="background: #0F0F0F">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Content Security Policy for the launcher window.
+
+      - The renderer never talks to the network: every game asset is bundled by
+        Vite and everything else travels over the preload IPC bridge, so no
+        http(s) origin is allowed for any directive. That is what "forbidding
+        remote scripts" means here: no remote origin can supply a script, a style,
+        an image, a video or a font, and `connect-src 'self'` leaves the renderer
+        no endpoint to reach.
+      - `unsafe-inline` for styles is required twice over. Vite injects the
+        compiled stylesheet into the document as an inline `<style>` tag in
+        development, and the design needs inline `style` attributes on many
+        elements because its values are not expressible as Tailwind arbitrary
+        classes — multi-stop gradients with percentage stops, percentage insets,
+        `mix-blend-mode` pairs and the stage's `transform: scale()`. CSP governs
+        both the `<style>` element and the `style` attribute, so without the token
+        every one of those surfaces would render unstyled.
+      - `unsafe-inline` for scripts is required for `pnpm dev` only.
+        `@vitejs/plugin-react` injects its Fast Refresh preamble as an *inline*
+        module script into this document during `electron-vite dev`
+        (node_modules/@vitejs/plugin-react/dist/index.js:331-337) and every
+        transformed component module throws "can't detect preamble" if that
+        script was blocked, which would blank the whole dev window. The production
+        bundle has no inline script at all, so the allowance costs nothing there.
+      - `file:` is listed beside 'self' for every local resource directive
+        because a packaged build is loaded with `window.loadFile()`
+        (src/main/index.ts:166), i.e. the document's own origin is `file:`; whether
+        'self' matches `file:` subresources is engine-dependent, and art, fonts
+        and video are all `file:` URLs in that mode. A `file:` source can only ever
+        name a local file, so this does not widen the remote-content surface.
+      - `object-src`/`base-uri`/`frame-src` are closed because nothing in this UI
+        embeds a plugin, rewrites its base URL or frames another document.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self' file:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; media-src 'self' data: blob: file:; font-src 'self' data: blob: file:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-src 'none'"
+    />
+
+    <title>Resident Evil - Classic Collection</title>
+  </head>
+
+  <!--
+    The window is a fixed 1920x1080 author space scaled to fit (see
+    src/renderer/src/stage/Stage.tsx), so it must never scroll.
+
+    Both the html and the body element carry `background: #0F0F0F` *inline*, i.e.
+    before any stylesheet or font has been fetched: until React mounts and the
+    Tailwind bundle is applied there is nothing else painting the window, and the
+    UA default canvas is white. The inline value is also what beats the shadcn
+    `body { @apply bg-background }` base rule in styles/theme.css, whose
+    `--background` token is light-mode white, so the window stays dark even after
+    the stylesheet loads. `margin: 0` is what Tailwind's preflight would do to the
+    body anyway; writing it here keeps the pre-Tailwind paint identical.
+  -->
+  <body style="background: #0F0F0F; overflow: hidden; margin: 0">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
