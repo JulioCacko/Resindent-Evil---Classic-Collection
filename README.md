@@ -336,11 +336,30 @@ any of them at runtime — it reads the generated files under
 ```bash
 pnpm test           # unit tests (vitest, Node environment)
 pnpm test:watch     # the same, in watch mode
-pnpm typecheck      # tsc over the main/preload project and the renderer project
+pnpm typecheck      # tsc over the main/preload, renderer and e2e projects
 pnpm compile        # build main, preload and renderer into out/
 pnpm test:e2e       # compile, then run the Playwright specs from tests/e2e/
 pnpm check:fidelity # the design-drift guard: the live UI vs the Figma export
 ```
+
+### The one spec that starts a game
+
+`pnpm test:e2e` is hermetic: every spec replaces the main process's `launch` handler
+so that no test can start an executable, and points the app at a throwaway fixture.
+That leaves one path untested — the real one — so `tests/e2e/live-launch.spec.ts`
+covers it and is skipped unless you ask for it:
+
+```powershell
+pnpm compile
+$env:RE_LIVE_LAUNCH = '1'; npx playwright test tests/e2e/live-launch.spec.ts
+```
+
+It runs against your real application directory, so it probes your actual
+`GOG Games/` install, injects the RE-Enhance overlay, starts the game, checks the
+launcher tracks it, and then quits the launcher to prove the game is killed rather
+than orphaned. The spec's *profile* is redirected to a temp directory so it is
+repeatable; the game and the mod injection are not, and are not meant to be. It
+force-kills anything it started on the way out, including a failure midway.
 
 `pnpm check:fidelity` is the one to run after touching any component, any measured
 value or the catalog: it reads the vendored Figma export and fails if a design class
