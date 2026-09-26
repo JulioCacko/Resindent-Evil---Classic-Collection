@@ -181,6 +181,37 @@ test.describe('the launcher frame matches the Figma export', () => {
     expectWithin(logo.x + logo.width / 2, CANVAS.width / 2, TOLERANCE, 'logo block centred on the canvas')
     expectWithin(logo.y, column.y, TOLERANCE, 'logo block y (first child of the menu column)')
 
+    // The badge's own box, derived from the export's percentage inset of the
+    // lockup rather than restated: `inset-[73.96%_7.57%_0_7.52%]` means the badge
+    // starts 73.96% down a 250px box and spans what is left, and starts 7.52% in
+    // from the left of a 625.021px box, leaving 7.57% on the right. This is the
+    // assertion that keeps the badge's geometry under test now that its face and
+    // lettering come from the concept's texture instead of live text - see
+    // docs/DESIGN-FIDELITY.md 7.2 and the `liveTokens` note in
+    // tools/check-fidelity.mjs.
+    const badge = await rect(page, 'logo-badge')
+    const badgeInset = MAIN_MENU.logo.badgeInset
+    const insetOf = (value: string): number => Number.parseFloat(value) / 100
+    expectWithin(
+      badge.x - logo.x,
+      insetOf(badgeInset.left) * MAIN_MENU.logo.width,
+      TOLERANCE,
+      'badge left inset'
+    )
+    expectWithin(
+      badge.width,
+      (1 - insetOf(badgeInset.left) - insetOf(badgeInset.right)) * MAIN_MENU.logo.width,
+      TOLERANCE,
+      'badge width'
+    )
+    expectWithin(badge.y - logo.y, insetOf(badgeInset.top) * MAIN_MENU.logo.height, TOLERANCE, 'badge top inset')
+    expectWithin(
+      badge.height,
+      (1 - insetOf(badgeInset.top) - insetOf(badgeInset.bottom)) * MAIN_MENU.logo.height,
+      TOLERANCE,
+      'badge height'
+    )
+
     // The card row: 616px tall, the full width of the column.
     const cardRow = await rect(page, NODES.menuCardRow)
     expectWithin(cardRow.height, MAIN_MENU.cardRowHeight, TOLERANCE, 'card row height')

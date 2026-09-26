@@ -14,6 +14,11 @@
  * design's spelling against the resolved family, and that family against the
  * system sans, so the spec keeps its meaning if a font file is ever swapped. Every
  * measurement is recorded in the report so a failure explains itself.
+ *
+ * The concept's other face - the one it draws "Classic Collection" in - needs no
+ * check here, because the badge is no longer live text: it renders the designer's
+ * own cropped texture (see BADGE_ART in data/design.ts). This spec asserts that
+ * art is present and decodes, which is the equivalent guarantee.
  */
 import { expect, test } from '@playwright/test'
 
@@ -35,9 +40,6 @@ interface Measurements {
   readonly systemSans: number
   /** A family that cannot exist, i.e. the exact shape of the old failure. */
   readonly missingFamily: number
-  /** The badge in the design's badge family, and the same text in the label face. */
-  readonly badgeSpec: number
-  readonly badgeAsActor: number
   /** `Navigate` measured in the two candidate faces, for the live-element check. */
   readonly navActor: number
   readonly navSans: number
@@ -58,7 +60,6 @@ test.describe('the design typography resolves', () => {
       // are measured against the real fonts rather than a fallback.
       await document.fonts.load('400 24px "Actor"')
       await document.fonts.load('400 24px "Actor:Regular"')
-      await document.fonts.load('400 43.13px "Resident Evil Classic Font"')
       await document.fonts.ready
 
       // The synthetic spans are appended *inside* the stage layer, not to
@@ -95,8 +96,6 @@ test.describe('the design typography resolves', () => {
         actorPlain: measure("'Actor', sans-serif", SAMPLE, 24, 0),
         systemSans: measure('sans-serif', SAMPLE, 24, 0),
         missingFamily: measure("'__re_no_such_family__', sans-serif", SAMPLE, 24, 0),
-        badgeSpec: measure("'Resident Evil Classic Font', 'Actor', sans-serif", 'Classic Collection', 43.13, 12.939),
-        badgeAsActor: measure("'Actor', sans-serif", 'Classic Collection', 43.13, 12.939),
         navActor: measure("'Actor', sans-serif", 'Navigate', 24, 0),
         navSans: measure('sans-serif', 'Navigate', 24, 0),
         loaded
@@ -127,22 +126,25 @@ test.describe('the design typography resolves', () => {
     expect(m.loaded.some((entry) => entry.startsWith('Actor:'))).toBe(true)
     expect(m.loaded.some((entry) => entry.startsWith('Actor:Regular:'))).toBe(true)
 
-    // 4. The badge is set in a display face, not the label sans. Only a *missing*
-    //    badge face would collapse these two together.
+    // 4. The badge is the concept's own texture, not live text in a face this
+    //    repository does not have. Asserted on the decoded image rather than on the
+    //    class, so a missing or broken asset fails here instead of showing an empty
+    //    box. The badge's *box* is measured by geometry.spec.ts.
+    const badgeMedia = page.locator('[data-figma-node="logo-badge"] img').first()
+    expect(await badgeMedia.count(), 'the badge renders an image').toBe(1)
+    const badgeSrc = (await badgeMedia.getAttribute('src')) ?? ''
+    expect(badgeSrc, 'the badge image is the cropped lockup texture').toContain('badge-classic-collection')
+    const decoded = await badgeMedia.evaluate((element) => {
+      const image = element as HTMLImageElement
+      return { width: image.naturalWidth, height: image.naturalHeight }
+    })
     expect(
-      Math.abs(m.badgeSpec - m.badgeAsActor),
-      `the badge face must not be Actor: badge=${m.badgeSpec} actor=${m.badgeAsActor}`
-    ).toBeGreaterThan(1)
+      decoded.width,
+      `the badge art decodes (natural size ${decoded.width}x${decoded.height})`
+    ).toBeGreaterThan(0)
+    expect(decoded.height, 'the badge art decodes').toBeGreaterThan(0)
 
-    // 5. The rendered badge asks for it — a live read, so a component that dropped
-    //    the class fails here even though the font resolves.
-    const badgeFamily = await page
-      .getByText('Classic Collection', { exact: true })
-      .first()
-      .evaluate((element) => window.getComputedStyle(element).fontFamily)
-    expect(badgeFamily).toContain('Resident Evil Classic Font')
-
-    // 6. The helper bar's label is a live `font-['Actor:Regular',sans-serif]`
+    // 5. The helper bar's label is a live `font-['Actor:Regular',sans-serif]`
     //    element from the design: it must measure like Actor and unlike the sans.
     const labelWidth = await page
       .getByText('Navigate', { exact: true })
