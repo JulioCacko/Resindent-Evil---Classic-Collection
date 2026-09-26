@@ -509,6 +509,49 @@ injectedMod }` or `{ ok: false, code, message }`, where `code` is one of
 `game-already-running`. The renderer turns a failure into the error dialog and a
 toast; it never sees an exception.
 
+### Why the game is NOT embedded in the launcher window
+
+The concept draws its Gameplay screen as a 1300x975 card, which reads as "the game runs
+inside the launcher". It cannot, and this was measured rather than assumed.
+
+`tools/probe-embed.ps1` launches a real install, finds the game's own top-level window,
+reparents it into a host window the size of that card with `SetParent`, strips
+`WS_CAPTION`/`WS_THICKFRAME`, fits it to the client area, and then checks whether the
+window survived and is still drawing. Run against this machine's RE1 install
+(`Biohazard.exe`, the RE-Enhance build), with its loader dialog dismissed:
+
+| Measurement | Result |
+|---|---|
+| The game's window | class `BIOHAZARD`, title `RESIDENT EVIL® PC`, 1286x989 |
+| `SetParent` return | `0x1000C` — and yet `GetParent` is `0` *immediately* after |
+| `GetParent` after 5 s | `0` — still top-level |
+| Style after re-apply | `0x12CA0000`, i.e. `WS_CAPTION` back, no `WS_CHILD` |
+| Watchdog re-applying at 4 Hz for 8 s | `SetParent` re-applied **33 times out of 33 samples**, style likewise |
+| Window recreated | 0 times — it does not rebuild the window, it refuses |
+
+So the game re-asserts its own top-level status, caption and geometry in its window
+procedure, continuously, without ever recreating the window. It also refuses the
+resize: asked for 1300x975 it stays 1280x960. A watchdog cannot win that race, because
+the loser of each round is a window that must be usable between rounds — the game would
+flicker between embedded and not, and any frame spent as a child of the launcher is a
+frame the wrapper may have stopped presenting to.
+
+Two other things the probe established, which shape the launch flow:
+
+- **The first window is not the game.** RE-Enhance's loader opens a `#32770` dialog
+  titled "MOD SELECTION" (with a combobox and, on some runs, no standard button) and the
+  game only starts once it is dismissed. A launcher that waited for "the main window"
+  would wait on a dialog it cannot drive.
+- **The retail executable can fail on its own.** `ResidentEvil.exe` — the file
+  RE-Enhance did *not* overwrite, per its own `.mod_backup/manifest.txt` — exited with
+  `0xC0000409` (a stack-buffer-overrun fast-fail) when started with `BootConfig = 0`.
+  That is the game's business, not the launcher's, but it is why ORIGINAL mode on this
+  title is reported as-is rather than assumed to work.
+
+The launcher therefore **yields to the game** instead of containing it: on a successful
+spawn it minimises or hides, and the Gameplay screen becomes an honest "now playing"
+surface rather than a card that implies the trailer is the running game.
+
 ---
 
 ## 7. Mod injection and restore
