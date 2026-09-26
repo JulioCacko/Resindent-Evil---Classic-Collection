@@ -7,6 +7,7 @@
  * and `media/` art into WebP.
  */
 import backdrop from '../assets/game/backdrop-unsplash.webp'
+import badgeClassicCollection from '../assets/game/badge-classic-collection.webp'
 import cardRe1 from '../assets/game/card-re1.webp'
 import cardRe2 from '../assets/game/card-re2.webp'
 import cardRe3 from '../assets/game/card-re3.webp'
@@ -52,6 +53,9 @@ import actorFont from '../assets/font/Actor-Regular.ttf'
 
 export const ASSET_URLS: Record<string, string> = {
   'game/backdrop-unsplash': backdrop,
+  // The main-menu badge, cropped from the concept's own lockup texture by
+  // `pnpm assets:sync` (see BADGE_ART in data/design.ts).
+  'game/badge-classic-collection': badgeClassicCollection,
   'game/card-re1': cardRe1,
   'game/card-re2': cardRe2,
   'game/card-re3': cardRe3,

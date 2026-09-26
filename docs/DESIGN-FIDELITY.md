@@ -357,7 +357,7 @@ did nothing would be a lie to the keyboard user), and the achievement toast's
 legacy gold *edge* is replaced by the shared hairline so it belongs to the same
 family as the dialog and the gate.
 
-### 7.2 The badge typeface: identified, and stood in for
+### 7.2 The badge: the concept's own texture, not re-typeset text
 
 The concept draws `Classic Collection` in a face it calls
 `'Resident Evil Classic Font'`. Research identified it as Peter Jonca's **"Resident
@@ -368,32 +368,58 @@ under **CC BY-ND 3.0** ("It's the Classic Title Font from the Games Resident Evi
 Resident Evil 2 and Resident Evil 3 (not the remakes!)"). The name match is exact,
 so the concept's badge is that font.
 
-CC BY-ND *does* permit redistributing the font unmodified with credit, so shipping
-it would be lawful — but the download is behind a DeviantArt login, which means the
-file can be neither fetched nor verified from here, and committing an unverifiable
-copy of someone else's file under a licence that forbids derivatives is not a call
-this repository makes silently. So the badge resolves in three steps:
+CC BY-ND *does* permit redistributing the font unmodified with credit, so shipping it
+would be lawful — but the download is behind a DeviantArt login, which means the file
+can be neither fetched nor verified from here, and committing an unverifiable copy of
+someone else's work under a licence that forbids derivatives is not a call this
+repository makes silently.
 
-1. **`local()` first.** `styles/fonts.css` declares
-   `src: local('Resident Evil Classic Font'), local('ResidentEvilClassic'), url(…)`,
-   so a machine with the authentic font installed renders the authentic badge with
-   no configuration at all.
-2. **A bundled stand-in.** `assets/font/badge-display.ttf` is
-   [Metamorphous](https://fonts.google.com/specimen/Metamorphous) by Sorkin Type Co
-   under the **SIL Open Font License 1.1** (licence text shipped beside it at
-   `assets/font/vendor/Metamorphous-OFL.txt`) — an eroded carved serif chosen as the
-   closest redistributable match to the classic title lettering, so the badge is a
-   *display* face rather than the label sans.
-3. **An override.** `tools/sync-design-assets.mjs` prefers
-   `assets/font/ResidentEvilClassic.ttf` when it exists and reports which file it
-   used, so an authentic 1:1 badge is one file copy plus `pnpm assets:sync`.
+**The badge therefore renders the designer's own pixels instead of live text.**
+`assets/textures/main-logo.png` is the concept's assembled lockup — the red wordmark
+over a transparent gap over the badge, confirmed by `tools/inspect-image.mjs`, which
+reports the three bands (red through y208, empty y216..226, grey/white y227..307) and
+the badge band's opaque columns at x57..x711. Those columns are the design's own
+`7.52% / 7.57%` inset of 770px (57.9 and 711.7) to the pixel, so the crop lands inside
+the design's badge box exactly.
 
-So the badge's *box*, size, tracking, gradient and shadow are the design's, and its
-glyphs are the authentic face if the user has it, otherwise an OFL face of the same
-character. `tests/e2e/fonts.spec.ts` asserts the badge resolves to a display face
-and not to the label sans, so this can never silently regress.
+`tools/sync-design-assets.mjs` lifts that band out at its native 655x81 and the
+component covers it into the box the export defines. Three consequences:
 
-### 7.2.1 A typography defect found while wiring the above, and fixed
+- **The glyphs are exact**, not an approximation by a similar face, and no font file
+  is involved at all — so there is no unresolvable `@font-face`, no console 404, and
+  no licence question for downstream users.
+- **The box, inset, 4.786px radius and two-offset drop shadow are still the export's.**
+  The texture supplies the badge's face and lettering only; everything positional is
+  drawn in CSS from the design's own values, which is why the crop trims the five rows
+  of drop shadow that Figma flattened into the texture — keeping both would darken it
+  twice.
+- **The wordmark stays inline SVG.** It is a vector trace in the export and stays sharp
+  at any stage scale, which matters on a display larger than the 1920×1080 canvas; a
+  raster lockup would have gone soft there.
+
+The cost is that the export's badge *type* tokens (`py-[7.776px]`, `text-[43.13px]`,
+`tracking-[12.939px]`, its text-shadow, the `#7f828a` fill, the overlay gradient and
+`bg-clip-text`) no longer exist in the markup, because all of them are baked into the
+pixels. That is a real reduction in what `tools/check-fidelity.mjs` can compare, so it
+is compensated in three ways rather than waved through:
+
+1. `check-fidelity.mjs` gained **`liveTokens`** — facts a live file must carry that the
+   export has no equivalent for. `LogoBlock.tsx` is now held to `BADGE_ART.key`,
+   `data-figma-node="logo-badge"` and `object-cover`, so the *replacement* cannot
+   silently disappear either. Verified by unhooking the art and watching the check fail.
+2. `tests/e2e/geometry.spec.ts` measures the badge's box and derives its expectation
+   from `MAIN_MENU.logo.badgeInset` — the percentages above — so the geometry stays
+   under test even though its class strings moved into pixels.
+3. `tests/e2e/fonts.spec.ts` asserts the badge image is present and *decodes*, which an
+   empty box would not.
+
+An earlier revision of this app used a bundled OFL stand-in face
+([Metamorphous](https://fonts.google.com/specimen/Metamorphous), Sorkin Type Co, SIL
+OFL 1.1) behind a `local()` lookup. That machinery is gone: with the designer's own
+texture available it was strictly worse — a similar face where an exact one is
+possible.
+
+### 7.2.1 A typography defect found along the way, and fixed
 
 The export classes **every** label `font-['Actor:Regular',sans-serif]` — Figma's own
 `Family:Style` notation (`MainMenuPage.tsx:54` and ~114 other places). Tailwind v4

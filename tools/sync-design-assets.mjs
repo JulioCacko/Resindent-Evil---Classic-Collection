@@ -126,28 +126,95 @@ const AUDIO = [
 const FONTS = [{ from: 'assets/fonts/Actor-Regular.ttf', out: 'font/Actor-Regular.ttf' }]
 
 /**
- * The badge face.
+ * The "Classic Collection" badge.
  *
- * The concept sets "Classic Collection" in a family it names
- * `Resident Evil Classic Font` (`.ref/designref/src/app/components/MainMenuPage.tsx:54`).
- * That is a fan re-creation of the title lettering from RE1/RE2/RE3 — Peter
- * Jonca's "Resident Evil Classic Game Font", released on DeviantArt under
- * CC BY-ND 3.0 — and it is deliberately NOT in this repository: the licence
- * permits redistribution of the unmodified font with credit, but the download is
- * behind a DeviantArt login, so the file cannot be fetched or verified here.
+ * `assets/textures/main-logo.png` is the concept's assembled lockup: the red
+ * "Resident Evil" wordmark in its upper half, a transparent gap, then the badge.
+ * `tools/inspect-image.mjs` reports the three bands - red through y208, empty
+ * y216..226, grey/white y227..307 - and the badge band's opaque columns run x57 to
+ * x711, which is the design's own 7.52% / 7.57% inset of 770px (57.9 and 711.7) to
+ * the pixel.
  *
- * So the badge resolves in two steps, both declared in `styles/fonts.css`:
- *   1. `local()` picks up the authentic face when the user has installed it.
- *   2. Otherwise this file stands in — Metamorphous (Sorkin Type Co, SIL Open
- *      Font License 1.1), an eroded carved serif chosen as the closest
- *      redistributable match to the classic title lettering, so the badge is set
- *      in a display face rather than falling back to the label sans.
+ * The badge is lifted out of that texture rather than re-typeset, because the face
+ * the concept sets it in is not in this repository (docs/DESIGN-FIDELITY.md, "The
+ * badge typeface"). The designer's own pixels make the glyphs exact instead of
+ * approximate, and need no font file at all.
  *
- * Dropping the authentic file in as `assets/font/ResidentEvilClassic.ttf` and
- * re-running `pnpm assets:sync` switches the bundle over with no code change.
+ * Two regions are left behind on purpose. The wordmark, because LogoBlock draws it
+ * as inline SVG so it stays sharp at any stage scale - which matters on a display
+ * larger than the 1920x1080 canvas. And the badge's baked drop shadow, because
+ * Figma flattened the layer's shadow into this texture while LogoBlock draws the
+ * same shadow in CSS from the export's own values; keeping both would darken it
+ * twice.
  */
-const BADGE_FONT_AUTHENTIC = 'assets/font/ResidentEvilClassic.ttf'
-const BADGE_FONT_FALLBACK = 'assets/font/vendor/Metamorphous-Regular.ttf'
+async function badgeArtRect() {
+  const source = join(texturesDir, 'main-logo.png')
+  if (!existsSync(source)) return null
+
+  const { data, info } = await sharp(source).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const { width: W, height: H, channels } = info
+  const alphaAt = (x, y) => data[(y * W + x) * channels + 3]
+
+  // Find the bands of rows that carry any pixel at all - the lockup is a stack of
+  // them with transparent gaps - and take the last one, which is the badge. Taking
+  // a fixed fraction of the height instead would have to guess where the wordmark
+  // ends; on this texture the wordmark alone runs to y208 of 313.
+  const bands = []
+  for (let y = 0; y < H; y += 1) {
+    let opaque = 0
+    for (let x = 0; x < W; x += 1) {
+      if (alphaAt(x, y) >= 32) opaque += 1
+    }
+    const last = bands.at(-1)
+    if (opaque === 0) bands.push({ from: -1, to: -1 })
+    else if (last !== undefined && last.to === y - 1 && last.from !== -1) last.to = y
+    else bands.push({ from: y, to: y })
+  }
+  const band = bands.filter((candidate) => candidate.from !== -1).at(-1)
+  if (band === undefined) return null
+
+  let y0 = band.from
+  let y1 = band.to
+
+  // Trim the badge's flattened drop shadow off the bottom. Figma baked the layer's
+  // shadow into this texture and LogoBlock draws that same shadow in CSS from the
+  // export's values, so keeping both would darken it twice. The shadow's rows are
+  // the ones with no light pixel at all: the lettering reaches ~248 and even the
+  // bare grey fill sits near 130.
+  const rowHasLight = (y) => {
+    for (let x = 0; x < W; x += 1) {
+      if (alphaAt(x, y) < 32) continue
+      const i = (y * W + x) * channels
+      if (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2] >= 100) return true
+    }
+    return false
+  }
+  const bottomWithShadow = y1
+  while (y1 > y0 && !rowHasLight(y1)) y1 -= 1
+
+  // The fill's own columns, measured over the trimmed band so the shadow cannot
+  // widen them.
+  let x0 = W
+  let x1 = -1
+  for (let y = y0; y <= y1; y += 1) {
+    for (let x = 0; x < W; x += 1) {
+      if (alphaAt(x, y) < 32) continue
+      if (x < x0) x0 = x
+      if (x > x1) x1 = x
+    }
+  }
+  if (x1 < 0) return null
+
+  return {
+    source,
+    left: x0,
+    top: y0,
+    width: x1 - x0 + 1,
+    height: y1 - y0 + 1,
+    bandsFound: bands.filter((candidate) => candidate.from !== -1).length,
+    trimmedShadowRows: bottomWithShadow - y1
+  }
+}
 
 function resolveSource(source, id) {
   if (source === 'texture') {
@@ -162,11 +229,6 @@ function resolveSource(source, id) {
     if (existsSync(candidate)) return candidate
   }
   return null
-}
-
-/** The authentic badge face when it has been provided, else the bundled OFL stand-in. */
-function badgeFontSource() {
-  return existsSync(join(repoRoot, BADGE_FONT_AUTHENTIC)) ? BADGE_FONT_AUTHENTIC : BADGE_FONT_FALLBACK
 }
 
 async function hashFile(path) {
@@ -208,7 +270,7 @@ async function main() {
     })
   }
 
-  for (const group of [VIDEOS, AUDIO, FONTS, [{ from: badgeFontSource(), out: 'font/badge-display.ttf' }]]) {
+  for (const group of [VIDEOS, AUDIO, FONTS]) {
     for (const item of group) {
       const src = join(repoRoot, item.from)
       if (!existsSync(src)) {
@@ -226,8 +288,42 @@ async function main() {
     }
   }
 
-  // The export references the RE2 Alt art (Claire) through a second hash in the
-  // gameplay frames; keep the map explicit rather than guessing at runtime.
+  // The badge, cropped out of the concept's own lockup texture. `--check` reports
+  // the same rectangle it would cut, so the crop stays auditable without writing.
+  const badge = await badgeArtRect()
+  if (badge === null) {
+    missing.push(`${texturesDir}\\main-logo.png`)
+  } else {
+    const out = 'game/badge-classic-collection.webp'
+    const dest = join(outRoot, out)
+    if (!check) {
+      await mkdir(dirname(dest), { recursive: true })
+      await sharp(badge.source)
+        .extract({ left: badge.left, top: badge.top, width: badge.width, height: badge.height })
+        .webp({ quality: 94, effort: 5 })
+        .toFile(dest)
+    }
+    const size = (await import('node:fs')).statSync(dest).size
+    written.push({
+      out,
+      source: `assets/textures/main-logo.png [${badge.left},${badge.top} ${badge.width}x${badge.height}]`,
+      bytes: size
+    })
+    manifest.images.push({
+      key: 'game/badge-classic-collection',
+      file: out,
+      source: 'assets/textures/main-logo.png',
+      crop: { left: badge.left, top: badge.top, width: badge.width, height: badge.height },
+      trimmedShadowRows: badge.trimmedShadowRows,
+      bytes: size
+    })
+  }
+
+  // The export names several of its assets by hash rather than by semantic key, and
+  // some frames reach the same art through a second hash. These entries are the ones
+  // the sync's own naming cannot infer, written out so the vendored Figma JSX could
+  // be imported unedited. Each maps to the row whose art it is - `logo-re2-proto` is
+  // the RE2 Alt logo, which is the BIOHAZARD 1.5 row, not a Claire scenario.
   designMap['8c48435db9d52dd5b04c9234227dd601baa2cbbf'] = 'game/region-re2-leon.webp'
   designMap['18fb9a00f28d573818b95bd7ae1d1ecab2df9883'] = 'game/logo-re2-leon.webp'
   designMap['58d40011eaef29d1d44ec90e8ed08041d5b0c468'] = 'game/region-re3-us.webp'
@@ -260,16 +356,14 @@ async function main() {
   }
 
   const total = written.reduce((sum, w) => sum + w.bytes, 0)
-  const badgeSource = badgeFontSource()
   console.log(`sync-design-assets: ${written.length} files, ${(total / 1024 / 1024).toFixed(2)} MiB`)
-  console.log(
-    `sync-design-assets: badge face = ${badgeSource}` +
-      (badgeSource === BADGE_FONT_AUTHENTIC
-        ? ' (authentic "Resident Evil Classic" file)'
-        : ' (bundled OFL stand-in; drop the authentic font in as ' +
-          BADGE_FONT_AUTHENTIC +
-          ' to switch)')
-  )
+  if (badge !== null) {
+    console.log(
+      `sync-design-assets: badge cropped at [${badge.left},${badge.top}] ` +
+        `${badge.width}x${badge.height} from main-logo.png ` +
+        `(band ${badge.bandsFound} of the lockup, trimmed ${badge.trimmedShadowRows} row(s) of baked shadow; ` + `the CSS shadow from the export is drawn instead)`
+    )
+  }
   for (const w of written) {
     console.log(`  ${String(Math.round(w.bytes / 1024)).padStart(6)} KiB  ${w.out}  <-  ${w.source}`)
   }

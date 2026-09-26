@@ -5,8 +5,11 @@
  * `src/renderer/src/assets/font/...`; Vite fingerprints and copies the files into
  * `out/renderer/font/` on build.
  *
- * There are three declarations for what the design calls two families, and the
- * extra one is not redundant — see the `Actor:Regular` face below.
+ * There are two declarations for what the design calls one family, and the second
+ * is not redundant â€” see the `Actor:Regular` face below. The concept's other face,
+ * the one it draws "Classic Collection" in, needs no declaration at all: the badge
+ * is rendered from the designer's own texture, not from live text (see BADGE_ART in
+ * data/design.ts).
  */
 
 @font-face {
@@ -25,10 +28,10 @@
  * Every label in the concept is classed `font-['Actor:Regular',sans-serif]`
  * (`.ref/designref/src/imports/MainMenu.tsx` and the other frames). Tailwind v4
  * compiles an arbitrary family verbatim, so that class emits
- * `font-family: Actor\:Regular, sans-serif` — and the `:Regular` suffix is Figma's
+ * `font-family: Actor\:Regular, sans-serif` â€” and the `:Regular` suffix is Figma's
  * own `Family:Style` notation, not a valid family name. All 115 occurrences in the
  * export (27 in the shipped components) therefore fell through to the system sans
- * — Segoe UI on Windows — instead of Actor, so letterforms and metrics were wrong
+ * â€” Segoe UI on Windows â€” instead of Actor, so letterforms and metrics were wrong
  * everywhere the design specifies a label.
  *
  * Declaring the name *including* the suffix fixes that without editing a single
@@ -44,41 +47,4 @@
   src: url('../assets/font/Actor-Regular.ttf') format('truetype');
   font-weight: 400;
   font-display: block;
-}
-
-/**
- * The badge face: "Classic Collection".
- *
- * The concept sets the badge in a family it names `Resident Evil Classic Font`
- * (`.ref/designref/src/app/components/MainMenuPage.tsx:54`), which is Peter
- * Jonca's fan re-creation of the RE1/RE2/RE3 title lettering ("Resident Evil
- * Classic Game Font", DeviantArt, CC BY-ND 3.0). That file is deliberately NOT in
- * this repository: the licence permits redistributing the font unmodified with
- * credit, but the download sits behind a DeviantArt login, so it can be neither
- * fetched nor verified from here, and shipping an unverifiable copy of someone
- * else's file is not a call this repository should make silently.
- *
- * `local()` is tried first, so a machine with the authentic font installed gets
- * the authentic font with no configuration. The bundled `badge-display.ttf` is the
- * stand-in: Metamorphous by Sorkin Type Co under the SIL Open Font License 1.1 —
- * an eroded carved serif, the closest redistributable match to the classic title
- * lettering, which keeps the badge in a *display* face instead of dropping it into
- * the label sans. `tools/sync-design-assets.mjs` writes that file, preferring the
- * authentic `assets/font/ResidentEvilClassic.ttf` when someone drops it in, so
- * upgrading to a true 1:1 badge is one file copy plus `pnpm assets:sync`.
- *
- * `swap` rather than `block`: the badge is decorative, and the design's
- * 43.13px/12.939px metrics are set at the call site (`BADGE_FONT_FAMILY`,
- * src/renderer/src/components/LogoBlock.tsx), so the badge keeps its designed box
- * either way. The stand-in's licence ships beside it at
- * `assets/font/vendor/Metamorphous-OFL.txt`.
- */
-@font-face {
-  font-family: 'Resident Evil Classic Font';
-  src:
-    local('Resident Evil Classic Font'),
-    local('ResidentEvilClassic'),
-    url('../assets/font/badge-display.ttf') format('truetype');
-  font-weight: 400;
-  font-display: swap;
 }

@@ -32,6 +32,31 @@ export const COLOR = {
   badgeShadow: '#434343'
 } as const
 
+/**
+ * The "Classic Collection" badge, which is the concept's own texture rather than
+ * live text.
+ *
+ * The design builds it from a `#7f828a` fill, an `overlay` gradient and a
+ * gradient-clipped text run in a face called `Resident Evil Classic Font`
+ * (Peter Jonca's "Resident Evil Classic Game Font", CC BY-ND 3.0) that is not in
+ * this repository. `assets/textures/main-logo.png` is the concept's assembled
+ * lockup, and its badge band is the designer's own rendering of all of that, so
+ * the badge uses those pixels: exact glyphs, no font dependency, no licence
+ * question. `tools/sync-design-assets.mjs` crops the band and records where.
+ *
+ * `badgeInset`, `badgeRadius` and `badgeShadow` are still the export's, because
+ * the texture supplies only the badge's face and lettering - its position in the
+ * 625.021x250 lockup and its drop shadow are drawn in CSS exactly as the export
+ * declares them.
+ */
+export const BADGE_ART = {
+  /** Asset key, resolved by data/assets.ts. */
+  key: 'game/badge-classic-collection',
+  /** Cropped band in `assets/textures/main-logo.png`, as measured by the sync. */
+  sourceWidth: 655,
+  sourceHeight: 81
+} as const
+
 /** The full-stage backdrop: a portrait photo, flipped, blended hard-light. */
 export const BACKDROP = {
   boxWidth: 1920,
@@ -55,14 +80,8 @@ export const MAIN_MENU = {
     wordmarkViewBox: '0 0 624.714 161.327',
     wordmarkDropShadow: '0 8.00915px 0 rgba(0, 0, 0, 0.4), 0 3.43249px 0 #848484',
     badgeInset: { top: '73.96%', right: '7.57%', bottom: '0', left: '7.52%' },
-    badgePaddingY: 7.776,
     badgeRadius: 4.786,
-    badgeShadow: `0px 1.944px 0px 0px ${COLOR.badgeShadow}, 0px 3.888px 0px 0px rgba(0, 0, 0, 0.4)`,
-    badgeGradient: 'linear-gradient(173.006deg, rgba(255, 255, 255, 0) 17.454%, rgba(0, 0, 0, 0.4) 82.545%)',
-    badgeFontSize: 43.13,
-    badgeTracking: 12.939,
-    badgeTextShadow: '0px 4.313px 0px rgba(0, 0, 0, 0.4)',
-    badgeLabel: 'Classic Collection'
+    badgeShadow: `0px 1.944px 0px 0px ${COLOR.badgeShadow}, 0px 3.888px 0px 0px rgba(0, 0, 0, 0.4)`
   },
   cardRowHeight: 616,
   cardGap: 48,

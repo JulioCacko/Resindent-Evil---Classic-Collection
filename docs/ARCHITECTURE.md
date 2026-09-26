@@ -196,8 +196,8 @@ src/
         ├── data/design.ts        every measured value from the Figma export
         ├── data/assets.ts        asset key -> bundled URL
         ├── data/derive.ts        pure selectors (mode, scenario, canLaunch, ...)
-        ├── styles/fonts.css      @font-face for Actor, its Figma-spelled alias
-        │                         ('Actor:Regular') and the badge face
+        ├── styles/fonts.css      @font-face for Actor and its Figma-spelled alias
+        │                         ('Actor:Regular')
         ├── styles/theme.css      colour tokens
         └── styles/tailwind.css   Tailwind entry
 assets/                          shipped with the build

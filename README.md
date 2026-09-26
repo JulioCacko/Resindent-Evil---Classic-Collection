@@ -74,7 +74,7 @@ provided locally. Both folders are gitignored.
 |---|---|---|
 | The GOG Resident Evil Classic Bundle | `GOG Games/` next to the launcher (or anywhere the launcher can detect) | Purchase and install from GOG.com |
 | RE-Enhance mods (optional) | `reenhancemods/` next to the launcher | From their respective authors (see Credits) |
-| The `Resident Evil Classic Font` typeface | `assets/font/ResidentEvilClassic.ttf` (optional, then `pnpm assets:sync`) | **"Resident Evil Classic Game Font"** by Peter Jonca — his re-creation of the RE1/2/3 title lettering, free on [DeviantArt](https://www.deviantart.com/snakeyboy/art/Resident-Evil-Classic-Game-Font-842017934) under CC BY-ND 3.0 (credit him if you use it). Not bundled: the download needs a DeviantArt login. The `Classic Collection` badge otherwise uses **Metamorphous** (SIL OFL 1.1), an eroded carved serif standing in for it, and picks up the authentic face automatically if you have it installed |
+| The concept's textures (optional, only to re-run `pnpm assets:sync`) | `assets/textures/` | **Included in the repository.** Figma's own exports for the eight info-panel logos and the main-menu lockup. Their converted copies are committed under `src/renderer/src/assets/`, so a clone builds without them |
 
 ---
 
@@ -295,26 +295,39 @@ a different catalog cannot resurrect a row that no longer exists.
 sound the renderer imports. It is a build step, not a manual one, and it is the only
 thing that writes into `src/renderer/src/assets/`.
 
-- **Sources.** Game art comes from `media/` — the art the previous launcher shipped,
-  verified as the 1x twin of the Figma export's @2x/@4x originals by dimension (for
-  example `media/RE1Logo.png` is 263x70 against a 262.686x70 design box, and the
-  region art is 1068x1080 against a 1068x1080 mask). The handful of assets the export
-  has and `media/` does not — the Unsplash backdrop, the three cover portraits, the
-  two gameplay stills — come from `.ref/designref/src/assets/`.
+- **Sources.** The eight info-panel logos and the main-menu badge come from
+  `assets/textures/` — the concept's own texture exports, named the way Figma names
+  layers (`Game=1, Type=Default.png`, `main-logo.png`). Each logo has the exact aspect
+  ratio of the box the design draws it in (`Game=1, Type=Default` is 409x109 against a
+  262.686x70 box) and is about 1.55x the `media/` file of the same art, so the
+  textures win. Heroes and region art come from `media/`, the art the previous
+  launcher shipped, verified as the 1x twin of the export's @2x/@4x originals by
+  dimension. The assets the export has and neither of those folders covers — the
+  Unsplash backdrop, the three cover portraits, the two gameplay stills — come from
+  `.ref/designref/src/assets/`.
+- **The badge.** It is cropped out of `main-logo.png` rather than re-typeset: the sync
+  finds the lockup's lowest opaque band, trims the drop shadow Figma flattened into the
+  texture (the CSS one from the export is drawn instead) and reports the rectangle it
+  used, which is also recorded in the manifest. See `docs/DESIGN-FIDELITY.md` §7.2.
 - **Re-encoding.** Everything becomes WebP (`sharp`) so the renderer stays small;
   heroes are resized to 1600 wide and region art to 1068 wide, and the logos are kept
   at native size because each one's pixel width already equals its design box. Videos
   are copied verbatim (re-encoding a trailer costs quality for no real saving), and so
   are the three WAV cues and the Actor font.
 - **Records.** `src/renderer/src/assets/MANIFEST.json` lists every output with its
-  source path and size; `design-map.json` maps the export's `figma:asset/<hash>`
-  specifiers to converted files. Neither is hand-edited.
+  source path, size and — for the badge — the crop rectangle; `design-map.json` maps
+  the export's `figma:asset/<hash>` specifiers to converted files. Neither is
+  hand-edited.
 - `node tools/sync-design-assets.mjs --check` reports what would be missing without
   writing anything.
+- `node tools/inspect-image.mjs <file.png>` reports what a texture actually is: its
+  alpha bounding box and the bands of red / grey-white content inside it. That is how
+  the badge's crop was established rather than guessed.
 
-The input folders are `media/`, `.ref/designref/src/assets/` and `assets/`
-(`assets/videos`, `assets/audio`, `assets/fonts`); the renderer never reads any of
-them at runtime — it reads the generated files under `src/renderer/src/assets/`.
+The input folders are `media/`, `assets/textures/`, `.ref/designref/src/assets/` and
+`assets/` (`assets/videos`, `assets/audio`, `assets/fonts`); the renderer never reads
+any of them at runtime — it reads the generated files under
+`src/renderer/src/assets/`.
 
 ---
 
@@ -386,11 +399,11 @@ gitignored and must be supplied by the user. What the repository contains is
 launcher source code, the concept's own generated art (derived from the design
 export), and achievement definitions.
 
-Two typefaces are bundled and both are redistributable: **Actor** (SIL OFL 1.1) for
-the whole interface, and **Metamorphous** (SIL OFL 1.1) as the `Classic Collection`
-badge's stand-in — licence texts sit beside them in `assets/fonts/` and
-`assets/font/vendor/`. The concept's actual badge face is Peter Jonca's
-**"Resident Evil Classic Game Font"** (CC BY-ND 3.0); it is not redistributed here
-because its download requires a DeviantArt login, but the badge uses it
-automatically when it is installed on the machine or dropped into
-`assets/font/ResidentEvilClassic.ttf`. **If you use his font, credit Peter Jonca.**
+One typeface is bundled and it is redistributable: **Actor** (SIL OFL 1.1, licence at
+`assets/fonts/OFL.txt`), which sets the entire interface. The concept's other face —
+the one it draws `Classic Collection` in — is Peter Jonca's **"Resident Evil Classic
+Game Font"** (CC BY-ND 3.0), which is *not* redistributed here because its download
+requires a DeviantArt login. No font is needed for it either way: the badge renders
+the designer's own cropped texture (`assets/textures/main-logo.png`), so the lettering
+is exact without shipping anyone else's file. If you use his font in your own work,
+credit Peter Jonca.

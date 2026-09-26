@@ -158,23 +158,25 @@ const TRACKED = [
     export: 'MainMenu.tsx',
     live: LIVE.logoBlock,
     tokens: [
-      // The 625.021x250 lockup, the badge inset and its 43.13px/12.939px type.
+      // The 625.021x250 lockup and the wordmark's own geometry.
       'h-[250px]',
       'w-[625.021px]',
-      'inset-[73.96%_7.57%_0_7.52%]',
-      'py-[7.776px]',
-      'rounded-[4.786px]',
-      'text-[43.13px]',
-      'tracking-[12.939px]',
-      'text-shadow-[0px_4.313px_0px_rgba(0,0,0,0.4)]',
-      'shadow-[0px_1.944px_0px_0px_#434343,0px_3.888px_0px_0px_rgba(0,0,0,0.4)]',
       'inset-[5.52%_0_33.15%_0.05%]',
       'inset-[0_0_-5.22%_0]',
-      'bg-[#7f828a]',
-      'bg-[#f7f8fa]',
-      'bg-clip-text',
-      'mix-blend-overlay',
-      'leading-[0]',
+      // The badge's box: its inset in the lockup, its radius and its two-offset
+      // drop shadow. Its face and lettering come from the concept's own texture
+      // (assets/textures/main-logo.png, cropped by pnpm assets:sync) rather than
+      // from live text, so the export's badge *type* tokens - py-[7.776px],
+      // text-[43.13px], tracking-[12.939px], its text-shadow, the #7f828a fill,
+      // the overlay gradient and bg-clip-text - are deliberately no longer in this
+      // file. What replaced them is the art, and the four tokens below are what
+      // pin it: the design's badge inset, the key it resolves through, and the
+      // cover behaviour that fits it to the box. The box itself is measured by
+      // tests/e2e/geometry.spec.ts, which checks the badge against the percentages
+      // in this same inset. See docs/DESIGN-FIDELITY.md 7.2.
+      'inset-[73.96%_7.57%_0_7.52%]',
+      'rounded-[4.786px]',
+      'shadow-[0px_1.944px_0px_0px_#434343,0px_3.888px_0px_0px_rgba(0,0,0,0.4)]',
       // The wordmark SVG: its viewBox, its two shadow offsets and the colour
       // matrix that turns 0.519445 into #848484.
       '624.714',
@@ -185,7 +187,12 @@ const TRACKED = [
       '312.357',
       '153.318',
       '#FE0000'
-    ]
+    ],
+    // What stands in for the badge's type tokens, which the export writes but this
+    // component no longer does - see the comment above and docs/DESIGN-FIDELITY.md
+    // 7.2. `data-figma-node="logo-badge"` is the hook tests/e2e/geometry.spec.ts
+    // measures the badge box through.
+    liveTokens: ['BADGE_ART.key', 'data-figma-node="logo-badge"', 'object-cover']
   },
   {
     export: 'MainMenu.tsx',
@@ -804,6 +811,24 @@ async function main() {
         strict ? 'error' : 'warn',
         `relocated: "${token}" (from ${entry.export}) is in ${owners.join(', ')}, not in ${entry.live}`
       )
+    }
+
+    // `liveTokens` are the other direction: facts the live file must carry that the
+    // export has no equivalent for. They exist because a component can legitimately
+    // replace a transcribed design detail with something better - the badge draws
+    // the concept's own texture instead of re-typesetting its lettering in a font
+    // this repository does not have - and a guard that could only check
+    // transcriptions would have to stop checking that component at all. Each one
+    // still has to be present, so the replacement cannot silently disappear either.
+    for (const token of entry.liveTokens ?? []) {
+      tokensChecked += 1
+      if (liveText === undefined) {
+        report('error', `live token "${token}" cannot be checked: ${entry.live} is not readable`)
+        continue
+      }
+      if (!liveText.includes(token)) {
+        report('error', `missing: "${token}" (expected in ${entry.live})`)
+      }
     }
   }
 

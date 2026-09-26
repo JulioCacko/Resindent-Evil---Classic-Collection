@@ -180,6 +180,19 @@
       "file": "game/logo-re3-jp.webp",
       "source": "assets/textures/Game=3, Type=JP.png",
       "bytes": 12176
+    },
+    {
+      "key": "game/badge-classic-collection",
+      "file": "game/badge-classic-collection.webp",
+      "source": "assets/textures/main-logo.png",
+      "crop": {
+        "left": 57,
+        "top": 227,
+        "width": 655,
+        "height": 81
+      },
+      "trimmedShadowRows": 5,
+      "bytes": 6596
     }
   ],
   "copies": [
@@ -232,11 +245,6 @@
       "file": "font/Actor-Regular.ttf",
       "source": "assets/fonts/Actor-Regular.ttf",
       "bytes": 64944
-    },
-    {
-      "file": "font/badge-display.ttf",
-      "source": "assets/font/vendor/Metamorphous-Regular.ttf",
-      "bytes": 135740
     }
   ],
   "designMapCount": 20
