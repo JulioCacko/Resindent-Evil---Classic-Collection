@@ -2,7 +2,7 @@
  * One full-width hero row of the Game Version screen's left panel.
  *
  * Geometry is transcribed from the Figma export, which draws the exact same row
- * three times in its two states — `.ref/designref/src/imports/MainMenuRe1.tsx`
+ * three times in its two states Ã¢â‚¬â€ `.ref/designref/src/imports/MainMenuRe1.tsx`
  * (`Menu`, rows carrying `data-name="btn/menu"`) and
  * `.ref/designref/src/imports/MainMenuRe2.tsx` (`Menu`):
  *
@@ -22,7 +22,6 @@
  * `flex-[1_0_0]` to every row, so a row whose art is missing still occupies its
  * exact share of the panel and shows nothing but the `#0F0F0F` surface.
  */
-import type { KeyboardEvent } from 'react'
 
 import type { VersionRowProps } from '../contracts'
 import { assetUrl } from '../data/assets'
@@ -52,20 +51,16 @@ export function VersionRow({ version, selected, onHover, onActivate }: VersionRo
     if (launchable) onActivate()
   }
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (event.key !== 'Enter') return
-    // Enter is the helper bar's "Confirm". Mirroring the click path exactly
-    // (hover, then activate) keeps the info panel showing the row that is about
-    // to be acted on when the row was reached by keyboard rather than pointer.
-    event.preventDefault()
-    onHover()
-    if (launchable) onActivate()
-  }
+  // Deliberately no `onKeyDown`: `App`'s window-level action layer
+  // (`input/useActions.ts` -> `store.handleAction`) is the single interpreter of
+  // the canonical action set, and Enter here would be handled twice. The second
+  // pass reads the state the first pass just produced, so one press would open the
+  // launch panel and then act on the panel's own focused row.
 
   /**
    * The hero lane: full panel width, framed at 1600/740 (`VERSION_SCREEN
    * .heroAspect`), vertically centred on the row. Being wider than the row is
-   * tall is the point of the design — the `overflow-clip` around it crops the
+   * tall is the point of the design Ã¢â‚¬â€ the `overflow-clip` around it crops the
    * art rather than letterboxing it.
    */
   const hero =
@@ -91,7 +86,6 @@ export function VersionRow({ version, selected, onHover, onActivate }: VersionRo
       }`}
       data-name="btn/menu"
       onClick={handleClick}
-      onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       role="button"
       tabIndex={0}

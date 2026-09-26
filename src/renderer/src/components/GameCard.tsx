@@ -55,11 +55,13 @@ export function GameCard({ index, title, selected, onHover, onActivate }: GameCa
         onHover(index)
         onActivate(index)
       }}
-      onKeyDown={(event) => {
-        // Arrow navigation already moves `menuIndex` through the store's action
-        // handler; the card only has to mirror the pointer's activation.
-        if (event.key === 'Enter') onActivate(index)
-      }}
+      // No `onKeyDown` here on purpose. `App` installs the one window-level action
+      // layer (`input/useActions.ts` -> `store.handleAction`) and the contract calls
+      // it the single interpreter of the canonical action set, so a component that
+      // also acted on Enter would run the same intent twice: the second pass reads
+      // the state the first pass just changed, which turns one Enter on the menu into
+      // "open the version screen" *and* "open the launch panel". That is a race, not
+      // a feature - it made the E2E keyboard spec fail intermittently.
     >
       <div className="overflow-clip relative rounded-[inherit] size-full">
         <div className="-translate-y-1/2 absolute h-[580px] left-0 right-0 top-1/2">
