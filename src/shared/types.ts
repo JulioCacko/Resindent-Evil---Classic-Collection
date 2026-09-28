@@ -122,6 +122,27 @@ export interface Achievement {
 }
 
 /**
+ * One RetroAchievements entry, as the launcher reads and shows it.
+ *
+ * Shared rather than owned by the main-process client because it crosses the IPC boundary: the
+ * main process fetches it and the achievements surface displays it, and the channel map has to
+ * name the same shape on both sides.
+ *
+ * These are **reference material**. RA works by reading an emulator's memory and the games this
+ * launcher starts are native Windows builds, so nothing here can be unlocked by playing - the
+ * measurement behind that is in `docs/ARCHITECTURE.md`.
+ */
+export interface RaAchievement {
+  /** RA's own numeric id, which is what a locally-tracked tick would be stored against. */
+  id: number
+  title: string
+  description: string
+  points: number
+  /** The badge image name, or an empty string when RA has none for it. */
+  badge: string
+}
+
+/**
  * What the launcher window does when a game starts.
  *
  * minimise is the default because these games cannot be embedded - see

@@ -15,6 +15,7 @@ import type {
   LaunchRequest,
   LaunchResult,
   LauncherConfig,
+  RaAchievement,
   ModProgress,
   Re2Scenario,
   TitleId
@@ -35,6 +36,14 @@ export const INVOKE_CHANNELS = {
   achievementsList: 'achievements:list',
   achievementsUnlock: 'achievements:unlock',
   achievementsReset: 'achievements:reset',
+  /**
+   * The RetroAchievements lists for a title, fetched on demand.
+   *
+   * Separate from chievementsList, which answers from what the launcher ships: this one leaves
+   * the machine, needs the user's own credentials, and answers an empty array whenever it cannot -
+   * so a surface can treat both the same way without either being able to break the launcher.
+   */
+  achievementsRetro: 'achievements:retro',
   appPaths: 'app:paths',
   openExternal: 'shell:open-external',
   revealPath: 'shell:reveal-path',
@@ -76,6 +85,7 @@ export interface InvokeMap {
   [INVOKE_CHANNELS.achievementsList]: { request: { gameId: TitleId }; response: Achievement[] }
   [INVOKE_CHANNELS.achievementsUnlock]: { request: { id: string }; response: Achievement | null }
   [INVOKE_CHANNELS.achievementsReset]: { request: { gameId?: TitleId }; response: Achievement[] }
+  [INVOKE_CHANNELS.achievementsRetro]: { request: { gameId: TitleId }; response: RaAchievement[] }
   [INVOKE_CHANNELS.appPaths]: { request: void; response: AppPaths }
   [INVOKE_CHANNELS.openExternal]: { request: { url: string }; response: void }
   [INVOKE_CHANNELS.revealPath]: { request: { path: string }; response: void }

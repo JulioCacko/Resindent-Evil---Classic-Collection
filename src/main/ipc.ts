@@ -37,6 +37,7 @@ import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron'
 import { EVENT_CHANNELS, INVOKE_CHANNELS } from '@shared/channels'
 import type { EventChannel, EventMap, InvokeChannel, InvokeMap } from '@shared/channels'
 import { TITLES } from '@shared/catalog'
+import { fetchGameAchievements } from './retroachievements'
 import type {
   CatalogSnapshot,
   GameExitEvent,
@@ -863,6 +864,26 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
     // this module is one of them, so pushing here too would toast twice.
     await current.achievements.init()
     return await current.achievements.unlock(id)
+  })
+
+  // The RetroAchievements lists for a title, on demand.
+  //
+  // Reference material only: RA works by reading an emulator's memory and these rows launch native
+  // Windows builds, so nothing returned here can be unlocked by playing. Every failure answers an
+  // empty array - no credentials, no network, no RA id for the title - because the alternative is a
+  // launcher that breaks because a website was unreachable.
+  handle(INVOKE_CHANNELS.achievementsRetro, () => [], async (payload) => {
+    const retroGameId = readText(payload, 'gameId')
+    if (retroGameId === null) return []
+    const seed = TITLES.find((title) => title.id === retroGameId)
+    if (seed === undefined || seed.raGameId === '') return []
+
+    const config = await current.config.load()
+    const game = await fetchGameAchievements(Number(seed.raGameId), {
+      user: config.raUser,
+      key: config.raKey
+    })
+    return game?.achievements ?? []
   })
 
   handle(INVOKE_CHANNELS.achievementsReset, () => current.achievements.all(), async (payload) => {

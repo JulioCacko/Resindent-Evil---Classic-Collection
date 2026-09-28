@@ -235,7 +235,7 @@ Two directions, one rule each:
 Every payload arriving from the renderer is re-validated in `ipc.ts` before it can
 reach the filesystem, the registry or a child process.
 
-### Invoke channels (19)
+### Invoke channels (20)
 
 | Channel | Payload | Result | Notes |
 |---|---|---|---|
