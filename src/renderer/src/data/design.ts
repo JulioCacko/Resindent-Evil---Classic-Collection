@@ -220,6 +220,7 @@ export type SettingsRowId =
   | 'installRoot'
   | 'redetect'
   | 'reset'
+  | 'achievements'
 
 export interface SettingsRow {
   id: SettingsRowId
@@ -244,7 +245,10 @@ export const SETTINGS_ROWS: readonly SettingsRow[] = [
   { id: 'ingameCrt', label: 'In-Game CRT', kind: 'toggle' },
   { id: 'installRoot', label: 'Games Folder', kind: 'action' },
   { id: 'redetect', label: 'Scan For Games', kind: 'action' },
-  { id: 'reset', label: 'Reset Settings', kind: 'action' }
+  { id: 'reset', label: 'Reset Settings', kind: 'action' },
+  // The achievements screen. A row rather than a key of its own: the designed screens share one
+  // canonical action set, and this costs them nothing.
+  { id: 'achievements', label: 'Achievements', kind: 'action' }
 ]
 
 /**

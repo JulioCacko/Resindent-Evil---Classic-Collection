@@ -33,6 +33,7 @@ import { useActions } from '@renderer/input/useActions'
 import { AchievementToast } from '@renderer/overlays/AchievementToast'
 import { CrtOverlay } from '@renderer/overlays/CrtOverlay'
 import { ErrorDialog } from '@renderer/overlays/ErrorDialog'
+import { Achievements } from '@renderer/overlays/Achievements'
 import { Settings } from '@renderer/overlays/Settings'
 import { InstallStatus } from '@renderer/overlays/InstallStatus'
 import { LaunchPanel } from '@renderer/overlays/LaunchPanel'
@@ -73,6 +74,10 @@ export function App() {
   const panelOptionIndex = useLauncher((state) => state.panelOptionIndex)
 const openSettings = useLauncher((state) => state.openSettings)
 const settingsOpen = useLauncher((state) => state.settingsOpen)
+  const achievementsOpen = useLauncher((state) => state.achievementsOpen)
+  const achievements = useLauncher((state) => state.achievements)
+  const achievementsTitle = useLauncher((state) => state.achievementsTitle)
+  const closeAchievements = useLauncher((state) => state.closeAchievements)
   const busy = useLauncher((state) => state.busy)
   const error = useLauncher((state) => state.error)
 
@@ -233,6 +238,14 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
         read, say) has to be reportable above it.
       */}
       {settingsOpen ? <Settings /> : null}
+      {/* The achievements surface, over everything the settings surface sits over. */}
+      {achievementsOpen ? (
+        <Achievements
+          achievements={achievements}
+          onClose={closeAchievements}
+          title={achievementsTitle}
+        />
+      ) : null}
 
       {error === null ? null : <ErrorDialog error={error} onDismiss={dismissError} />}
 

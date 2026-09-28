@@ -74,6 +74,8 @@ export function settingsValue(row: SettingsRow, config: LauncherConfig | null): 
     case 'redetect':
     case 'reset':
       return ''
+    case 'achievements':
+      return ''
   }
 }
 

@@ -293,7 +293,7 @@ test.describe('the launcher flow', () => {
     await captureScreenshot(page, testInfo, 'flow-6-settings')
 
     const rows = page.locator('[data-figma-node="settings-rows"] [data-name^="setting-"]')
-    expect(await rows.count(), 'every settings row is drawn').toBe(13)
+    expect(await rows.count(), 'every settings row is drawn').toBe(14)
 
     /** Reads a setting's readout, and the same field from the main process's config. */
     const readBack = async (id: string): Promise<{ shown: string; persisted: unknown }> => {

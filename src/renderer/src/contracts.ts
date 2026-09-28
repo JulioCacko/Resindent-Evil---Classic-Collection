@@ -226,6 +226,16 @@ export interface LauncherState {
   /** Row under the cursor on that surface, wrapped over SETTINGS_ROWS. */
   settingsIndex: number
   panelOptionIndex: number
+  /**
+   * The achievements surface is up (an addition; reached from the settings surface).
+   *
+   * The list the main process answered with, or null before the first answer,
+   * which is what lets the surface tell an empty list apart from one that has not arrived.
+   */
+  achievementsOpen: boolean
+  achievements: Achievement[] | null
+  /** The title the list belongs to, for the surface's own heading. */
+  achievementsTitle: string
   gameplay: { titleId: TitleId; versionId: string } | null
   catalog: CatalogSnapshot | null
   config: LauncherConfig | null
@@ -256,6 +266,9 @@ export interface LauncherActions {
   moveSettingsRow(delta: number): void
   changeSetting(delta: number): void
   activateSetting(): void
+  /** Opens the achievements surface, fetching the current title's list first. */
+  openAchievements(): Promise<void>
+  closeAchievements(): void
   openPanel(): void
   closePanel(): void
   setPanelOption(index: number): void

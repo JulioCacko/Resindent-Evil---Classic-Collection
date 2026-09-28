@@ -546,6 +546,9 @@ const INITIAL_STATE: LauncherState = {
   panelOpen: false,
   settingsOpen: false,
   settingsIndex: 0,
+  achievementsOpen: false,
+  achievements: null,
+  achievementsTitle: '',
   panelOptionIndex: 0,
   gameplay: null,
   catalog: null,
@@ -834,6 +837,27 @@ const store = create<LauncherStore>()((set, get) => {
    * stacked on the first, so one Escape always leaves it and there is never a question of
    * which layer a key belongs to.
    */
+  /**
+   * The achievements surface, and the list it shows.
+   *
+   * Opened from the settings surface rather than by a key of its own: the three designed screens
+   * share one canonical action set (input/actions.ts), and a key of its own would change that set
+   * for every screen. The list is fetched on open rather than at boot, so the main process's work
+   * stays proportional to what the player asked for - and a rejected call leaves the surface
+   * showing its empty state, because reference material must not be able to break the launcher.
+   */
+  const openAchievements = async (): Promise<void> => {
+    const gameId = get().titleId
+    const title = get().catalog?.titles.find((candidate) => candidate.id === gameId)?.name ?? ''
+    set({ achievementsOpen: true, achievements: null, achievementsTitle: title })
+    const outcome = await invoke(INVOKE_CHANNELS.achievementsList, { gameId })
+    if (get().achievementsOpen) set({ achievements: outcome.ok ? outcome.value : [] })
+  }
+
+  const closeAchievements = (): void => {
+    set({ achievementsOpen: false })
+  }
+
   const openSettings = (): void => {
     set({ settingsOpen: true, settingsIndex: 0, panelOpen: false })
   }
@@ -916,6 +940,9 @@ const store = create<LauncherStore>()((set, get) => {
         return
       case 'redetect':
         void get().refreshCatalog()
+        return
+      case 'achievements':
+        void get().openAchievements()
         return
       case 'reset':
         void get().resetConfig()
@@ -1311,6 +1338,8 @@ const store = create<LauncherStore>()((set, get) => {
     changeSetting,
     activateSetting,
     closeSettings,
+    openAchievements,
+    closeAchievements,
     movePanelOption,
     setMode,
     setScenario,
