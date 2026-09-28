@@ -508,29 +508,43 @@ toast; it never sees an exception.
 ### Why the game is NOT embedded in the launcher window
 
 The concept draws its Gameplay screen as a 1300x975 card, which reads as "the game runs
-inside the launcher". It cannot, and this was measured rather than assumed.
+inside the launcher". It does not, and `tools/probe-embed3.ps1` is the measurement that says
+so. It supersedes `probe-embed.ps1`, whose conclusion was reached on a window it never
+validated.
 
-`tools/probe-embed.ps1` launches a real install, finds the game's own top-level window,
-reparents it into a host window the size of that card with `SetParent`, strips
-`WS_CAPTION`/`WS_THICKFRAME`, fits it to the client area, and then checks whether the
-window survived and is still drawing. Run against this machine's RE1 install
-(`Biohazard.exe`, the RE-Enhance build), with its loader dialog dismissed:
+**The window itself obeys.** The earlier probe parented first and styled second, and reported
+that the game re-asserted its own top-level status and refused the resize. Doing it the other
+way round changes the answer: set `WS_CHILD` (and clear `WS_POPUP`/`WS_CAPTION`/`WS_THICKFRAME`)
+*first*, then `SetParent` - and the window stays a child and takes the size it is given.
 
 | Measurement | Result |
 |---|---|
-| The game's window | class `BIOHAZARD`, title `RESIDENT EVIL® PC`, 1286x989 |
-| `SetParent` return | `0x1000C` — and yet `GetParent` is `0` *immediately* after |
-| `GetParent` after 5 s | `0` — still top-level |
-| Style after re-apply | `0x12CA0000`, i.e. `WS_CAPTION` back, no `WS_CHILD` |
-| Watchdog re-applying at 4 Hz for 8 s | `SetParent` re-applied **33 times out of 33 samples**, style likewise |
-| Window recreated | 0 times — it does not rebuild the window, it refuses |
+| The game's window, windowed install | class `BIOHAZARD`, 1286x989, `client=1280x960`, style `0x1ECA0000`, parent `0` |
+| `SetWindowLong` | `0x1ECA0000` -> `0x5E0A0000` (`WS_CHILD` set, the frame styles cleared) |
+| `SetParent` return / `GetLastError` | `0x1000C` / `0` |
+| `GetParent` immediately after | the host - **reparenting took** |
+| `GetParent` and geometry after 3 s | still the host, resized to its client area, 1300x975 |
+| Samples of the host area over 8 s | 25071 of 26040 still the host's own paint; 39 distinct colours elsewhere |
+| **Two frames captured 3 s apart** | **0 of 26040 samples changed** |
 
-So the game re-asserts its own top-level status, caption and geometry in its window
-procedure, continuously, without ever recreating the window. It also refuses the
-resize: asked for 1300x975 it stays 1280x960. A watchdog cannot win that race, because
-the loser of each round is a window that must be usable between rounds — the game would
-flicker between embedded and not, and any frame spent as a child of the launcher is a
-frame the wrapper may have stopped presenting to.
+**That last row is the answer.** A window that is still presenting shows a different frame each
+time - the game's intro animates - while these two are identical across eight seconds. The
+wrapper (dgVoodoo over DirectDraw) does not follow its window into a child: its swapchain keeps
+the presentation it was created with, so a successful reparent leaves a frozen still. Embedding
+fails for a reason nobody would guess from the window's behaviour, which is why it is measured.
+
+A single capture cannot see that, and this probe was written twice because of it: the first
+version reported "embedded and drawing" from one frame whose host sat partly below the screen,
+so the capture swept the desktop and counted it as game content. The window has to be fully on
+screen, and the frames have to be compared.
+
+**What this leaves open.** True embedding is out for these games on this wrapper, but the
+*shell* is not: the launcher can go borderless, place the game's own top-level window exactly
+over the design's gameplay card with `SetWindowPos`, and draw its chrome around it. The game
+then fills the launcher's content area without any window being reparented, and no swapchain
+has to tolerate a new parent - which is the one thing measured to fail here. That is the route
+a future change should take, and it is why this section says "not embedded" rather than "not
+possible".
 
 Two other things the probe established, which shape the launch flow:
 
@@ -581,11 +595,11 @@ launcher already writes before every launch:
 
 | Setting | File, section | On | Off | Titles |
 |---|---|---|---|---|
-| RetroMode | config.ini, [DLL] | 1 |   | all three (RE-Enhance ships it) |
+| RetroMode | config.ini, [DLL] | 1 | 0 | all three (RE-Enhance ships it) |
 | ScalingMode | dgVoodoo.conf, [General] | stretched_4_3_crt | centered | RE1 only (only its payload ships the file) |
 
 Both are written from the one inGameCrt setting, and both are put back to **the payload's
-own defaults** when it is off —   and centered, which is what RE-Enhance and dgVoodoo ship
+own defaults** when it is off — 0 and centered, which is what RE-Enhance and dgVoodoo ship
 — so turning the setting off really turns it off rather than leaving a previous launch's
 effect in place. The patches are deliberately excluded from the config-unwritable decision:
 a retail install has no [DLL] section and no dgVoodoo.conf, and that is not a reason to

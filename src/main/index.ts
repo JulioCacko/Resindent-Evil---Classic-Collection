@@ -303,7 +303,7 @@ let steppedAside = false
  *
  * This is what "the game runs inside the launcher" becomes for these titles. The concept
  * draws the Gameplay screen as a card with gameplay in it, and the launcher cannot put the
- * game there: `tools/probe-embed.ps1` measured the game re-asserting its own top-level
+ * game there: `tools/probe-embed3.ps1` measured the wrapper stopping its presentation when the
  * window, caption and size on every one of 33 consecutive attempts, and refusing a resize
  * (docs/ARCHITECTURE.md section 6 has the numbers). So on a successful spawn the window
  * minimises and the real game is simply what the user sees.
