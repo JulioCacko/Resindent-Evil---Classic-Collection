@@ -866,6 +866,22 @@ export async function setDesignWindow(
     console.warn(`[e2e] the page refused a viewport: ${String(error)}`)
   }
 
+  /**
+   * Park the pointer in a corner before anything asserts *keyboard* navigation.
+   *
+   * Hover selects, deliberately: the menu follows the pointer because the concept is
+   * pointer-driven, and that is asserted by other tests. But this suite also drives the
+   * same screens with keys, and the window is placed wherever the OS puts it - which on a
+   * real desktop can be directly under the physical cursor. A pointer resting over card 2
+   * then selects card 2 the moment the window appears, and the next ArrowRight clamps at
+   * the last card: the keyboard spec failed with "still 2 after waiting" for exactly that
+   * reason, deterministically, once the cursor happened to end up over the menu.
+   *
+   * Moving to (1, 1) - the canvas corner, clear of every measured surface - makes the
+   * pointer's position something the test chooses instead of something it inherits.
+   */
+  await page.mouse.move(1, 1).catch(() => undefined)
+
   return await stageMetrics(page)
 }
 
