@@ -347,7 +347,9 @@ const SOUND_FOR: Record<InputAction, SfxName> = {
   'nav-up': 'cursor',
   'nav-down': 'cursor',
   confirm: 'confirm',
-  back: 'back'
+  back: 'back',
+  // The menu key does something rather than leaving, so it sounds like the confirmations it leads to.
+  menu: 'confirm'
 }
 
 // ---------------------------------------------------------------------------
@@ -378,6 +380,7 @@ type Intent =
   | { kind: 'move-setting'; delta: number }
   | { kind: 'change-setting'; delta: number }
   | { kind: 'activate-setting' }
+  | { kind: 'close-achievements' }
 
 /**
  * The single place that interprets the canonical action set.
@@ -401,6 +404,28 @@ function resolveIntent(state: LauncherState, action: InputAction): Intent | null
   // both this store's `launch()` and the main process (`runLaunch` ->
   // `game-already-running`) refuse a second one.
   if (state.busy !== null && action !== 'back') return null
+
+  /**
+   * The dedicated menu key, before anything else can claim it.
+   *
+   * It opens the settings surface and closes it again, from any screen - and on the achievements
+   * surface it closes that first, so one key is the way out of whatever addition is on top. Nothing
+   * else answers `menu`, which is why it can sit here without fighting a screen's own bindings;
+   * `Back` remains the screen-level "leave this", and both reach the same intent.
+   */
+  if (action === 'menu') {
+    if (state.achievementsOpen) return { kind: 'close-achievements' }
+    return state.settingsOpen ? { kind: 'close-settings' } : { kind: 'open-settings' }
+  }
+
+  /**
+   * Back leaves an addition before it leaves the screen beneath it.
+   *
+   * The achievements surface had no way out by keyboard at all until this: the row that opens it is
+   * reached with the keyboard, so the surface it opens has to be leavable the same way. Its own
+   * helper bar promised `esc Back` and nothing answered it.
+   */
+  if (action === 'back' && state.achievementsOpen) return { kind: 'close-achievements' }
 
   // Settings is a full surface, so it owns the whole action set while it is up: the rows are
   // navigated with up/down, changed with left/right, and left with Back. It is checked before
@@ -1273,6 +1298,9 @@ const store = create<LauncherStore>()((set, get) => {
         return
       case 'open-settings':
         get().openSettings()
+        return
+      case 'close-achievements':
+        get().closeAchievements()
         return
       case 'close-settings':
         get().closeSettings()

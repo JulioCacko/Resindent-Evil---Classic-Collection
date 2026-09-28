@@ -184,7 +184,7 @@ export const HELPER_BAR = {
 
 /** A row in the bottom helper bar. `art` picks the glyph the design draws. */
 export interface HelperHint {
-  keys: ('left' | 'right' | 'up' | 'down' | 'enter' | 'esc' | 'text')[]
+  keys: ('left' | 'right' | 'up' | 'down' | 'enter' | 'esc' | 'text' | 'f1')[]
   text?: string
   label: string
 }
@@ -304,7 +304,12 @@ export const RA_LOGIN_LABEL = {
   cancel: 'CANCEL'
 } as const
 
-export const HINTS_ACHIEVEMENTS: HelperHint[] = [{ keys: ['esc'], label: 'Back' }]
+export const HINTS_ACHIEVEMENTS: HelperHint[] = [
+  { keys: ['esc'], label: 'Back' },
+  // The dedicated menu key, named where it can be: the helper bar on the three designed screens is part
+  // of the export and cannot gain a hint without breaking its geometry.
+  { keys: ['f1'], label: 'Menu' }
+]
 
 /**
  * The achievements surface's own text.

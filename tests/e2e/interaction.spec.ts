@@ -430,3 +430,22 @@ test.describe('the launcher flow', () => {
     await captureScreenshot(page, testInfo, 'gamepad-2-back-at-the-menu')
   })
 })
+
+test('the menu key opens the settings surface from the menu, and closes it again', async ({}, testInfo) => {
+  const { app, page } = await launchApp()
+  await setDesignWindow(app, page)
+  await ensureMenu(page)
+
+  const rows = page.locator('[data-figma-node^="setting-"]')
+  await expect(rows, 'nothing is open to begin with').toHaveCount(0)
+
+  await press(page, 'F1')
+  await expect(rows.first(), 'F1 opens the settings surface').toBeVisible()
+  const opened = await rows.count()
+
+  await press(page, 'F1')
+  await expect(rows, 'F1 closes it again, so one key is the way in and out').toHaveCount(0)
+
+  await captureScreenshot(page, testInfo, 'flow-f1-menu')
+  expect(opened, 'the surface drew its rows').toBeGreaterThan(0)
+})

@@ -57,7 +57,11 @@ export const KEYS_TO_ACTIONS: Record<string, InputAction> = {
   Enter: 'confirm',
   NumpadEnter: 'confirm',
   KeyE: 'confirm',
-  Escape: 'back'
+  Escape: 'back',
+  // F1 rather than a letter: every letter that reads as "menu" (M) or "achievements" (A) collides with
+  // the navigation the brief already binds to WASD, and a function key cannot be typed into the login
+  // panel by accident. Nothing else answers it.
+  F1: 'menu'
 }
 
 /**
