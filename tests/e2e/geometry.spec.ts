@@ -20,6 +20,8 @@
  * `test-results/` for review, but nothing here compares pixels: geometry is the
  * assertion.
  */
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import type { Page, TestInfo } from '@playwright/test'
 
@@ -56,6 +58,9 @@ import {
   waitUntil
 } from './electron-app'
 import type { AppHandle } from './electron-app'
+
+/** The repository root: Playwright runs from it, which is where the manifest lives. */
+const repoRoot = process.cwd()
 
 /**
  * The one tolerance every measurement gets, in author-space pixels.
@@ -349,6 +354,25 @@ test.describe('the launcher frame matches the Figma export', () => {
       )
       expectWithin(hero.width, leftPanel.width - 2 * VERSION_SCREEN.padding.left, TOLERANCE, `version row ${index} hero width`)
     })
+
+    // And the art inside those lanes is the design's, not the previous launcher's.
+    //
+    // Asserted from the asset manifest rather than from the rendered pixels, because the
+    // frames' hero art is the same *aspect* as `media/`'s (both 1600x740), so a shape check
+    // cannot tell them apart - and for two rows they were different artwork entirely.
+    // The manifest records where every converted file came from, which is the fact worth
+    // checking: a hero must never trace back to `media/`.
+    const manifest = JSON.parse(
+      await readFile(join(repoRoot, 'src', 'renderer', 'src', 'assets', 'MANIFEST.json'), 'utf8')
+    ) as { images: { key: string; file: string; source: string }[] }
+    const heroCopies = manifest.images.filter((image) => image.key.startsWith('game/hero-'))
+    expect(heroCopies.length, 'every hero asset is recorded in the manifest').toBe(8)
+    for (const copy of heroCopies) {
+      expect(
+        copy.source.replace(/\\/g, '/'),
+        `${copy.key} must come from the design's own files, not media/`
+      ).not.toContain('/media/')
+    }
 
     // The info block: 482px, pinned to the bottom of the 860px column.
     const infoBlock = await rect(page, NODES.infoBlock)

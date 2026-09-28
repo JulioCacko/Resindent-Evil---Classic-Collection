@@ -13,6 +13,14 @@
   "b12c50123899f890436f2efdbde5b2a090e9d3e1": "game/lane-re2-jp.webp",
   "58d40011eaef29d1d44ec90e8ed08041d5b0c468": "game/lane-re3-us.webp",
   "cf21968f1c075e671f72eb879de346b6729865b9": "game/lane-re3-jp.webp",
+  "352e234e9a1deb048b8d66078d298fc88e109d56": "game/hero-re1-us.webp",
+  "a31c3aa8e8999bc7e1fdc31433ce7385ad05dcbf": "game/hero-re1-jp.webp",
+  "2f63ca4ce622c7012e112295b12b584723394c01": "game/hero-re1-dc.webp",
+  "0ed2bbd6b79e5294a6452f7ac1998e39b92ea055": "game/hero-re2-leon.webp",
+  "d182fb3818d62eb90bafb9e4f746fbd29d77f133": "game/hero-re2-proto.webp",
+  "f8c0e7a4270842140b6be411bfbfa511010667cd": "game/hero-re2-jp.webp",
+  "ff6fc94a7d1e2ca9f10c606d84441d8499515000": "game/hero-re3-us.webp",
+  "7d964730ae22e5f38c6b31f70707ba718d074126": "game/hero-re3-jp.webp",
   "18fb9a00f28d573818b95bd7ae1d1ecab2df9883": "game/logo-re2-leon.webp",
   "33e66c27f8da095f0102a73b1c0d2fee8e68b3a9": "game/logo-re3-us.webp",
   "9b6e0e65ba185590981bf00e804ba7d696a9dd40": "game/logo-re1-us.webp",
@@ -20,8 +28,5 @@
   "224a236631d0ee6393b92aab293e54d48973ad00": "game/logo-re1-jp.webp",
   "57406ca19408bbace2755440946d0fa49a246ca9": "game/logo-re1-dc.webp",
   "ac6158854fda777638c9d097f999b5b7cecd91c1": "game/logo-re2-jp.webp",
-  "fda2f63964de51029878d3049d5b6c523bb68bb0": "game/logo-re3-jp.webp",
-  "352e234e9a1deb048b8d66078d298fc88e109d56": "game/hero-re1-us.webp",
-  "a31c3aa8e8999bc7e1fdc31433ce7385ad05dcbf": "game/hero-re1-jp.webp",
-  "2f63ca4ce622c7012e112295b12b584723394c01": "game/hero-re1-dc.webp"
+  "fda2f63964de51029878d3049d5b6c523bb68bb0": "game/logo-re3-jp.webp"
 }

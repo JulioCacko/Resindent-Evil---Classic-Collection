@@ -57,7 +57,16 @@ const H = {
   laneRe2Proto: '2a4dea96a06159267f83ecc8efc454778d1e68a4',
   laneRe2Jp: 'b12c50123899f890436f2efdbde5b2a090e9d3e1',
   laneRe3Us: '58d40011eaef29d1d44ec90e8ed08041d5b0c468',
-  laneRe3Jp: 'cf21968f1c075e671f72eb879de346b6729865b9'
+  laneRe3Jp: 'cf21968f1c075e671f72eb879de346b6729865b9',
+  // Version-row hero art, one per row.
+  heroRe1Us: '352e234e9a1deb048b8d66078d298fc88e109d56',
+  heroRe1Jp: 'a31c3aa8e8999bc7e1fdc31433ce7385ad05dcbf',
+  heroRe1Dc: '2f63ca4ce622c7012e112295b12b584723394c01',
+  heroRe2Leon: '0ed2bbd6b79e5294a6452f7ac1998e39b92ea055',
+  heroRe2Proto: 'd182fb3818d62eb90bafb9e4f746fbd29d77f133',
+  heroRe2Jp: 'f8c0e7a4270842140b6be411bfbfa511010667cd',
+  heroRe3Us: 'ff6fc94a7d1e2ca9f10c606d84441d8499515000',
+  heroRe3Jp: '7d964730ae22e5f38c6b31f70707ba718d074126'
 }
 
 /**
@@ -95,15 +104,26 @@ const IMAGES = [
   { source: 'design', id: H.laneRe3Us, out: 'game/lane-re3-us', quality: 88 },
   { source: 'design', id: H.laneRe3Jp, out: 'game/lane-re3-jp', width: 1720, quality: 86 },
 
-  // Version-row heroes: design aspect 1600/740.
-  { source: 'media', id: 'game_re1_version_default.png', out: 'game/hero-re1-us', width: 1600, quality: 86 },
-  { source: 'media', id: 'game_re1_version_jp.png', out: 'game/hero-re1-jp', width: 1600, quality: 86 },
-  { source: 'media', id: 'game_re1_version_alt.png', out: 'game/hero-re1-dc', width: 1600, quality: 86 },
-  { source: 'media', id: 'game_re2_version_default.png', out: 'game/hero-re2-leon', width: 1600, quality: 86 },
-  { source: 'media', id: 'game_re2_version_alt.png', out: 'game/hero-re2-proto', width: 1600, quality: 86 },
-  { source: 'media', id: 'game_re2_version_jp.png', out: 'game/hero-re2-jp', width: 1600, quality: 86 },
-  { source: 'media', id: 'game_re3_version_default.png', out: 'game/hero-re3-us', width: 1600, quality: 86 },
-  { source: 'media', id: 'game_re3_version_jp.png', out: 'game/hero-re3-jp', width: 1600, quality: 86 },
+  // Version-row heroes, from the export like everything else.
+  //
+  // Six of these eight were byte-for-byte the same image as the `media/` files they used to
+  // come from, so switching them changes nothing visible and only makes the provenance
+  // honest - and `designMap` below already *claimed* these hashes for these keys, which is
+  // exactly the kind of documented-but-untrue claim that rots. The other two are a real
+  // correction: `re2_proto` and `re2_jp` were showing different art entirely (a 16x16
+  // greyscale fingerprint puts them ~24/255 apart, against <= 0.7/255 for the other six).
+  //
+  // The lane is `aspect-[1600/740]` and the art fills it with `object-cover`, so unlike the
+  // info-panel lanes these do not need a per-row crop: every hero asset is authored at that
+  // aspect already.
+  { source: 'design', id: H.heroRe1Us, out: 'game/hero-re1-us', width: 1600, quality: 86 },
+  { source: 'design', id: H.heroRe1Jp, out: 'game/hero-re1-jp', width: 1600, quality: 86 },
+  { source: 'design', id: H.heroRe1Dc, out: 'game/hero-re1-dc', width: 1600, quality: 86 },
+  { source: 'design', id: H.heroRe2Leon, out: 'game/hero-re2-leon', width: 1600, quality: 86 },
+  { source: 'design', id: H.heroRe2Proto, out: 'game/hero-re2-proto', width: 1600, quality: 86 },
+  { source: 'design', id: H.heroRe2Jp, out: 'game/hero-re2-jp', width: 1600, quality: 86 },
+  { source: 'design', id: H.heroRe3Us, out: 'game/hero-re3-us', width: 1600, quality: 86 },
+  { source: 'design', id: H.heroRe3Jp, out: 'game/hero-re3-jp', width: 1600, quality: 86 },
 
   // Info-panel region art: design mask-size 1068x1080.
 
@@ -263,6 +283,28 @@ async function main() {
   const written = []
   const manifest = { generatedBy: 'tools/sync-design-assets.mjs', images: [], copies: [] }
 
+  /**
+   * Everything the Figma frames draw must come from the design's own files - the vendored
+   * export (`design`) or the user's texture exports (`texture`) - and never from `media/`,
+   * which is the previous launcher's own art.
+   *
+   * This exists because it already happened. The hero art and the info-panel lanes were
+   * sourced from `media/` while `designMap` went on claiming the export's hashes for them,
+   * and in the heroes' case two rows (`re2_proto`, `re2_jp`) were showing different artwork
+   * entirely - a 16x16 fingerprint put them ~24/255 apart. A comment saying "this is the
+   * design's art" is exactly the kind of claim that stops being true; a check is not.
+   */
+  const DESIGN_ONLY_PREFIXES = ['game/hero-', 'game/lane-', 'game/logo-', 'game/card-']
+  for (const item of IMAGES) {
+    if (item.source !== 'media') continue
+    if (DESIGN_ONLY_PREFIXES.some((prefix) => item.out.startsWith(prefix))) {
+      throw new Error(
+        `${item.out} is sourced from media:${item.id}, but everything the Figma frames draw ` +
+          `must come from the design's own files (.ref/designref/src/assets or assets/textures)`
+      )
+    }
+  }
+
   for (const item of IMAGES) {
     const src = resolveSource(item.source, item.id)
     if (!src) {
@@ -356,6 +398,11 @@ async function main() {
   designMap['352e234e9a1deb048b8d66078d298fc88e109d56'] = 'game/hero-re1-us.webp'
   designMap['a31c3aa8e8999bc7e1fdc31433ce7385ad05dcbf'] = 'game/hero-re1-jp.webp'
   designMap['2f63ca4ce622c7012e112295b12b584723394c01'] = 'game/hero-re1-dc.webp'
+  designMap['0ed2bbd6b79e5294a6452f7ac1998e39b92ea055'] = 'game/hero-re2-leon.webp'
+  designMap['d182fb3818d62eb90bafb9e4f746fbd29d77f133'] = 'game/hero-re2-proto.webp'
+  designMap['f8c0e7a4270842140b6be411bfbfa511010667cd'] = 'game/hero-re2-jp.webp'
+  designMap['ff6fc94a7d1e2ca9f10c606d84441d8499515000'] = 'game/hero-re3-us.webp'
+  designMap['7d964730ae22e5f38c6b31f70707ba718d074126'] = 'game/hero-re3-jp.webp'
 
   if (missing.length > 0) {
     console.error('sync-design-assets: missing source assets:')

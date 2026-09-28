@@ -88,50 +88,50 @@
     {
       "key": "game/hero-re1-us",
       "file": "game/hero-re1-us.webp",
-      "source": "media/game_re1_version_default.png",
-      "bytes": 56726
+      "source": ".ref/designref/src/assets/352e234e9a1deb048b8d66078d298fc88e109d56.png",
+      "bytes": 65456
     },
     {
       "key": "game/hero-re1-jp",
       "file": "game/hero-re1-jp.webp",
-      "source": "media/game_re1_version_jp.png",
-      "bytes": 37258
+      "source": ".ref/designref/src/assets/a31c3aa8e8999bc7e1fdc31433ce7385ad05dcbf.png",
+      "bytes": 35000
     },
     {
       "key": "game/hero-re1-dc",
       "file": "game/hero-re1-dc.webp",
-      "source": "media/game_re1_version_alt.png",
-      "bytes": 31308
+      "source": ".ref/designref/src/assets/2f63ca4ce622c7012e112295b12b584723394c01.png",
+      "bytes": 29140
     },
     {
       "key": "game/hero-re2-leon",
       "file": "game/hero-re2-leon.webp",
-      "source": "media/game_re2_version_default.png",
-      "bytes": 51840
+      "source": ".ref/designref/src/assets/0ed2bbd6b79e5294a6452f7ac1998e39b92ea055.png",
+      "bytes": 47584
     },
     {
       "key": "game/hero-re2-proto",
       "file": "game/hero-re2-proto.webp",
-      "source": "media/game_re2_version_alt.png",
-      "bytes": 32256
+      "source": ".ref/designref/src/assets/d182fb3818d62eb90bafb9e4f746fbd29d77f133.png",
+      "bytes": 39628
     },
     {
       "key": "game/hero-re2-jp",
       "file": "game/hero-re2-jp.webp",
-      "source": "media/game_re2_version_jp.png",
-      "bytes": 39350
+      "source": ".ref/designref/src/assets/f8c0e7a4270842140b6be411bfbfa511010667cd.png",
+      "bytes": 29614
     },
     {
       "key": "game/hero-re3-us",
       "file": "game/hero-re3-us.webp",
-      "source": "media/game_re3_version_default.png",
-      "bytes": 38560
+      "source": ".ref/designref/src/assets/ff6fc94a7d1e2ca9f10c606d84441d8499515000.png",
+      "bytes": 39248
     },
     {
       "key": "game/hero-re3-jp",
       "file": "game/hero-re3-jp.webp",
-      "source": "media/game_re3_version_jp.png",
-      "bytes": 148578
+      "source": ".ref/designref/src/assets/7d964730ae22e5f38c6b31f70707ba718d074126.png",
+      "bytes": 131016
     },
     {
       "key": "game/logo-re1-us",
@@ -247,5 +247,5 @@
       "bytes": 64944
     }
   ],
-  "designMapCount": 25
+  "designMapCount": 30
 }

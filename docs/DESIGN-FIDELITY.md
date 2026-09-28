@@ -280,12 +280,27 @@ no real saving — and so are the WAV cues and the Actor font.
 | `game/backdrop-unsplash.webp` | export | 1920 wide, q88 |
 | `game/card-re{1,2,3}.webp` | export | native (342x482 portrait art), q90 |
 | `game/gameplay-re1.webp`, `game/gameplay-re3.webp` | export | native, q90 |
-| `game/hero-*.webp` (8) | `media/` | 1600 wide, q86 |
-| `game/region-*.webp` (8) | `media/` | 1068 wide, q86 |
-| `game/logo-*.webp` (8) | `media/` | native width (each already equals its design box), q92 |
+| `game/hero-*.webp` (8) | export | 1600 wide, q86 |
+| `game/lane-*.webp` (8) | export | native, or 1720 wide for the ones wider than that (§7.4) |
+| `game/logo-*.webp` (8) | `assets/textures/` | native width (each already equals its design box), q92 |
 | `video/*.mp4` (6) | `assets/videos/` | copied |
 | `audio/{confirm,back,cursor}.wav` | `assets/audio/` | copied |
 | `font/Actor-Regular.ttf` | `assets/fonts/` | copied |
+
+**Nothing the Figma frames draw comes from `media/` any more.** That folder is the previous
+launcher's own art, and two families were still being sourced from it while the generated
+`design-map.json` went on claiming the export's hashes for them: the info-panel lanes (§7.4) and
+the version-row heroes. `tools/sync-design-assets.mjs` now refuses to run if a `game/hero-`,
+`game/lane-`, `game/logo-` or `game/card-` output is pointed at `media/`, because a comment
+saying "this is the design's art" is exactly the kind of claim that quietly stops being true.
+
+The heroes are worth a note of their own. Six of the eight turned out to be the *same image* as
+the `media/` file they came from (a 16x16 greyscale fingerprint puts them ≤ 0.7/255 apart), so
+switching them changed nothing on screen and only made the provenance honest. The other two
+were a real correction: `re2_proto` and `re2_jp` were showing different artwork entirely, ~24/255
+apart. A shape check could never have caught that - the frames' hero art and `media/`'s are both
+1600x740 - which is why `tests/e2e/geometry.spec.ts` asserts the heroes' *provenance* from the
+manifest rather than their dimensions.
 
 Two generated files record what happened, and neither is hand-edited:
 
@@ -317,7 +332,7 @@ and every consumer treats that as "draw nothing" rather than as a broken image.
 | `game/backdrop-unsplash` | `game/backdrop-unsplash.webp` | every screen's `Backdrop` |
 | `game/card-re1` / `-re2` / `-re3` | `game/card-re*.webp` | main-menu covers |
 | `game/gameplay-re1` / `-re3` | `game/gameplay-re*.webp` | gameplay card still (RE1, RE3) |
-| `game/hero-re1-us` / `-re1-jp` / `-re1-dc` / `-re2-leon` / `-re2-proto` / `-re2-jp` / `-re3-us` / `-re3-jp` | `game/hero-*.webp` | version-row hero art |
+| `game/hero-re1-us` / `-re1-jp` / `-re1-dc` / `-re2-leon` / `-re2-proto` / `-re2-jp` / `-re3-us` / `-re3-jp` | `game/hero-*.webp` | version-row hero art, from the export (§7.3) |
 | `game/lane-re1-us` / `-re1-jp` / `-re1-dc` / `-re2-leon` / `-re2-proto` / `-re2-jp` / `-re3-us` / `-re3-jp` | `game/lane-*.webp` | info-panel lane art (one per row) |
 | `game/logo-re1-us` … `game/logo-re3-jp` (8) | `game/logo-*.webp` | info-panel logo box, gameplay rotated logo |
 | `video/video-re1` / `-re1-jp` / `-re2` / `-re2-jp` / `-re3` / `-re3-jp` | `video/video-*.mp4` | info-panel video window; `video/video-re2` also fills the RE2 gameplay card |
