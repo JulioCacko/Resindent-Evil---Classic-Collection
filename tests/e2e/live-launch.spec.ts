@@ -19,7 +19,7 @@
  * the game stopped and reports what it changed.
  */
 import { execFile } from 'node:child_process'
-import { mkdtemp, readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -109,6 +109,23 @@ test.describe('live launch', () => {
     //    decide what this one asserts. `src/main/paths.ts` separates the two, so the
     //    real `GOG Games/` and `reenhancemods/` are still what gets probed.
     const profileDir = await mkdtemp(join(tmpdir(), 're-classic-live-'))
+    /**
+     * The mode is *seeded*, not inferred.
+     *
+     * This spec tests the ENHANCED path - injection, the patched `config.ini`, the mod's
+     * own executable - because that is the path with all the machinery in it. Inferring
+     * it from the install's on-disk state made the spec's meaning depend on history: a
+     * user who launched a row in ORIGINAL mode (which restores the retail files and
+     * consumes `.mod_backup`) left the install with no overlay, and the spec then
+     * silently tested the retail path instead - which on RE1 is the executable that
+     * crashes. The stored mode is the user's choice and the launcher honours it, so the
+     * spec states the choice it wants and asserts the launcher delivered it.
+     */
+    await writeFile(
+      join(profileDir, 'config.json'),
+      JSON.stringify({ modes: { [TARGET_VERSION]: 'enhanced' } }),
+      'utf8'
+    )
     app = await electron.launch({
       args: [MAIN_ENTRY],
       cwd: repoRoot,
@@ -160,7 +177,13 @@ test.describe('live launch', () => {
     )
 
     const before = await readDllSection(title.installPath)
-    const expectedMode = row.modInstalled && row.hasMod ? 'ENHANCED' : 'ORIGINAL'
+    // Seeded above, so this is what the launcher must resolve: the stored mode wins over
+    // the on-disk state, and the row has a payload to inject.
+    const expectedMode = row.hasMod ? 'ENHANCED' : 'ORIGINAL'
+    expect(
+      snapshot.config.modes[TARGET_VERSION],
+      'the seeded mode reached the store'
+    ).toBe('enhanced')
     const expectedExecutable =
       expectedMode === 'ENHANCED' && row.modExecRelPath !== '' ? row.modExecRelPath : row.execRelPath
     // RE-Enhance ships as a replacement launcher (`Biohazard.exe`) that can start the
@@ -238,9 +261,12 @@ test.describe('live launch', () => {
       `the panel shows ${expectedMode} | storedModes=${JSON.stringify(snapshot.config.modes)} | ` +
         `steps=${steps.join(' ')} | main=${diagnostics.join(' ')}`
     ).toContain(expectedMode)
-    // A fresh profile stores no mode, so a stored one appearing here is proof that
-    // the panel wrote a mode nobody asked for.
-    expect(snapshot.config.modes, 'opening the panel stores no mode').toEqual({})
+    // Opening the panel must not *write* a mode: the profile was seeded with exactly one
+    // entry, and a second entry (or a changed one) would be the panel choosing for the
+    // user, which is the bug this assertion was written for.
+    expect(snapshot.config.modes, 'opening the panel stores no new mode').toEqual({
+      [TARGET_VERSION]: 'enhanced'
+    })
 
     const rows = page.locator('[data-name="launch-panel"] [data-name^="row-"]')
     const rowCount = await rows.count()

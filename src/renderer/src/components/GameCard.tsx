@@ -48,7 +48,18 @@ export function GameCard({ index, title, selected, onHover, onActivate }: GameCa
       aria-pressed={selected}
       className="bg-[#0f0f0f] h-[580px] relative rounded-[8px] shrink-0 w-[380px] cursor-pointer transition-transform duration-200"
       style={{ transform: `scale(${scale})` }}
-      onMouseEnter={() => onHover(index)}
+      /**
+       * `onMouseMove`, not `onMouseEnter`.
+       *
+       * Enter fires when a card appears *under* a stationary pointer - which happens
+       * whenever the menu mounts or relayouts with the mouse resting over a card - and it
+       * moved the cursor before the user touched anything. The e2e keyboard spec caught it:
+       * it clamped to the first card, pressed ArrowRight, and found the cursor on the
+       * third, because a synthetic enter had already selected the second. A browser only
+       * sends `mousemove` for real movement, which is the rule wanted here: the pointer
+       * moves the cursor, the keyboard moves the cursor, and neither does it unasked.
+       */
+      onMouseMove={() => onHover(index)}
       onClick={() => {
         // Hover first, then activate: the store's `menuIndex` must already point
         // at this card when `onActivate` runs, exactly as it does for the pointer.
