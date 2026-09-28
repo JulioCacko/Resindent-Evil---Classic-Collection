@@ -1,6 +1,6 @@
 {
   "name": "re-classic-collection",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "description": "Resident Evil - Classic Collection launcher (Electron + React)",
   "author": {

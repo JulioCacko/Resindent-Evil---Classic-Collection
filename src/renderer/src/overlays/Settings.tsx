@@ -252,7 +252,7 @@ export function Settings() {
           clicked. */}
       <button
         aria-label="Close settings"
-        className="absolute right-[120px] top-[80px] cursor-pointer font-['Actor:Regular',sans-serif] leading-none not-italic text-[#999] text-[20px]"
+        className="absolute right-[120px] top-[80px] cursor-pointer font-['Actor:Regular',sans-serif] leading-none not-italic text-[#999] text-[20px] transition-[scale,color] duration-150 ease-out active:scale-[0.96]"
         data-figma-node="settings-close"
         onClick={() => closeSettings()}
         type="button"
