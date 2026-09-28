@@ -930,6 +930,11 @@ const store = create<LauncherStore>()((set, get) => {
       case 'ingameCrt':
         void get().patchConfig({ inGameCrt: !(config?.inGameCrt ?? false) })
         return
+      case 'steamLaunch':
+        // Handing a launch to Steam trades this launcher's process tracking for Steam's playtime and
+        // overlay, so it is a choice the player makes rather than a default.
+        void get().patchConfig({ launchThroughSteam: !(config?.launchThroughSteam ?? false) })
+        return
       case 'window':
         // Both arrows flip it, like every other two-value row: there is no direction to a
         // choice between two things.

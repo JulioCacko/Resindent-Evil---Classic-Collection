@@ -222,6 +222,7 @@ export type SettingsRowId =
   | 'reset'
   | 'achievements'
   | 'retroAccount'
+  | 'steamLaunch'
 
 export interface SettingsRow {
   id: SettingsRowId
@@ -250,7 +251,10 @@ export const SETTINGS_ROWS: readonly SettingsRow[] = [
   // The achievements screen. A row rather than a key of its own: the designed screens share one
   // canonical action set, and this costs them nothing.
   { id: 'achievements', label: 'Achievements', kind: 'action' },
-  { id: 'retroAccount', label: 'RetroAchievements Login', kind: 'action' }
+  { id: 'retroAccount', label: 'RetroAchievements Login', kind: 'action' },
+  // Handing the launch to Steam costs the launcher its own process tracking and buys Steam's playtime
+  // and overlay, so it is the player's choice rather than a default.
+  { id: 'steamLaunch', label: 'Launch Through Steam', kind: 'toggle' }
 ]
 
 /**
@@ -282,6 +286,7 @@ export const SETTINGS_LABEL = {
   off: 'OFF',
   minimise: 'MINIMISE THE LAUNCHER',
   ingameCrtNote: 'NEEDS RE-ENHANCE',
+  steamLaunchNote: 'STEAM INSTALLS ONLY',
   stay: 'STAY ON NOW PLAYING',
   resetConfirm: 'RESET SETTINGS?',
   resetDetail: 'Enter again to put every setting back to its default.'

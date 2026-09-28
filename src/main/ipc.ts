@@ -58,7 +58,14 @@ import { createAchievementStore } from './achievements'
 import { buildCatalogSnapshot } from './catalog-state'
 import { createConfigStore } from './config-store'
 import type { AchievementStore, ConfigStore, MainPaths, ModContext, ModResult } from './contracts'
-import { getGameStatus, killGame, onGameExit, performLaunch, prepareLaunch } from './launch'
+import {
+  getGameStatus,
+  killGame,
+  onGameExit,
+  performLaunch,
+  prepareLaunch,
+  refreshExternalGame
+} from './launch'
 import { log } from './logger'
 import { hasBackup, injectMod, removeMod } from './mods'
 import { getMainPaths, toAppPaths } from './paths'
@@ -808,7 +815,18 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
     async (payload) => await runLaunch(current, payload)
   )
 
-  handle(INVOKE_CHANNELS.gameStatus, () => NOT_RUNNING, () => getGameStatus())
+  /**
+   * The running game, refreshed first.
+   *
+   * `refreshExternalGame` settles a Steam-launched game whose image has disappeared - the same event a
+   * child's exit produces - and it has to run *before* the synchronous read, or a game the launcher
+   * handed to Steam would report as running forever. The read itself stays synchronous, so every
+   * other caller of `getGameStatus` is unaffected.
+   */
+  handle(INVOKE_CHANNELS.gameStatus, () => NOT_RUNNING, async () => {
+    await refreshExternalGame()
+    return getGameStatus()
+  })
 
   handle(
     INVOKE_CHANNELS.gameStop,
