@@ -25,6 +25,7 @@
 
 import type { VersionRowProps } from '../contracts'
 import { assetUrl } from '../data/assets'
+import { useHoverSelect } from '@renderer/input/useHoverSelect'
 
 export function VersionRow({ version, selected, onHover, onActivate }: VersionRowProps) {
   const launchable = version.launchable
@@ -39,6 +40,10 @@ export function VersionRow({ version, selected, onHover, onActivate }: VersionRo
    * src/shared/catalog.ts).
    */
   const unavailableReason = launchable ? null : version.unavailableReason || null
+  // Hover only moves the cursor for a pointer that actually moved; see useHoverSelect.
+  const onPointerMove = useHoverSelect(() => {
+    handlePointerMove()
+  })
 
   /**
    * The pointer moves the cursor onto a row, but only when it *moves*.
@@ -96,7 +101,7 @@ export function VersionRow({ version, selected, onHover, onActivate }: VersionRo
       }`}
       data-name="btn/menu"
       onClick={handleClick}
-      onMouseMove={handlePointerMove}
+      onMouseMove={onPointerMove}
       role="button"
       tabIndex={0}
     >

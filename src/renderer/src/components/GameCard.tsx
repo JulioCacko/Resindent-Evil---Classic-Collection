@@ -23,6 +23,7 @@
 import type { GameCardProps } from '@renderer/contracts'
 import { assetUrl } from '@renderer/data/assets'
 import { MAIN_MENU } from '@renderer/data/design'
+import { useHoverSelect } from '@renderer/input/useHoverSelect'
 
 export function GameCard({ index, title, selected, onHover, onActivate }: GameCardProps) {
   const artUrl = assetUrl(title.cardAsset)
@@ -39,6 +40,8 @@ export function GameCard({ index, title, selected, onHover, onActivate }: GameCa
   // the factor lives in data/design.ts so the geometry test and the component
   // cannot disagree about it.
   const scale = selected ? MAIN_MENU.card.selectedScale : 1
+  // Hover only moves the cursor for a pointer that actually moved; see useHoverSelect.
+  const onPointerMove = useHoverSelect(() => onHover(index))
 
   return (
     <div
@@ -59,7 +62,7 @@ export function GameCard({ index, title, selected, onHover, onActivate }: GameCa
        * sends `mousemove` for real movement, which is the rule wanted here: the pointer
        * moves the cursor, the keyboard moves the cursor, and neither does it unasked.
        */
-      onMouseMove={() => onHover(index)}
+      onMouseMove={onPointerMove}
       onClick={() => {
         // Hover first, then activate: the store's `menuIndex` must already point
         // at this card when `onActivate` runs, exactly as it does for the pointer.
