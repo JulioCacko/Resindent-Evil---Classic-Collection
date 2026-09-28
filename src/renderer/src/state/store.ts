@@ -185,6 +185,7 @@ function offlineConfig(): LauncherConfig {
     inGameCrt: false,
     raUser: '',
     raKey: '',
+    launchThroughSteam: false,
     gogPathOverride: '',
     keepLauncherVisible: true
   }

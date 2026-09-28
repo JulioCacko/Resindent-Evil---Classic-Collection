@@ -95,6 +95,9 @@ export function defaultConfig(): LauncherConfig {
     // says so rather than showing an empty list as if the game had no achievements.
     raUser: '',
     raKey: '',
+    // Off by default: handing the launch to Steam trades this launcher's own process tracking
+    // for Steam's, and that is the player's choice to make rather than a default.
+    launchThroughSteam: false,
     gogPathOverride: '',
     keepLauncherVisible: true
   }
@@ -199,6 +202,7 @@ function sanitizeConfig(value: unknown, base: LauncherConfig): LauncherConfig {
     inGameCrt: readBoolean(source.inGameCrt, base.inGameCrt),
     raUser: readString(source.raUser, base.raUser),
     raKey: readString(source.raKey, base.raKey),
+    launchThroughSteam: readBoolean(source.launchThroughSteam, base.launchThroughSteam),
     gogPathOverride: readString(source.gogPathOverride, base.gogPathOverride),
     keepLauncherVisible: readBoolean(source.keepLauncherVisible, base.keepLauncherVisible)
   }

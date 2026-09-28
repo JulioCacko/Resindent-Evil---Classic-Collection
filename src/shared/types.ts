@@ -163,6 +163,19 @@ export interface LauncherConfig {
    * keeps everything the user configured.
    */
   raKey: string
+  /**
+   * Ask Steam to start Steam-installed games, instead of spawning the executable here.
+   *
+   * Steam records playtime, shows its overlay and tracks achievements only for games it starts
+   * itself, so a player with the Steam release gets all three by letting the client do the
+   * launching - \steam://rungameid/<appid>\, which is what \steam-launch.ts\ builds.
+   *
+   * Only Steam installs are affected: a GOG copy is invisible to Steam unless the user has added
+   * it as a non-Steam shortcut, and launching an app id Steam does not have opens a store page at
+   * best. Off by default, because it trades the launcher's own child-process tracking for Steam's
+   * and that trade is the player's to make.
+   */
+  launchThroughSteam: boolean
   scanlineIntensity: number
   curvature: number
   crtVignette: number

@@ -61,6 +61,7 @@ const CONFIG: LauncherConfig = {
   inGameCrt: false,
     raUser: '',
     raKey: '',
+  launchThroughSteam: false,
   gogPathOverride: 'D:\\GOG Games',
   keepLauncherVisible: true
 }

@@ -69,6 +69,7 @@ describe('defaultConfig', () => {
       inGameCrt: false,
     raUser: '',
     raKey: '',
+    launchThroughSteam: false,
       gogPathOverride: '',
       keepLauncherVisible: true
     })
