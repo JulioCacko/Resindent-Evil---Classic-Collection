@@ -7,6 +7,32 @@ design's own measured values rather than by hand-written draw calls, and it laun
 three titles with optional RE-Enhance mod support, per-version regional variants, RE2's
 player scenarios, a CRT filter and an achievement system.
 
+<p align="center">
+  <img alt="The main menu: three titles as cards, the Resident Evil logo above them" src="docs/screenshots/main-menu.png" width="880">
+</p>
+
+<p align="center">
+  <a href="https://github.com/JulioCacko/Resindent-Evil---Classic-Collection/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/JulioCacko/Resindent-Evil---Classic-Collection?label=download&color=8b1a1a"></a>
+  <img alt="Platform: Windows" src="https://img.shields.io/badge/platform-Windows-2f6f9f">
+  <img alt="Built with Electron and React" src="https://img.shields.io/badge/Electron%2044-React%2019-3b3b3b">
+  <img alt="Tests passing" src="https://img.shields.io/badge/tests-271%20passing-2f7a4f">
+  <img alt="Not affiliated with Capcom" src="https://img.shields.io/badge/unofficial-not%20affiliated%20with%20Capcom-6b6b6b">
+</p>
+
+## What it looks like
+
+Every image below is a real frame of the running application, captured by its own end-to-end suite at
+the design's 1920x1080 canvas - not a mockup, and not a render of the design file.
+
+|  |  |
+| --- | --- |
+| <img alt="A title, showing every released version and what is installed" src="docs/screenshots/version-screen.png" width="440"><br>*A title: every released version, and what is installed on this machine* | <img alt="The launch panel with mode, scenario and Play" src="docs/screenshots/launch-panel.png" width="440"><br>*The launch panel: mode, scenario, Play* |
+| <img alt="Settings, reached with F1 from any screen" src="docs/screenshots/settings.png" width="440"><br>*Settings, reached with **F1** from any screen* | <img alt="Achievements, with the launcher's own list and RetroAchievements beside it" src="docs/screenshots/achievements.png" width="440"><br>*Achievements: the launcher's own list, and RetroAchievements beside it* |
+| <img alt="A running game, with the now-playing bar and Stop" src="docs/screenshots/now-playing.png" width="440"><br>*A running game: the now-playing bar, and Stop* |  |
+
+The screenshots are produced by `tools/readme-shots.mjs`, which picks them out of the test run,
+resizes them and refuses to publish a blank frame - so an image here cannot be a capture that happened
+before the app painted.
 > ### Not affiliated with Capcom, GOG or Valve — and not a game
 >
 > This is an **unofficial project**, made by a fan of the games. It is not authorised,

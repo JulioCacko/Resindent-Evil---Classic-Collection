@@ -449,3 +449,31 @@ test('the menu key opens the settings surface from the menu, and closes it again
   await captureScreenshot(page, testInfo, 'flow-f1-menu')
   expect(opened, 'the surface drew its rows').toBeGreaterThan(0)
 })
+test('the achievements surface opens from the settings row and lists the title', async ({}, testInfo) => {
+  const { app, page } = await launchApp()
+  await setDesignWindow(app, page)
+  await ensureMenu(page)
+
+  // F1 for the menu surface, then the achievements row: clicked once to select it, again to run it.
+  // Clicking rather than counting arrow presses keeps the test independent of the row order, which
+  // has changed three times as rows were added.
+  await press(page, 'F1')
+  const row = page.locator('[data-name="setting-achievements"]')
+  await expect(row, 'the settings surface offers the row').toBeVisible()
+  await row.click()
+  await row.click()
+
+  const surface = page.locator('[data-figma-node="achievements"]')
+  await expect(surface, 'the row opens the surface').toBeVisible()
+
+  const achievements = page.locator('[data-name="achievement-row"]')
+  await expect(achievements.first(), 'the bundled list is drawn').toBeVisible()
+  const count = await achievements.count()
+  expect(count, 'a title with achievements lists them').toBeGreaterThan(0)
+
+  await captureScreenshot(page, testInfo, 'achievements')
+
+  // Back leaves it, which the surface's own helper bar promises.
+  await press(page, 'Escape')
+  await expect(surface, 'Escape closes the achievements surface').toHaveCount(0)
+})
