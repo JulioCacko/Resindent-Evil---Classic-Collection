@@ -34,6 +34,7 @@ import { AchievementToast } from '@renderer/overlays/AchievementToast'
 import { CrtOverlay } from '@renderer/overlays/CrtOverlay'
 import { ErrorDialog } from '@renderer/overlays/ErrorDialog'
 import { Achievements } from '@renderer/overlays/Achievements'
+import { Credentials } from '@renderer/overlays/Credentials'
 import { Settings } from '@renderer/overlays/Settings'
 import { InstallStatus } from '@renderer/overlays/InstallStatus'
 import { LaunchPanel } from '@renderer/overlays/LaunchPanel'
@@ -82,6 +83,11 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
   // Whether RA can be asked at all. Read from the config rather than inferred from the list being
   // empty, because "no key yet" and "RA has nothing for this game" are different messages.
   const raConnected = useLauncher((state) => (state.config?.raKey ?? '') !== '')
+  const credentialsOpen = useLauncher((state) => state.credentialsOpen)
+  const raUser = useLauncher((state) => state.config?.raUser ?? '')
+  const raKey = useLauncher((state) => state.config?.raKey ?? '')
+  const saveCredentials = useLauncher((state) => state.saveCredentials)
+  const closeCredentials = useLauncher((state) => state.closeCredentials)
   const busy = useLauncher((state) => state.busy)
   const error = useLauncher((state) => state.error)
 
@@ -211,6 +217,15 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
           onContinue={goToMenu}
         />
       ) : null}
+      {/* Above everything: the login panel is modal, and Escape or Save is the way out. */}
+      {credentialsOpen ? (
+        <Credentials
+          key={raKey}
+          onCancel={closeCredentials}
+          onSave={saveCredentials}
+          user={raUser}
+        />
+      ) : null}
 
       {panelOpen && current !== null ? (
         <LaunchPanel
@@ -235,6 +250,15 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
           onClose={closePanel}
         />
       ) : null}
+      {/* Above everything: the login panel is modal, and Escape or Save is the way out. */}
+      {credentialsOpen ? (
+        <Credentials
+          key={raKey}
+          onCancel={closeCredentials}
+          onSave={saveCredentials}
+          user={raUser}
+        />
+      ) : null}
 
       {/*
         The settings surface, over the screens and under the error dialog: it is reached from
@@ -250,6 +274,15 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
           title={achievementsTitle}
           raAchievements={raAchievements}
           raConnected={raConnected}
+        />
+      ) : null}
+      {/* Above everything: the login panel is modal, and Escape or Save is the way out. */}
+      {credentialsOpen ? (
+        <Credentials
+          key={raKey}
+          onCancel={closeCredentials}
+          onSave={saveCredentials}
+          user={raUser}
         />
       ) : null}
 

@@ -239,6 +239,8 @@ export interface LauncherState {
   achievementsTitle: string
   /** The RetroAchievements list for the same title, or null before its fetch answers. */
   raAchievements: RaAchievement[] | null
+  /** The RetroAchievements login panel is up. */
+  credentialsOpen: boolean
   gameplay: { titleId: TitleId; versionId: string } | null
   catalog: CatalogSnapshot | null
   config: LauncherConfig | null
@@ -272,6 +274,9 @@ export interface LauncherActions {
   /** Opens the achievements surface, fetching the current title's list first. */
   openAchievements(): Promise<void>
   closeAchievements(): void
+  openCredentials(): void
+  closeCredentials(): void
+  saveCredentials(user: string, key: string): void
   openPanel(): void
   closePanel(): void
   setPanelOption(index: number): void

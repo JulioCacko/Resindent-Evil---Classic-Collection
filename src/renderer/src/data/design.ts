@@ -221,6 +221,7 @@ export type SettingsRowId =
   | 'redetect'
   | 'reset'
   | 'achievements'
+  | 'retroAccount'
 
 export interface SettingsRow {
   id: SettingsRowId
@@ -248,7 +249,8 @@ export const SETTINGS_ROWS: readonly SettingsRow[] = [
   { id: 'reset', label: 'Reset Settings', kind: 'action' },
   // The achievements screen. A row rather than a key of its own: the designed screens share one
   // canonical action set, and this costs them nothing.
-  { id: 'achievements', label: 'Achievements', kind: 'action' }
+  { id: 'achievements', label: 'Achievements', kind: 'action' },
+  { id: 'retroAccount', label: 'RetroAchievements Login', kind: 'action' }
 ]
 
 /**
@@ -283,6 +285,18 @@ export const SETTINGS_LABEL = {
   stay: 'STAY ON NOW PLAYING',
   resetConfirm: 'RESET SETTINGS?',
   resetDetail: 'Enter again to put every setting back to its default.'
+} as const
+
+export const RA_LOGIN_LABEL = {
+  heading: 'RETROACHIEVEMENTS LOGIN',
+  blurb: 'Paste your own web API key from retroachievements.org (Settings, then API Keys). It is stored in this launcher\u2019s configuration on your machine and sent only to retroachievements.org.',
+  userLabel: 'ACCOUNT NAME (OPTIONAL)',
+  userHint: 'Only needed if RA ever asks for it; the API answers with the key alone.',
+  keyLabel: 'WEB API KEY',
+  keyHint: 'A personal credential. Nothing here is shared, uploaded or bundled with the launcher.',
+  note: 'Connecting loads the achievement lists as reference. RetroAchievements cannot unlock anything for these games: it reads an emulator\u2019s memory, and the launcher starts the native Windows builds where no emulator is running.',
+  save: 'SAVE',
+  cancel: 'CANCEL'
 } as const
 
 export const HINTS_ACHIEVEMENTS: HelperHint[] = [{ keys: ['esc'], label: 'Back' }]

@@ -76,6 +76,8 @@ export function settingsValue(row: SettingsRow, config: LauncherConfig | null): 
       return ''
     case 'achievements':
       return ''
+    case 'retroAccount':
+      return ''
   }
 }
 

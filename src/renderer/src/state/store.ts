@@ -550,6 +550,7 @@ const INITIAL_STATE: LauncherState = {
   achievements: null,
   achievementsTitle: '',
   raAchievements: null,
+  credentialsOpen: false,
   panelOptionIndex: 0,
   gameplay: null,
   catalog: null,
@@ -847,6 +848,26 @@ const store = create<LauncherStore>()((set, get) => {
    * stays proportional to what the player asked for - and a rejected call leaves the surface
    * showing its empty state, because reference material must not be able to break the launcher.
    */
+  /**
+   * The RetroAchievements login panel.
+   *
+   * Opening and closing are all this needs: the fields keep their own draft state and the browser
+   * owns Tab between them, so the launcher has no field navigation to get wrong. Saving writes
+   * through the same patchConfig every other setting uses.
+   */
+  const openCredentials = (): void => {
+    set({ credentialsOpen: true })
+  }
+
+  const closeCredentials = (): void => {
+    set({ credentialsOpen: false })
+  }
+
+  const saveCredentials = (user: string, key: string): void => {
+    set({ credentialsOpen: false })
+    void get().patchConfig({ raUser: user, raKey: key })
+  }
+
   const openAchievements = async (): Promise<void> => {
     const gameId = get().titleId
     const title = get().catalog?.titles.find((candidate) => candidate.id === gameId)?.name ?? ''
@@ -947,6 +968,9 @@ const store = create<LauncherStore>()((set, get) => {
         return
       case 'redetect':
         void get().refreshCatalog()
+        return
+      case 'retroAccount':
+        get().openCredentials()
         return
       case 'achievements':
         void get().openAchievements()
@@ -1346,6 +1370,9 @@ const store = create<LauncherStore>()((set, get) => {
     activateSetting,
     closeSettings,
     openAchievements,
+    openCredentials,
+    closeCredentials,
+    saveCredentials,
     closeAchievements,
     movePanelOption,
     setMode,
