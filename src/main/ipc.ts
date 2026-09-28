@@ -46,6 +46,7 @@ import type {
   LaunchMode,
   LaunchRequest,
   LaunchResult,
+  LaunchWindowMode,
   LauncherConfig,
   ModProgress,
   Re2Scenario,
@@ -56,7 +57,7 @@ import { createAchievementStore } from './achievements'
 import { buildCatalogSnapshot } from './catalog-state'
 import { createConfigStore } from './config-store'
 import type { AchievementStore, ConfigStore, MainPaths, ModContext, ModResult } from './contracts'
-import { getGameStatus, onGameExit, performLaunch, prepareLaunch } from './launch'
+import { getGameStatus, killGame, onGameExit, performLaunch, prepareLaunch } from './launch'
 import { log } from './logger'
 import { hasBackup, injectMod, removeMod } from './mods'
 import { getMainPaths, toAppPaths } from './paths'
@@ -72,6 +73,15 @@ export interface IpcOptions {
   targetWindow?: () => BrowserWindow | null
   /** Overrides `app.getVersion()` for `app:ping`. */
   appVersion?: string
+  /**
+   * Called after a game process is spawned, with the configured window behaviour.
+   *
+   * Injected rather than done here because the window lives in `index.ts`: this module
+   * owns IPC and has no business holding a `BrowserWindow`.
+   */
+  onGameLaunched?: (mode: LaunchWindowMode) => void
+  /** Called when a game process ends, so a launcher that stepped aside can come back. */
+  onGameStopped?: () => void
 }
 
 /**
@@ -100,7 +110,13 @@ let state: IpcState | null = null
 const disposers: (() => void)[] = []
 
 /** Status reported when the game-process module cannot answer (`game:status`). */
-const NOT_RUNNING: GameStatus = { running: false, titleId: null, versionId: null, exitCode: null }
+const NOT_RUNNING: GameStatus = {
+  running: false,
+  titleId: null,
+  versionId: null,
+  exitCode: null,
+  startedAt: null
+}
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
@@ -549,6 +565,14 @@ async function launchSequence(current: IpcState, payload: LaunchRequest): Promis
   current.launched = { titleId: version.titleId, versionId: version.id }
   log.info(`launched ${version.id} (pid ${result.pid})${injectedMod ? ' with the RE-Enhance overlay' : ''}`)
 
+  // The game is up, so the launcher steps aside (or stays, if that is what the user
+  // configured). These games cannot be embedded in the launcher window - see
+  // docs/ARCHITECTURE.md section 6 - so getting out of the way is how the real game
+  // becomes the thing on screen. The config is read here rather than cached, so a
+  // change made moments before launching is the one that applies.
+  const config = await current.config.load()
+  current.options.onGameLaunched?.(config.launchWindowMode)
+
   return { ok: true, pid: result.pid, executable: result.executable, injectedMod }
 }
 
@@ -749,6 +773,22 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
   handle(INVOKE_CHANNELS.gameStatus, () => NOT_RUNNING, () => getGameStatus())
 
   handle(
+    INVOKE_CHANNELS.gameStop,
+    () => undefined,
+    () => {
+      // The same kill path `before-quit` uses, so stopping a game from the launcher
+      // and quitting the launcher leave the machine in the same state.`r
+      const status = getGameStatus()
+      if (!status.running) {
+        log.warn('game:stop was asked to stop a game that is not running')
+        return
+      }
+      log.info(`stopping  on request`)
+      killGame()
+    }
+  )
+
+  handle(
     INVOKE_CHANNELS.gameFocus,
     () => undefined,
     (payload) => {
@@ -869,6 +909,10 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
       // The process is gone, so the launch record is stale from here on; the
       // renderer's focus record stays valid and answers for the next event.
       current.launched = null
+      // Whether or not the exit could be attributed to a row, a game has ended, so a
+      // window that stepped aside has to come back: leaving the user on the desktop with
+      // neither launcher nor game is the worst possible outcome here.
+      current.options.onGameStopped?.()
       if (attributed === null) {
         log.warn('game:exit arrived with no known title or version to attribute it to')
         return

@@ -26,6 +26,7 @@ import { promisify } from 'node:util'
 import { _electron as electron } from '@playwright/test'
 import type { ElectronApplication, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { describe, press, probe } from './electron-app'
 
 const run = promisify(execFile)
 const repoRoot = process.cwd()
@@ -303,6 +304,31 @@ test.describe('live launch', () => {
     testInfo.annotations.push({ type: 'live-status', description: JSON.stringify(status) })
     expect(status.running, 'the launcher tracks a running game').toBe(true)
     expect(status.versionId).toBe(TARGET_VERSION)
+    expect(
+      typeof (status as { startedAt?: number | null }).startedAt,
+      'the status carries when the game started, so the now-playing bar can count'
+    ).toBe('number')
+
+    // 6b. The launcher got out of the game's way. This is the whole of "press play and
+    //     the game is what you see": these games cannot be embedded in the launcher
+    //     window (tools/probe-embed.ps1 measured that), so the window minimises and the
+    //     real game is on screen instead.
+    const windowState = await app.evaluate(({ BrowserWindow }) => {
+      const [window] = BrowserWindow.getAllWindows()
+      if (window === undefined) return { exists: false, minimised: false }
+      return { exists: true, minimised: window.isMinimized() }
+    })
+    testInfo.annotations.push({ type: 'live-window', description: JSON.stringify(windowState) })
+    expect(windowState.exists, 'the launcher window still exists').toBe(true)
+    expect(windowState.minimised, 'the launcher minimised so the game is visible').toBe(true)
+
+    // 6c. And the surface it will show when the user comes back says the truth rather
+    //     than implying the footage in the card is the running game.
+    const nowPlaying = page.locator('[data-figma-node="now-playing"]').first()
+    await expect(nowPlaying).toHaveCount(1)
+    await expect(nowPlaying).toHaveAttribute('data-running', 'true')
+    await expect(nowPlaying).toContainText('NOW PLAYING')
+    await expect(page.locator('[data-figma-node="now-playing-stop"]')).toHaveCount(1)
 
     // 7. And it is really a process, not just launcher state.
     const spawned = expectedExecutable.split(/[\\/]/).pop() ?? expectedExecutable
@@ -325,16 +351,23 @@ test.describe('live launch', () => {
     expect(Object.keys(after).length, 'the install still has a readable config.ini').toBeGreaterThan(0)
     expect(after.readError, 'config.ini is readable').toBeUndefined()
 
-    // 9. Quitting the launcher must take the game with it (the `before-quit` kill),
-    //    or a player who closes the window is left with an orphaned game.
-    await app.evaluate(({ app: electronApp }) => {
-      electronApp.quit()
+    // 9. STOP GAME ends it, and the launcher comes back.
+    //
+    //    The launcher is minimised at this point, which is the state a player is in: the
+    //    game is on screen and the launcher is in the taskbar. Pressing the button on the
+    //    now-playing bar is therefore how a user stops a game without alt-tabbing to its
+    //    own menu, and it has to work from that state.
+    await app.evaluate(({ BrowserWindow }) => {
+      const [window] = BrowserWindow.getAllWindows()
+      if (window === undefined) throw new Error('no launcher window')
+      // Restoring first is what a click on the taskbar would do; the button needs the
+      // renderer to be visible for Playwright to click it.
+      if (window.isMinimized()) window.restore()
     })
-    await app.waitForEvent('close', { timeout: 30_000 })
-    app = undefined
+    await page.locator('[data-figma-node="now-playing-stop"]').first().click()
 
     /** Waits for every watched image to disappear, then reports which did not. */
-    const survivorsAfterQuit = async (): Promise<string[]> => {
+    const waitForImagesGone = async (): Promise<string[]> => {
       for (let attempt = 0; attempt < 20; attempt += 1) {
         const alive: string[] = []
         for (const image of images) {
@@ -350,10 +383,81 @@ test.describe('live launch', () => {
       return alive
     }
 
-    const survivors = await survivorsAfterQuit()
+    expect(
+      await waitForImagesGone(),
+      'STOP GAME ended the process, not just the launcher state'
+    ).toEqual([])
+
+    // The bar switches to the truth, and the main process agrees nothing runs.
+    const stoppedStatus = await page.evaluate(async () => {
+      const bridge = window.reLauncher
+      if (bridge === undefined) throw new Error('window.reLauncher is missing')
+      return (await bridge.invoke('game:status', undefined)) as { running: boolean }
+    })
+    expect(stoppedStatus.running, 'the launcher knows the game stopped').toBe(false)
+    await expect(page.locator('[data-figma-node="now-playing"]').first()).toHaveAttribute(
+      'data-running',
+      'false'
+    )
+    await expect(page.locator('[data-figma-node="now-playing"]').first()).toContainText('NOT RUNNING')
+
+    // 10. Relaunching and quitting must still take the game with it (the `before-quit`
+    //     kill), or a player who closes the window is left with an orphaned game.
+    //
+    //     One Escape, not a loop. This step is what caught the launcher reporting its own
+    //     STOP as a crash: `taskkill /F` kills with exit code 1, so the store showed
+    //     "GAME EXITED WITH AN ERROR - RESIDENT EVIL stopped unexpectedly (exit code 1)",
+    //     and the first Escape dismissed that dialog instead of going back. With
+    //     `GameExitEvent.requested` the dialog is gone and a single Back does what the
+    //     helper bar says it does.
+    const beforeBack = await probe(page)
+    await press(page, 'Escape')
+    const afterBack = await probe(page)
+    testInfo.annotations.push({
+      type: 'live-back',
+      description: `before=[${describe(beforeBack)}] after=[${describe(afterBack)}]`
+    })
+    expect(
+      beforeBack.error,
+      'stopping the game on purpose is not reported as an error'
+    ).toBeNull()
+    expect(
+      afterBack.screen,
+      `one Back after STOP returns to the version list; after=[${describe(afterBack)}]`
+    ).toBe('version')
+    await press(page, 'Enter')
+    await page
+      .locator('[data-name="launch-panel"]')
+      .first()
+      .waitFor({ timeout: 30_000 })
+    const relaunchRows = page.locator('[data-name="launch-panel"] [data-name^="row-"]')
+    const relaunchCount = await relaunchRows.count()
+    let relaunchIndex = -1
+    for (let index = 0; index < relaunchCount; index += 1) {
+      if ((await relaunchRows.nth(index).getAttribute('data-name')) === 'row-launch') {
+        relaunchIndex = index
+        break
+      }
+    }
+    expect(relaunchIndex).toBeGreaterThanOrEqual(0)
+    for (let step = 0; step < relaunchIndex; step += 1) await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Enter')
+    await page
+      .locator('[data-figma-node="gameplay-screen"]')
+      .first()
+      .waitFor({ timeout: 120_000 })
+    expect(await isImageRunning(spawned), `${spawned} is running again`).toBe(true)
+
+    await app.evaluate(({ app: electronApp }) => {
+      electronApp.quit()
+    })
+    await app.waitForEvent('close', { timeout: 30_000 })
+    app = undefined
+
+    const survivors = await waitForImagesGone()
     expect(survivors, `killed when the launcher quit; still running: ${survivors.join(', ')}`).toEqual([])
 
-    // 10. Report what this run changed, so the side effects are never a surprise.
+    // 11. Report what this run changed, so the side effects are never a surprise.
     testInfo.annotations.push({
       type: 'live-summary',
       description: `mode=${expectedMode} executable=${expectedExecutable} watched=${images.join(',')} config.ini: ${JSON.stringify(before)} -> ${JSON.stringify(after)}`,

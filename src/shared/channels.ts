@@ -30,6 +30,7 @@ export const INVOKE_CHANNELS = {
   launch: 'launch',
   gameStatus: 'game:status',
   gameFocus: 'game:focus',
+  gameStop: 'game:stop',
   achievementsList: 'achievements:list',
   achievementsUnlock: 'achievements:unlock',
   achievementsReset: 'achievements:reset',
@@ -63,6 +64,7 @@ export interface InvokeMap {
   [INVOKE_CHANNELS.launch]: { request: LaunchRequest; response: LaunchResult }
   [INVOKE_CHANNELS.gameStatus]: { request: void; response: GameStatus }
   [INVOKE_CHANNELS.gameFocus]: { request: { titleId: TitleId; versionId: string }; response: void }
+  [INVOKE_CHANNELS.gameStop]: { request: void; response: void }
   [INVOKE_CHANNELS.achievementsList]: { request: { gameId: TitleId }; response: Achievement[] }
   [INVOKE_CHANNELS.achievementsUnlock]: { request: { id: string }; response: Achievement | null }
   [INVOKE_CHANNELS.achievementsReset]: { request: { gameId?: TitleId }; response: Achievement[] }

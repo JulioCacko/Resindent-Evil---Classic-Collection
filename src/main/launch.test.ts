@@ -121,14 +121,20 @@ interface FakeSpawn {
   emit(event: string, ...args: unknown[]): void
 }
 
-/** Records what it was asked to run and lets the test play the child's events. */
-function createFakeSpawn(): FakeSpawn {
+/**
+ * Records what it was asked to run and lets the test play the child's events.
+ *
+ * pid defaults to none, which is what keeps `killGame` from signalling anything real: a
+ * test that wants the kill path passes a pid and injects `LaunchDeps.kill`.
+ */
+function createFakeSpawn(pid?: number): FakeSpawn {
   const calls: SpawnCall[] = []
   const listeners = new Map<string, Array<(...args: unknown[]) => void>>()
 
   const spawn: SpawnFn = (executable, args, options) => {
     calls.push({ executable, args, options })
     return {
+      pid,
       on: (event, listener) => {
         const registered = listeners.get(event)
         if (registered === undefined) listeners.set(event, [listener])
@@ -532,7 +538,9 @@ describe('performLaunch', () => {
 
     fake.emit('exit', 3, null)
 
-    expect(events).toEqual([{ titleId: 're1', versionId: 're1_us', exitCode: 3, signal: null }])
+    expect(events).toEqual([
+      { titleId: 're1', versionId: 're1_us', exitCode: 3, signal: null, requested: false }
+    ])
     expect(getGameStatus()).toMatchObject({
       running: false,
       titleId: null,
@@ -552,7 +560,9 @@ describe('performLaunch', () => {
     expectLaunched(await performLaunch(prepared, { spawn: fake.spawn }))
     fake.emit('error', new Error('spawn ENOENT'))
 
-    expect(events).toEqual([{ titleId: 're1', versionId: 're1_us', exitCode: null, signal: null }])
+    expect(events).toEqual([
+      { titleId: 're1', versionId: 're1_us', exitCode: null, signal: null, requested: false }
+    ])
     expect(getGameStatus().running).toBe(false)
   })
 
@@ -609,24 +619,39 @@ describe('performLaunch', () => {
     await installExecutable(RETAIL_EXECUTABLE)
     useInstallContext({})
     const prepared = expectPrepared(await prepareLaunch(request('re1_us')))
-    const fake = createFakeSpawn()
+    const fake = createFakeSpawn(4242)
     const events: GameExitEvent[] = []
     subscribeToExits(events)
     expectLaunched(await performLaunch(prepared, { spawn: fake.spawn }))
 
-    killGame()
+    // The kill is injected: this test is about who is recorded as having ended the game,
+    // and signalling a real pid would be a very bad way to find that out.
+    const killed: number[] = []
+    killGame({ kill: (pid) => killed.push(pid) })
+    expect(killed, 'the kill was handed the spawned pid').toEqual([4242])
 
     expect(getGameStatus()).toMatchObject({ running: false, titleId: null, versionId: null })
 
-    // The killed child still reports its own exit; the slot is already free.
-    fake.emit('exit', null, 'SIGTERM')
-    expect(events).toEqual([{ titleId: 're1', versionId: 're1_us', exitCode: null, signal: 'SIGTERM' }])
+    // The killed child still reports its own exit; the slot is already free. `requested`
+    // is what keeps that exit from being reported to the user as a crash: `taskkill /F`
+    // kills with a non-zero code, so without it the launcher would tell the user its own
+    // deliberate stop was "stopped unexpectedly".
+    fake.emit('exit', 1, null)
+    expect(events).toEqual([
+      { titleId: 're1', versionId: 're1_us', exitCode: 1, signal: null, requested: true }
+    ])
     expect(getGameStatus().running).toBe(false)
 
     // And a new launch is allowed immediately.
     const next = createFakeSpawn()
     expectLaunched(await performLaunch(prepared, { spawn: next.spawn }))
     expect(next.calls).toHaveLength(1)
+
+    // The request is consumed by that one exit: this game's own end is not the launcher's
+    // doing, and must be reported as it is.
+    next.emit('exit', 0, null)
+    expect(events).toHaveLength(2)
+    expect(events[1]?.requested, 'a fresh exit is not a requested stop').toBe(false)
   })
 })
 

@@ -37,8 +37,10 @@ import {
   installFakeGamepad,
   launchApp,
   padPress,
+  panelRowNames,
   press,
   probe,
+  rect,
   scaleFactor,
   selectedCardIndex,
   selectedVersionRowIndex,
@@ -193,6 +195,64 @@ test.describe('the launcher flow', () => {
     // and the menu still clamps: the round trip changed nothing about its ends.
     await clampMenuToFirstCard(page)
     expect(await selectedCardIndex(page), 'ArrowLeft past the first card still does not wrap').toBe(0)
+  })
+
+  /**
+   * The gameplay screen after a launch, hermetically.
+   *
+   * The spawn itself is stubbed by `launchApp`, so this asserts what the screen *says*
+   * rather than that a game started - `live-launch.spec.ts` covers the real one. What
+   * matters here is that the surface tells the truth: the card is a frame of gameplay
+   * footage, and the bar over it is the only thing separating "your game is running" from
+   * "here is a trailer", so it has to be present, running, timed and stoppable.
+   */
+  test('the gameplay screen reports the running game, and Back returns to its row', async ({}, testInfo) => {
+    const { app, page } = await sharedApp()
+    await setDesignWindow(app, page)
+    await ensureMenu(page)
+
+    const cards = await cardCount(page)
+    test.skip(cards === 0, 'the catalog is empty: there is no row to launch')
+
+    // Menu -> version -> panel, then onto the LAUNCH row.
+    await press(page, 'Enter')
+    await waitForScreen(page, 'version')
+    await press(page, 'Enter')
+    await waitForPanel(page)
+
+    const names = await panelRowNames(page)
+    const launchIndex = names.indexOf('row-launch')
+    expect(launchIndex, `the panel has a LAUNCH row; it has ${names.join(', ')}`).toBeGreaterThanOrEqual(0)
+    for (let step = 0; step < launchIndex; step += 1) await page.keyboard.press('ArrowDown')
+    await press(page, 'Enter')
+
+    await waitForScreen(page, 'gameplay')
+    await captureScreenshot(page, testInfo, 'flow-5-gameplay-now-playing')
+
+    const bar = page.locator('[data-figma-node="now-playing"]').first()
+    await expect(bar, 'the now-playing bar is on the card').toHaveCount(1)
+    await expect(bar, 'a launched row reports a running game').toHaveAttribute('data-running', 'true')
+    await expect(bar).toContainText('NOW PLAYING')
+    await expect(
+      page.locator('[data-figma-node="now-playing-elapsed"]').first(),
+      'the elapsed readout counts from the launch'
+    ).toHaveText(/^\d{2}:\d{2}$/)
+    await expect(
+      page.locator('[data-figma-node="now-playing-stop"]').first(),
+      'a running game has a stop action'
+    ).toHaveCount(1)
+
+    // Inside the card, which is what keeps the bar from drifting if the card moves.
+    const card = await rect(page, 'gameplay-card')
+    const barBox = await rect(page, 'now-playing')
+    expect(barBox.y, 'the bar is inside the card').toBeGreaterThan(card.y)
+    expect(barBox.y + barBox.height, 'the bar is inside the card').toBeLessThanOrEqual(
+      card.y + card.height
+    )
+
+    // --- Escape: the only key this screen answers, and it goes back to the row ---
+    await press(page, 'Escape')
+    await waitForScreen(page, 'version')
   })
 
   test('gamepad: the D-pad navigates and A/B confirm and go back', async ({}, testInfo) => {

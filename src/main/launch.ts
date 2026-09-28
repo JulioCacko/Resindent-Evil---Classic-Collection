@@ -281,6 +281,8 @@ type ExitListener = (event: GameExitEvent) => void
 interface TrackedGame {
   titleId: TitleId
   versionId: string
+  /** When the process was spawned, for the renderer's elapsed-time readout. */
+  startedAt: number
   /** `0` when the OS (or an injected double) reported no pid. */
   pid: number
   /**
@@ -299,6 +301,15 @@ let tracked: TrackedGame | null = null
  * from the moment a launch started until its process was reaped.
  */
 let lastExitCode: number | null = null
+
+/**
+ * Whether the launcher itself asked the running game to stop.
+ *
+ * The kill and the process's exit are separate events, so nothing on the exit itself says
+ * who ended it - and a `taskkill /F` kill is exit code 1, which reads exactly like a crash.
+ * Set by `killGame`, read once by the next exit, then cleared.
+ */
+let stopRequested = false
 
 const exitListeners = new Set<ExitListener>()
 
@@ -540,7 +551,8 @@ export async function performLaunch(prepared: PreparedLaunch, deps?: LaunchDeps)
     // The frozen contract makes `pid` optional, so an injected double may report
     // none; `0` then means "nothing to signal" rather than a real process id.
     pid: typeof child.pid === 'number' ? child.pid : 0,
-    settled: false
+    settled: false,
+    startedAt: Date.now()
   }
   tracked = game
 
@@ -551,7 +563,17 @@ export async function performLaunch(prepared: PreparedLaunch, deps?: LaunchDeps)
     // immediately, and a later launch must not be untracked by this child's exit.
     if (tracked === game) tracked = null
     lastExitCode = exitCode
-    notifyExit({ titleId: game.titleId, versionId: game.versionId, exitCode, signal })
+    notifyExit({
+      titleId: game.titleId,
+      versionId: game.versionId,
+      exitCode,
+      signal,
+      // Read here rather than passed in: the kill and the child's exit are two separate
+      // events, and this flag is what ties them together.
+      requested: stopRequested
+    })
+    // One exit consumes one request; a later game's natural exit must not inherit it.
+    stopRequested = false
   }
 
   child.on('exit', (...args: unknown[]) => {
@@ -595,15 +617,27 @@ function usesModExecutable(prepared: PreparedLaunch): boolean {
  * `TerminateProcess` only killed the one handle it held. `kill` stays the fallback
  * when taskkill is missing or refuses, which is also the only POSIX path.
  */
-export function killGame(): void {
+export function killGame(deps: LaunchDeps = {}): void {
   const game = tracked
   if (game === null) return
   tracked = null
 
   if (game.pid <= 0) return
 
+  // Recorded before the signal, because the child's exit can arrive while `taskkill` is
+  // still running. Only set once there is a pid to signal: a game this launcher could not
+  // signal is a game it did not stop, and claiming otherwise would suppress a real crash
+  // report.
+  stopRequested = true
+
+  const kill = deps.kill ?? defaultKill
+  kill(game.pid)
+}
+
+/** `taskkill /T /F` on Windows, `process.kill` everywhere else. See `killGame`. */
+function defaultKill(pid: number): void {
   if (process.platform === 'win32') {
-    const result = spawnSync('taskkill', ['/pid', String(game.pid), '/T', '/F'], {
+    const result = spawnSync('taskkill', ['/pid', String(pid), '/T', '/F'], {
       windowsHide: true,
       stdio: 'ignore'
     })
@@ -612,7 +646,7 @@ export function killGame(): void {
 
   try {
     // SIGTERM on POSIX; on Windows `process.kill` defaults to terminate-process.
-    process.kill(game.pid, 'SIGTERM')
+    process.kill(pid, 'SIGTERM')
   } catch {
     // Already gone, or not ours to signal: nothing left to do.
   }
@@ -626,9 +660,15 @@ export function killGame(): void {
  */
 export function getGameStatus(): GameStatus {
   if (tracked !== null) {
-    return { running: true, titleId: tracked.titleId, versionId: tracked.versionId, exitCode: null }
+    return {
+      running: true,
+      titleId: tracked.titleId,
+      versionId: tracked.versionId,
+      exitCode: null,
+      startedAt: tracked.startedAt
+    }
   }
-  return { running: false, titleId: null, versionId: null, exitCode: lastExitCode }
+  return { running: false, titleId: null, versionId: null, exitCode: lastExitCode, startedAt: null }
 }
 
 /** Subscribes to game exit; returns an unsubscribe function. */

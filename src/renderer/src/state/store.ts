@@ -181,6 +181,7 @@ function offlineConfig(): LauncherConfig {
     lastSelectedTitle: DEFAULT_TITLE_ID,
     modes: {},
     scenarios: {},
+    launchWindowMode: 'minimise',
     gogPathOverride: '',
     keepLauncherVisible: true
   }
@@ -492,7 +493,8 @@ const INITIAL_GAME_STATUS: GameStatus = {
   running: false,
   titleId: null,
   versionId: null,
-  exitCode: null
+  exitCode: null,
+  startedAt: null
 }
 
 /**
@@ -568,7 +570,9 @@ const store = create<LauncherStore>()((set, get) => {
       current.titleId === titleId &&
       current.versionId === versionId
     if (exitedThisRow) return current
-    return { running: true, titleId, versionId, exitCode: null }
+    // startedAt is the renderer's own clock reading, which is right here: this is the
+    // optimistic status this process shows the moment its own spawn succeeded.
+    return { running: true, titleId, versionId, exitCode: null, startedAt: Date.now() }
   }
 
   /** The display name of a row, for messages that would otherwise print an id. */
@@ -607,11 +611,17 @@ const store = create<LauncherStore>()((set, get) => {
         running: false,
         titleId: event.titleId,
         versionId: event.versionId,
-        exitCode: event.exitCode
+        exitCode: event.exitCode,
+        // The game is gone, so there is no longer a start to count from.
+        startedAt: null
       }
     })
     // A null code is the "never ran, or launched outside the launcher" case the type
-    // documents, so only a real non-zero code is a failure worth interrupting for.
+    // documents, so only a real non-zero code is a failure worth interrupting for. A stop
+    // the launcher asked for is not a failure at all: `taskkill /F` makes the game exit 1,
+    // and reporting that as "stopped unexpectedly" would be the launcher blaming the game
+    // for something the user just asked it to do.
+    if (event.requested) return
     if (event.exitCode === null || event.exitCode === 0) return
     get().showError({
       title: 'GAME EXITED WITH AN ERROR',
@@ -928,6 +938,29 @@ const store = create<LauncherStore>()((set, get) => {
     })
   }
 
+  /**
+   * Ends the running game, and says so if it cannot.
+   *
+   * The status is *not* set to stopped here. Main is the only thing that knows when the
+   * process is gone, and it answers with `game:exit`; guessing first would show a
+   * stopped game that is still running if the kill failed. `busy` is what makes the
+   * wait visible instead.
+   */
+  const stopGame = async (): Promise<void> => {
+    if (!get().gameStatus.running || get().busy !== null) return
+
+    set({ busy: busyOnly('STOPPING THE GAME') })
+    const outcome = await invoke(INVOKE_CHANNELS.gameStop, undefined)
+    set({ busy: null })
+
+    if (!outcome.ok) {
+      get().showError({
+        title: 'COULD NOT STOP',
+        message: 'The launcher could not stop the game process. Close the game window itself.'
+      })
+    }
+  }
+
   // -- overlays ------------------------------------------------------------
 
   const showError = (error: LauncherError): void => {
@@ -1103,6 +1136,7 @@ const store = create<LauncherStore>()((set, get) => {
     patchConfig,
     resetConfig,
     launch,
+    stopGame,
     dismissError,
     showError,
     pushAchievement,

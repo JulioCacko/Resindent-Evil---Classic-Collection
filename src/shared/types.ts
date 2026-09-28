@@ -121,6 +121,17 @@ export interface Achievement {
   unlockDate: string
 }
 
+/**
+ * What the launcher window does when a game starts.
+ *
+ * minimise is the default because these games cannot be embedded - see
+ * docs/ARCHITECTURE.md section 6, where reparenting the game window was measured and
+ * refused - so getting out of the way is the honest way to show the game. stay keeps
+ * the launcher up on the now-playing surface, which is right for a single-monitor
+ * setup where the game is expected to take the foreground itself.
+ */
+export type LaunchWindowMode = 'minimise' | 'stay'
+
 export interface LauncherConfig {
   crtEnabled: boolean
   scanlineIntensity: number
@@ -135,6 +146,8 @@ export interface LauncherConfig {
   modes: Record<string, LaunchMode>
   /** Per-version RE2 scenario; missing entries use the version default. */
   scenarios: Record<string, Re2Scenario>
+  /** What the launcher window does when a game starts. */
+  launchWindowMode: LaunchWindowMode
   /** Explicit GOG install root, overrides auto-detection when set. */
   gogPathOverride: string
   /** Keep the launcher window visible while the game runs. */
@@ -192,6 +205,14 @@ export interface GameStatus {
   versionId: string | null
   /** Exit code of the last finished game process; null if it never ran or was launched externally. */
   exitCode: number | null
+  /**
+   * When the running game was spawned, as epoch milliseconds; null when nothing runs.
+   *
+   * The renderer counts from this rather than from its own clock, so the elapsed time
+   * on the now-playing surface survives a window reload and cannot drift from the
+   * process it describes.
+   */
+  startedAt: number | null
 }
 
 export interface GameExitEvent {
@@ -199,6 +220,16 @@ export interface GameExitEvent {
   versionId: string
   exitCode: number | null
   signal: string | null
+  /**
+   * True when the launcher ended the process rather than the game exiting on its own.
+   *
+   * This matters because the launcher's own kill produces a non-zero exit code: STOP GAME
+   * runs `taskkill /F`, so the game dies with 1. Without this flag that is indistinguishable
+   * from a crash, and the launcher told the user that its own deliberate stop was
+   * "RESIDENT EVIL stopped unexpectedly (exit code 1)" - a lie it would tell every single
+   * time the button was pressed.
+   */
+  requested: boolean
 }
 
 export interface AppPaths {

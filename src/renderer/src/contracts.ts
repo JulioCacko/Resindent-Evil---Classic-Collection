@@ -254,6 +254,15 @@ export interface LauncherActions {
   patchConfig(patch: Partial<LauncherConfig>): Promise<void>
   resetConfig(): Promise<void>
   launch(): Promise<void>
+  /**
+   * Ends the running game.
+   *
+   * The launcher stays up on the now-playing surface while a game runs, so it needs a
+   * way to stop one: without this the only exit from a running game is the game's own
+   * menu or quitting the launcher, and the surface that says "RUNNING" would have no
+   * action that matches it.
+   */
+  stopGame(): Promise<void>
   dismissError(): void
   showError(error: LauncherError): void
   pushAchievement(achievement: Achievement): void

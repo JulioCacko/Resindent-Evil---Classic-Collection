@@ -189,6 +189,20 @@ export interface HelperHint {
   label: string
 }
 
+/**
+ * The now-playing bar's three labels.
+ *
+ * The bar itself is an addition (docs/DESIGN-FIDELITY.md 7.1): the concept's Gameplay
+ * frame fills its card with gameplay footage and says nothing about what is running, so
+ * the app says it instead. `stoppedDetail` stands in for the elapsed time when nothing
+ * is running, where a duration would be a claim about a process that is not there.
+ */
+export const NOW_PLAYING_LABEL = {
+  running: 'NOW PLAYING',
+  stopped: 'NOT RUNNING',
+  stoppedDetail: 'the game is not running',
+  stop: 'STOP GAME'
+} as const
 export const HINTS_MENU: HelperHint[] = [
   { keys: ['left', 'right'], label: 'Navigate' },
   { keys: ['enter'], label: 'Confirm' },

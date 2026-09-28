@@ -210,6 +210,15 @@ export interface LaunchDeps {
     options: { cwd: string; detached: boolean; windowsHide: boolean; stdio: 'ignore' }
   ) => { pid?: number; on: (event: string, listener: (...args: unknown[]) => void) => void }
   patchConfig?: typeof patchIniFile
+  /**
+   * Injected in tests. Defaults to `taskkill /T /F`, with `process.kill` as the fallback.
+   *
+   * `killGame` needs a seam for the same reason `spawn` has one: the branch that matters -
+   * a stop the launcher asked for, which is what keeps its own kill from being reported to
+   * the user as a crash - is only reachable when there is a real pid, and a test must not
+   * signal one.
+   */
+  kill?: (pid: number) => void
 }
 
 export interface PreparedLaunch {

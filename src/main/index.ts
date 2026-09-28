@@ -15,7 +15,7 @@ import { join } from 'node:path'
 
 import { BrowserWindow, app, screen } from 'electron'
 
-import type { InstallState } from '@shared/types'
+import type { InstallState, LaunchWindowMode } from '@shared/types'
 
 import { readCatalogSnapshot, registerIpcHandlers } from './ipc'
 import { killGame } from './launch'
@@ -285,10 +285,57 @@ async function bootstrap(): Promise<void> {
   // Registered before the window exists so the renderer's first `invoke` always
   // finds a handler, and so the config migration happens before the renderer asks
   // for `app:paths`.
-  disposeIpc = registerIpcHandlers()
+  disposeIpc = registerIpcHandlers({ onGameLaunched: stepAsideForGame, onGameStopped: returnFromGame })
 
   await openMainWindow()
   log.info('launcher started')
+}
+
+/**
+ * Whether the window was put aside for a game, so it is only brought back if this
+ * launcher is the one that moved it. A user who minimised the launcher themselves must
+ * not have it pop up when a game they started elsewhere exits.
+ */
+let steppedAside = false
+
+/**
+ * Gets the launcher out of the game's way.
+ *
+ * This is what "the game runs inside the launcher" becomes for these titles. The concept
+ * draws the Gameplay screen as a card with gameplay in it, and the launcher cannot put the
+ * game there: `tools/probe-embed.ps1` measured the game re-asserting its own top-level
+ * window, caption and size on every one of 33 consecutive attempts, and refusing a resize
+ * (docs/ARCHITECTURE.md section 6 has the numbers). So on a successful spawn the window
+ * minimises and the real game is simply what the user sees.
+ */
+function stepAsideForGame(mode: LaunchWindowMode): void {
+  const window = mainWindow
+  if (window === null || window.isDestroyed()) return
+
+  if (mode !== 'minimise') {
+    // 'stay': the window keeps the now-playing surface, which is what the renderer has
+    // already switched to. Nothing to do, and nothing to undo later.
+    steppedAside = false
+    log.info('a game started; the launcher stays on the now-playing screen')
+    return
+  }
+
+  steppedAside = true
+  window.minimize()
+  log.info('a game started; the launcher minimised')
+}
+
+/** Brings the launcher back once the game is gone. */
+function returnFromGame(): void {
+  if (!steppedAside) return
+  steppedAside = false
+
+  const window = mainWindow
+  if (window === null || window.isDestroyed()) return
+  if (window.isMinimized()) window.restore()
+  if (!window.isVisible()) window.show()
+  window.focus()
+  log.info('the game ended; the launcher is back on screen')
 }
 
 /** Brings the window of the already-running instance forward. */

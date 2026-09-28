@@ -374,10 +374,9 @@ the reason and the substitute it uses instead.
 
 ### 7.1 Surfaces the concept has no frame for
 
-Five surfaces exist in the running app and not in the Figma file. Each is composed
+Six surfaces exist in the running app and not in the Figma file. Each is composed
 from the design's own tokens rather than from new ones, and its geometry comes from
 the screen the rewrite replaces.
-
 | Surface | Why it exists | Composed from | Geometry source |
 |---|---|---|---|
 | **Launch panel** (`overlays/LaunchPanel.tsx`) | The concept has no launch surface; the MODE / CRT / SCENARIO / LAUNCH rows are the launcher's whole point | The export's `Frame3` meta box (`bg-[#0f0f0f]`, `p-[16px]`, `gap-[8px]`, `shadow-[inset_0px_0px_8px_0px_rgba(255,255,255,0.15)]`) plus the 1px `#4d4d4d` hairline every selectable surface carries; 8px row gap is the recipe's own `gap-[8px]`; rows are `h-[48px]` for a comfortable pointer target | `git show HEAD:src/ui/screens/screen_launch.cpp` (mode row forced by `hasMod`, CRT row, centred LAUNCH; selected row was `RGBA(0xFF,0xFF,0xFF,0x10)`, reproduced as a 0.063 white wash) |
@@ -385,6 +384,12 @@ the screen the rewrite replaces.
 | **Error dialog** (`overlays/ErrorDialog.tsx`) | A failed launch or injection has to be reportable | `rgba(0,0,0,.75)` scrim (the legacy `0xC0`), the shared card surface, the design's 36px inset glow | `git show HEAD:src/ui/screens/screen_error.cpp` (920x480 card centred in 1920x1080, 24px title 48px below the card's top, 20px message wrapped at 840px, 30px line advance) |
 | **Achievement toast** (`overlays/AchievementToast.tsx`) | Unlocks are announced without a modal | The shared card surface; the legacy gold `#D4AF37` kept for the eyebrow, glyph and underline only | `git show HEAD:src/achievements/achievement_overlay.cpp` (300ms fade in, hold, 300ms fade out; card at `x = 1920 - 420`, `y = 30`) |
 | **CRT overlay** (`overlays/CrtOverlay.tsx`) | Optional retro post-processing, carried over from the old launcher | Gradients, `feTurbulence`, `feDisplacementMap`; see `docs/ARCHITECTURE.md` §10 for what each layer replaces and what is lost | `git show HEAD:assets/shaders/crt.frag`, `git show HEAD:src/renderer/crt_filter.cpp` |
+| **Now-playing bar** (`screens/Gameplay.tsx`, `data/design.ts` `NOW_PLAYING_LABEL`) | The concept's Gameplay card is a *frame* filled with gameplay footage and says nothing about what is running. With the game running in its own window — it cannot be embedded, see `docs/ARCHITECTURE.md` §6 — the card alone would imply the footage is the game. The bar is the truth: which row, running or not, for how long, and the one action that matches a running game | `COLOR.reRed` for the dot, `COLOR.bg` at 85% with a 2px backdrop blur for the ground, `COLOR.textMuted` and `COLOR.textPrimary` for the two lines, the card's own 4px radius, and the design's Actor for the type; the button reuses the shared `#2a2a2a` ground and `#4d4d4d` hairline | Not from the legacy C++ launcher, which had no running-game surface at all: the bar is 16px inside the card's bottom edge, full width minus those insets, so it cannot drift from the card it sits in |
+
+One thing that bar does *not* do, and should be named: it is pointer-driven. The concept's
+Gameplay helper bar is `Esc Back` and nothing else, so adding a STOP key would put a hint on
+screen that the design does not draw. The action is therefore a button, and the keyboard
+path out of the screen is unchanged.
 
 Two related calls inside those surfaces worth naming: the Install Status screen's
 `CHANGE INSTALL FOLDER` label is **informational** in this pass (the frozen

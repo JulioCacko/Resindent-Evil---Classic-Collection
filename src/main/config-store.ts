@@ -26,7 +26,7 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 import { DEFAULT_TITLE_ID, TITLES } from '@shared/catalog'
-import type { LauncherConfig, LaunchMode, Re2Scenario, TitleId } from '@shared/types'
+import type { LauncherConfig, LaunchMode, LaunchWindowMode, Re2Scenario, TitleId } from '@shared/types'
 
 import type { ConfigStore, ConfigStoreOptions } from './contracts'
 
@@ -84,6 +84,9 @@ export function defaultConfig(): LauncherConfig {
     lastSelectedTitle: DEFAULT_TITLE_ID,
     modes: {},
     scenarios: {},
+    // These games cannot be embedded in the launcher window (docs/ARCHITECTURE.md
+    // section 6), so the launcher minimises and lets the game be the thing on screen.
+    launchWindowMode: 'minimise',
     gogPathOverride: '',
     keepLauncherVisible: true
   }
@@ -108,6 +111,15 @@ function isLaunchMode(value: unknown): value is LaunchMode {
 
 function isRe2Scenario(value: unknown): value is Re2Scenario {
   return value === 'leon' || value === 'claire'
+}
+
+/**
+ * Whether the launcher steps aside when a game starts, or stays on the now-playing
+ * surface. Anything else in the file falls back to the default rather than reaching the
+ * launch path, where an unrecognised value would silently mean "stay".
+ */
+function readLaunchWindowMode(value: unknown, fallback: LaunchWindowMode): LaunchWindowMode {
+  return value === 'minimise' || value === 'stay' ? value : fallback
 }
 
 function readBoolean(value: unknown, fallback: boolean): boolean {
@@ -175,6 +187,7 @@ function sanitizeConfig(value: unknown, base: LauncherConfig): LauncherConfig {
     lastSelectedTitle: readTitleId(source.lastSelectedTitle, base.lastSelectedTitle),
     modes: readMap(source.modes, isLaunchMode, base.modes),
     scenarios: readMap(source.scenarios, isRe2Scenario, base.scenarios),
+    launchWindowMode: readLaunchWindowMode(source.launchWindowMode, base.launchWindowMode),
     gogPathOverride: readString(source.gogPathOverride, base.gogPathOverride),
     keepLauncherVisible: readBoolean(source.keepLauncherVisible, base.keepLauncherVisible)
   }

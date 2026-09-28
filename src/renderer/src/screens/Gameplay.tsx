@@ -33,14 +33,14 @@
  * (`.ref/designref/src/app/components/GameplayPage.tsx:22-28`).
  */
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 
 import type { CatalogSnapshot, GameStatus, GameTitle, GameVersion, TitleId } from '@shared/types'
 import { HelperBar } from '@renderer/components/HelperBar'
 import { assetUrl } from '@renderer/data/assets'
 import { canLaunch } from '@renderer/data/derive'
-import { GAMEPLAY_COMMON, GAMEPLAY_LAYOUTS, HINTS_GAMEPLAY, MASKS } from '@renderer/data/design'
+import { GAMEPLAY_COMMON, GAMEPLAY_LAYOUTS, HINTS_GAMEPLAY, MASKS, NOW_PLAYING_LABEL } from '@renderer/data/design'
 import type { GameplayLayout } from '@renderer/data/design'
 import { useLauncher } from '@renderer/state/store'
 
@@ -378,8 +378,21 @@ function CardMedia({ version }: { version: GameVersion }) {
  * 45px for RE1 and RE2, 52.28px for RE3), so that one number is a style while the
  * box's own class string stays the export's. `Gameplay 1` is the export's own
  * `data-name` for it.
+ *
+ * The now-playing bar lives *inside* the card rather than beside it, so it inherits the
+ * card's coordinate space and cannot drift from it.
  */
-function GameplayCard({ version, top }: { version: GameVersion; top: number }) {
+function GameplayCard({
+  version,
+  top,
+  status,
+  onStop
+}: {
+  version: GameVersion
+  top: number
+  status: GameStatus
+  onStop: () => void
+}) {
   return (
     <div
       className="-translate-x-1/2 absolute bg-white h-[975px] left-1/2 overflow-clip rounded-[4px] w-[1300px]"
@@ -393,6 +406,101 @@ function GameplayCard({ version, top }: { version: GameVersion; top: number }) {
       <div className="absolute inset-[-0.1%_0_0_0]" data-name="main">
         <CardMedia version={version} />
       </div>
+      <NowPlaying status={status} version={version} onStop={onStop} />
+    </div>
+  )
+}
+
+/** `mm:ss` for an elapsed duration; hours are folded into minutes, as a game session
+ * is minutes long and "1:04:12" would not fit the bar. */
+export function formatElapsed(milliseconds: number): string {
+  if (!Number.isFinite(milliseconds) || milliseconds < 0) return '00:00'
+  const totalSeconds = Math.floor(milliseconds / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+/**
+ * What is actually happening, drawn over the card.
+ *
+ * This exists because the card is a *frame*, and the frame on its own is a claim: the
+ * export fills it with gameplay footage, and a launcher that showed that while claiming
+ * nothing would be implying the footage is the game. It is not - the game runs in its own
+ * window, which the launcher cannot embed (docs/ARCHITECTURE.md section 6 has the
+ * measurement) - so the bar says which row is running, for how long, and offers the one
+ * action that matches a running game.
+ *
+ * `NOT RUNNING` is shown rather than hidden: the screen is reachable with nothing running
+ * (the game can exit while it is up), and hiding the bar there would leave the footage
+ * implying a game that is not there.
+ *
+ * Not part of the Figma frame - see docs/DESIGN-FIDELITY.md 7.1 - so it is composed from
+ * the design's own tokens: the red is `COLOR.reRed`, the muted grey `COLOR.textMuted`, the
+ * dark ground `COLOR.bg` at 85%, the 4px radius is the card's, and the type is the
+ * design's Actor.
+ */
+function NowPlaying({
+  status,
+  version,
+  onStop
+}: {
+  status: GameStatus
+  version: GameVersion
+  onStop: () => void
+}) {
+  const running = status.running
+  const [elapsed, setElapsed] = useState(0)
+
+  useEffect(() => {
+    if (!running || status.startedAt === null) {
+      setElapsed(0)
+      return
+    }
+    const from = status.startedAt
+    const tick = (): void => {
+      setElapsed(Date.now() - from)
+    }
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [running, status.startedAt])
+
+  return (
+    <div
+      className="absolute backdrop-blur-[2px] bg-[#0f0f0f]/85 bottom-[16px] flex gap-[12px] items-center left-[16px] px-[16px] py-[10px] right-[16px] rounded-[4px]"
+      data-figma-node="now-playing"
+      data-running={running ? 'true' : 'false'}
+    >
+      <span
+        className={`rounded-full shrink-0 size-[10px] ${
+          running ? 'animate-pulse bg-[#FE0000]' : 'bg-[#4D4D4D]'
+        }`}
+      />
+      <p className="font-['Actor:Regular',sans-serif] leading-none not-italic shrink-0 text-[18px] text-white tracking-[0.06em] whitespace-nowrap">
+        {running ? NOW_PLAYING_LABEL.running : NOW_PLAYING_LABEL.stopped}
+      </p>
+      <p className="font-['Actor:Regular',sans-serif] leading-none min-w-px not-italic overflow-clip text-[#999] text-[18px] text-ellipsis whitespace-nowrap">
+        {version.displayName}
+      </p>
+      <p
+        className="font-['Actor:Regular',sans-serif] leading-none ml-auto not-italic shrink-0 text-[#999] text-[18px] tracking-[0.04em] whitespace-nowrap"
+        data-figma-node="now-playing-elapsed"
+      >
+        {running ? formatElapsed(elapsed) : NOW_PLAYING_LABEL.stoppedDetail}
+      </p>
+      {running ? (
+        <button
+          className="bg-[#2a2a2a] border border-[#4d4d4d] cursor-pointer font-['Actor:Regular',sans-serif] leading-none not-italic px-[14px] py-[7px] rounded-[4px] shrink-0 text-[#fffffe] text-[16px] tracking-[0.06em] whitespace-nowrap"
+          data-figma-node="now-playing-stop"
+          onClick={onStop}
+          type="button"
+        >
+          {NOW_PLAYING_LABEL.stop}
+        </button>
+      ) : null}
     </div>
   )
 }
@@ -450,6 +558,7 @@ function RotatedLogo({ version, layout }: { version: GameVersion; layout: Gamepl
 export function Gameplay() {
   const gameplay = useLauncher((state) => state.gameplay)
   const gameStatus = useLauncher((state) => state.gameStatus)
+  const stopGame = useLauncher((state) => state.stopGame)
   const selectedTitleId = useLauncher((state) => state.titleId)
   const catalog = useLauncher((state) => state.catalog)
 
@@ -484,7 +593,12 @@ export function Gameplay() {
           {target === null || layout === null ? null : (
             <>
               <ArtLane layout={layout} version={target.version} />
-              <GameplayCard top={layout.cardTop} version={target.version} />
+              <GameplayCard
+                onStop={stopGame}
+                status={gameStatus}
+                top={layout.cardTop}
+                version={target.version}
+              />
               <RotatedLogo layout={layout} version={target.version} />
             </>
           )}

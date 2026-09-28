@@ -241,7 +241,7 @@ Two directions, one rule each:
 Every payload arriving from the renderer is re-validated in `ipc.ts` before it can
 reach the filesystem, the registry or a child process.
 
-### Invoke channels (17)
+### Invoke channels (18)
 
 | Channel | Payload | Result | Notes |
 |---|---|---|---|
@@ -252,8 +252,9 @@ reach the filesystem, the registry or a child process.
 | `config:patch` | `Partial<LauncherConfig>` | `LauncherConfig` | Shallow merge; sanitised field by field |
 | `config:reset` | — | `LauncherConfig` | Defaults; also clears the install-root override |
 | `launch` | `LaunchRequest` | `LaunchResult` | Serialised; a second launch is refused |
-| `game:status` | — | `GameStatus` | `exitCode` is `null` while a game runs |
+| `game:status` | — | `GameStatus` | `exitCode` is `null` while a game runs; `startedAt` is what the now-playing bar counts from |
 | `game:focus` | `{ titleId, versionId }` | — | The row the renderer is showing, used to attribute an exit |
+| `game:stop` | — | — | Ends the running game through the same `killGame` that `app:quit` uses |
 | `achievements:list` | `{ gameId }` | `Achievement[]` | Definitions plus saved progress |
 | `achievements:unlock` | `{ id }` | `Achievement \| null` | `null` for an unknown or already-unlocked id |
 | `achievements:reset` | `{ gameId? }` | `Achievement[]` | Whole save when `gameId` is absent |
@@ -548,9 +549,33 @@ Two other things the probe established, which shape the launch flow:
   That is the game's business, not the launcher's, but it is why ORIGINAL mode on this
   title is reported as-is rather than assumed to work.
 
-The launcher therefore **yields to the game** instead of containing it: on a successful
-spawn it minimises or hides, and the Gameplay screen becomes an honest "now playing"
-surface rather than a card that implies the trailer is the running game.
+The launcher therefore **yields to the game** instead of containing it, and that is what
+"press play" does:
+
+1. The spawn succeeds, and main calls `IpcOptions.onGameLaunched` with the configured
+   `launchWindowMode`. `minimise` (the default) minimises the window; `stay` leaves it on
+   the now-playing surface. `index.ts` owns that window, which is why the hook exists
+   rather than `ipc.ts` reaching for a `BrowserWindow` it should not hold.
+2. The renderer is already on the Gameplay screen, and the card now carries a **now-playing
+   bar**: a red dot, `NOW PLAYING` or `NOT RUNNING`, the row's name, an elapsed `mm:ss`
+   counted from `GameStatus.startedAt` (main's clock, so a window reload cannot desync it),
+   and a `STOP GAME` button.
+3. The bar's `STOP GAME` calls `game:stop`, which runs the same `killGame` that
+   `app:quit` does. The status is *not* set to stopped optimistically: main is the only
+   thing that knows the process is gone and it answers with `game:exit`.
+4. On `game:exit` the window comes back — restored, shown and focused, but only if *this*
+   launcher put it aside, so a user who minimised it themselves does not have it pop up
+   when a game they started elsewhere ends.
+
+Two details earn their own note:
+
+- **`GameExitEvent.requested`.** The launcher's own kill is `taskkill /F`, i.e. exit code
+  1, which is indistinguishable from a crash. Without that flag the renderer reported the
+  user's own STOP as "GAME EXITED WITH AN ERROR — RESIDENT EVIL stopped unexpectedly (exit
+  code 1)", and the first Escape then dismissed that dialog instead of going back. The live
+  spec asserts both halves now: no dialog after STOP, and one Back returns to the list.
+- **`GameStatus.startedAt`** is set by main when it spawns, and cleared with the exit. The
+  renderer counts from it rather than from its own mount time.
 
 ---
 

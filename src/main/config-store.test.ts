@@ -65,6 +65,7 @@ describe('defaultConfig', () => {
       lastSelectedTitle: 're1',
       modes: {},
       scenarios: {},
+      launchWindowMode: 'minimise',
       gogPathOverride: '',
       keepLauncherVisible: true
     })

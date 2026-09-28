@@ -57,6 +57,7 @@ const CONFIG: LauncherConfig = {
   lastSelectedTitle: 're1',
   modes: {},
   scenarios: {},
+  launchWindowMode: 'minimise',
   gogPathOverride: 'D:\\GOG Games',
   keepLauncherVisible: true
 }
