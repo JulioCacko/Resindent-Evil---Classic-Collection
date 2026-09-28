@@ -41,6 +41,16 @@ export interface GameTitleSeed {
    * rather than from a guess at how Valve named it.
    */
   steamAppId: string
+  /**
+   * The RetroAchievements game id, or an empty string when that platform has no entry.
+   *
+   * These are the **PlayStation** entries (29328, 11245, 11265), which are the only ones
+   * RetroAchievements has for these games: RA works by reading an emulator's memory, so a native
+   * Windows build has nothing for it to watch and cannot be tracked automatically. The ids are
+   * carried so the launcher can *show* the lists as reference, ticked locally, and so nothing
+   * anywhere has to pretend an RA unlock could arrive for a game that is not emulated.
+   */
+  raGameId: string
   versions: GameVersionSeed[]
 }
 
@@ -112,6 +122,7 @@ export const TITLES: GameTitleSeed[] = [
     gogGameId: '1580232252',
     gogFolderName: 'Resident Evil',
     steamAppId: '4249100',
+    raGameId: '29328',
     versions: [
       {
         id: 're1_us',
@@ -213,6 +224,7 @@ export const TITLES: GameTitleSeed[] = [
     gogGameId: '1534123252',
     gogFolderName: 'Resident Evil 2',
     steamAppId: '4249110',
+    raGameId: '11245',
     versions: [
       {
         id: 're2_leon_us',
@@ -316,6 +328,7 @@ export const TITLES: GameTitleSeed[] = [
     gogGameId: '1266089300',
     gogFolderName: 'Resident Evil 3',
     steamAppId: '4249120',
+    raGameId: '11265',
     versions: [
       {
         id: 're3_us',
