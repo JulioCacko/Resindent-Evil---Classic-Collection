@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  createGameWindowHost,
   parseHostResult,
   positionArguments,
   positionGameWindow,
@@ -188,5 +189,97 @@ describe('resolveWindowHostScript', () => {
     // The repository really has it, which is the one case worth asserting against the filesystem: if
     // `resources/window-host.ps1` is renamed, this test is what says so.
     expect(resolveWindowHostScript()).toContain('window-host.ps1')
+  })
+})
+
+describe('createGameWindowHost', () => {
+  const bounds = { x: 0, y: 0, width: 1920, height: 1080 }
+
+  /** A host wired to fakes, with the clock under the test's control. */
+  function makeHost(options: {
+    processId?: number
+    bounds?: { x: number; y: number; width: number; height: number } | null
+    answers?: (string | null)[]
+  } = {}): {
+    host: ReturnType<typeof createGameWindowHost>
+    calls: string[][]
+    fire: () => void
+    cleared: () => number
+  } {
+    const calls: string[][] = []
+    const answers = options.answers ?? [POSITIONED]
+    let index = 0
+    let handler: (() => void) | null = null
+    let cleared = 0
+    const host = createGameWindowHost({
+      scriptPath: SCRIPT,
+      runner: (args) => {
+        calls.push(args)
+        const value = answers[Math.min(index, answers.length - 1)] ?? null
+        index += 1
+        return Promise.resolve(value)
+      },
+      bounds: () => (options.bounds === undefined ? bounds : options.bounds),
+      processId: () => options.processId ?? 4242,
+      setInterval: (fn) => {
+        handler = fn
+        return 'timer'
+      },
+      clearInterval: () => {
+        cleared += 1
+      }
+    })
+    return { host, calls, fire: () => handler?.(), cleared: () => cleared }
+  }
+
+  it('places the window once immediately and then on every tick', async () => {
+    const { host, calls, fire } = makeHost()
+    host.start()
+    await Promise.resolve()
+    expect(calls.length, 'placed at once, without waiting an interval').toBeGreaterThanOrEqual(1)
+    const before = calls.length
+    fire()
+    await Promise.resolve()
+    expect(calls.length).toBeGreaterThan(before)
+    await host.stop()
+  })
+
+  it('does nothing while no game is tracked', async () => {
+    const { host, calls } = makeHost({ processId: 0 })
+    const outcome = await host.tick()
+    expect(outcome.reason).toBe('no-game')
+    expect(calls).toHaveLength(0)
+  })
+
+  it('does nothing when the launcher has no usable bounds', async () => {
+    const { host, calls } = makeHost({ bounds: null })
+    expect((await host.tick()).reason).toBe('no-bounds')
+    expect(calls).toHaveLength(0)
+  })
+
+  it('keeps asking while the game has no window yet, which is the common case', async () => {
+    // RE1's loader replaces its window partway through starting, so "not found yet" must not stop the
+    // host: the next tick finds the second window.
+    const { host } = makeHost({ answers: [NOT_FOUND, NOT_FOUND, POSITIONED] })
+    expect((await host.tick()).positioned).toBe(false)
+    expect((await host.tick()).positioned).toBe(false)
+    expect((await host.tick()).positioned).toBe(true)
+  })
+
+  it('releases on stop, and clears the interval exactly once', async () => {
+    const { host, calls, cleared } = makeHost({ answers: [POSITIONED, '{"ok":true,"action":"release","found":true}'] })
+    host.start()
+    await Promise.resolve()
+    await host.stop()
+    expect(cleared()).toBe(1)
+    expect(host.running).toBe(false)
+    expect(calls.some((args) => args.includes('release')), 'a release was asked for').toBe(true)
+    await host.stop()
+    expect(cleared(), 'stopping twice does not clear twice').toBe(1)
+  })
+
+  it('does not throw when the helper cannot be run at all', async () => {
+    const { host } = makeHost({ answers: [null] })
+    await expect(host.tick()).resolves.toEqual({ positioned: false, window: null, reason: 'helper-failed' })
   })
 })

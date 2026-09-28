@@ -66,7 +66,7 @@ export function settingsValue(row: SettingsRow, config: LauncherConfig | null): 
       // write it into, so saying ON alone would promise an effect that cannot happen.
       return config.inGameCrt ? SETTINGS_LABEL.on : SETTINGS_LABEL.off
     case 'window':
-      return config.launchWindowMode === 'stay' ? SETTINGS_LABEL.stay : SETTINGS_LABEL.minimise
+      return SETTINGS_LABEL.launchWindowMode[config.launchWindowMode]
     case 'installRoot':
       // The override is a path; empty means detection's own search order, which is worth
       // naming rather than leaving blank.

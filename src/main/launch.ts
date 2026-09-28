@@ -871,6 +871,18 @@ function defaultKill(pid: number): void {
  * `exitCode` is `null` while a game runs, faithful to the legacy
  * `GetProcessExitCode`, which stayed "invalid" for the whole life of a process.
  */
+/**
+ * The running game's process id, or `0` when nothing is tracked.
+ *
+ * `GameStatus` does not carry a pid - the renderer has no use for one and a number it cannot act on is
+ * a number it should not have - so the window host asks here instead. A Steam launch reports `0`: that
+ * game belongs to Steam, and its window is found by image name rather than by pid.
+ */
+export function getGameProcessId(): number {
+  const game = tracked
+  return game === null ? 0 : game.pid
+}
+
 export function getGameStatus(): GameStatus {
   if (tracked !== null) {
     return {

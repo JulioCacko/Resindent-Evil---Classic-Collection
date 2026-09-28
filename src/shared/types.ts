@@ -151,7 +151,7 @@ export interface RaAchievement {
  * the launcher up on the now-playing surface, which is right for a single-monitor
  * setup where the game is expected to take the foreground itself.
  */
-export type LaunchWindowMode = 'minimise' | 'stay'
+export type LaunchWindowMode = 'minimise' | 'positioned' | 'stay'
 
 export interface LauncherConfig {
   crtEnabled: boolean

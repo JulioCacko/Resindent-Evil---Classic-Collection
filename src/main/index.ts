@@ -16,6 +16,8 @@ import { join } from 'node:path'
 import { BrowserWindow, app, screen } from 'electron'
 
 import type { InstallState, LaunchWindowMode } from '@shared/types'
+import { createGameWindowHost, type GameWindowHost } from './host-window'
+import { getGameProcessId } from './launch'
 
 import { readCatalogSnapshot, registerIpcHandlers } from './ipc'
 import { killGame } from './launch'
@@ -302,15 +304,61 @@ let steppedAside = false
  * Gets the launcher out of the game's way.
  *
  * This is what "the game runs inside the launcher" becomes for these titles. The concept
- * draws the Gameplay screen as a card with gameplay in it, and the launcher cannot put the
+ * draws the Gameplay screen as a card with gameplay in it. The game's window cannot be *reparented*
+ * into it - see docs/ARCHITECTURE.md section 6 - but it can be moved onto the launcher's own
  * game there: `tools/probe-embed3.ps1` measured the wrapper stopping its presentation when the
  * window, caption and size on every one of 33 consecutive attempts, and refusing a resize
  * (docs/ARCHITECTURE.md section 6 has the numbers). So on a successful spawn the window
  * minimises and the real game is simply what the user sees.
  */
+/**
+ * The running game's window, kept on the launcher's content area.
+ *
+ * Bounds are read fresh on every tick rather than captured, so moving or resizing the launcher moves
+ * the game with it and nothing has to notice the change. The pid comes from the tracker, which is also
+ * where a Steam launch's image-name tracking lives, so this works the same whether the launcher spawned
+ * the game or Steam did.
+ */
+let gameHost: GameWindowHost | null = null
+
+function startGameHost(): void {
+  const window = mainWindow
+  if (window === null || window.isDestroyed()) return
+  stopGameHost()
+  gameHost = createGameWindowHost({
+    bounds: () => (window.isDestroyed() ? null : window.getContentBounds()),
+    processId: getGameProcessId,
+    onOutcome: (outcome) => {
+      // `no-window` is the ordinary early answer - RE1's loader replaces its window partway through
+      // starting - so only anything else is worth a line in the log.
+      if (!outcome.positioned && outcome.reason !== 'no-window') {
+        log.warn('could not place the game window: ' + outcome.reason)
+      }
+    }
+  })
+  gameHost.start()
+}
+
+function stopGameHost(): void {
+  const host = gameHost
+  gameHost = null
+  if (host !== null) void host.stop()
+}
 function stepAsideForGame(mode: LaunchWindowMode): void {
   const window = mainWindow
   if (window === null || window.isDestroyed()) return
+
+  if (mode === 'positioned') {
+    // 'positioned': the game's own window is moved onto the launcher's content area and kept there, so
+    // the game runs *inside* the launcher's window rather than beside it. The launcher stays exactly
+    // where it is - minimising would make its bounds meaningless and the game would follow it off
+    // screen - and nothing is reparented, because the wrapper was measured to stop presenting when a
+    // window is made a child (docs/ARCHITECTURE.md section 6 has the numbers).
+    steppedAside = false
+    startGameHost()
+    log.info('a game started; the launcher is hosting the game window')
+    return
+  }
 
   if (mode !== 'minimise') {
     // 'stay': the window keeps the now-playing surface, which is what the renderer has
@@ -327,6 +375,10 @@ function stepAsideForGame(mode: LaunchWindowMode): void {
 
 /** Brings the launcher back once the game is gone. */
 function returnFromGame(): void {
+  // Stopped before the guard: in positioned mode nothing stepped aside, and the release still has to
+  // happen - a window left with its taskbar override set is one nobody can alt-tab back to.
+  stopGameHost()
+
   if (!steppedAside) return
   steppedAside = false
 

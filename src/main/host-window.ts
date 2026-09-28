@@ -248,3 +248,96 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 function asNumber(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0
 }
+
+/** Everything the host needs to keep a game where it belongs, and to stop doing it. */
+export interface GameWindowHostOptions extends HostWindowOptions {
+  /**
+   * Where to put the window, asked again on every tick.
+   *
+   * A function rather than a rectangle so that moving or resizing the launcher moves the game with it
+   * without anything having to notice the change: the next tick reads the new bounds.
+   */
+  bounds: () => ScreenRect | null
+  /** The game's process id, or `0` when no game is tracked. */
+  processId: () => number
+  /** Keep the game in the taskbar and alt-tab. See `PositionRequest.taskbar`. */
+  taskbar?: boolean
+  /** How often to re-apply, in milliseconds. */
+  intervalMs?: number
+  /** Injected in tests, so a test can drive the clock instead of waiting for it. */
+  setInterval?: (handler: () => void, ms: number) => unknown
+  clearInterval?: (handle: unknown) => void
+  /** Called after each attempt, for the log. Never throws into the caller. */
+  onOutcome?: (outcome: PositionOutcome) => void
+}
+
+export interface GameWindowHost {
+  /** One attempt at putting the window where it belongs. */
+  tick(): Promise<PositionOutcome>
+  /** Starts re-applying on the interval. Idempotent. */
+  start(): void
+  /** Stops re-applying and puts the window back the way it was found. Idempotent. */
+  stop(): Promise<void>
+  readonly running: boolean
+}
+
+/**
+ * Keeps a game's window on the launcher's content area for as long as it runs.
+ *
+ * The re-application is not defensive, it is required: RE1's RE-Enhance loader **replaces** its window
+ * partway through starting (the embedding probes measured a new handle arriving seconds after the
+ * first one), and a game that has not opened its window yet answers `found: false` rather than failing.
+ * So a single placement at launch would leave the second window wherever Windows put it.
+ *
+ * Stopping always releases, even if nothing was ever positioned: the release clears the taskbar
+ * override whether or not this code set it, because a window nobody can alt-tab to is a worse failure
+ * than a stray taskbar entry.
+ */
+export function createGameWindowHost(options: GameWindowHostOptions): GameWindowHost {
+  const intervalMs = options.intervalMs ?? 2000
+  const schedule = options.setInterval ?? ((handler, ms) => setInterval(handler, ms))
+  const cancel = options.clearInterval ?? ((handle) => clearInterval(handle as NodeJS.Timeout))
+  let timer: unknown = null
+
+  const tick = async (): Promise<PositionOutcome> => {
+    const processId = options.processId()
+    if (!Number.isInteger(processId) || processId <= 0) {
+      return { positioned: false, window: null, reason: 'no-game' }
+    }
+    const bounds = options.bounds()
+    if (bounds === null) return { positioned: false, window: null, reason: 'no-bounds' }
+
+    const outcome = await positionGameWindow(
+      { processId, rect: bounds, ...(options.taskbar === true ? { taskbar: true } : {}) },
+      options
+    )
+    options.onOutcome?.(outcome)
+    return outcome
+  }
+
+  return {
+    tick,
+    get running() {
+      return timer !== null
+    },
+    start() {
+      if (timer !== null) return
+      timer = schedule(() => {
+        void tick()
+      }, intervalMs)
+      // The first placement should not wait a whole interval for the game to appear in the right
+      // place: one attempt immediately, then the interval keeps it there.
+      void tick()
+    },
+    async stop() {
+      if (timer !== null) {
+        cancel(timer)
+        timer = null
+      }
+      const processId = options.processId()
+      if (Number.isInteger(processId) && processId > 0) {
+        await releaseGameWindow(processId, options)
+      }
+    }
+  }
+}

@@ -45,6 +45,7 @@ import type {
   LaunchRequest,
   LaunchResult,
   LauncherConfig,
+  LaunchWindowMode,
   LauncherError,
   ModProgress,
   Re2Scenario,
@@ -341,6 +342,18 @@ function errorForFailure(code: LaunchFailure): LauncherError {
 }
 
 /** The sound a canonical action makes. `SfxName` is the frozen vocabulary. */
+/**
+ * The launch-window behaviours in the order the settings row cycles them.
+ *
+ * Ordered as they read: get out of the way, put the game inside the launcher, or leave the launcher up
+ * behind it. One cycle for either arrow, because there is no direction to a choice between three things.
+ */
+const LAUNCH_WINDOW_ORDER = ['minimise', 'positioned', 'stay'] as const
+
+function nextLaunchWindowMode(current: LaunchWindowMode): LaunchWindowMode {
+  const at = LAUNCH_WINDOW_ORDER.indexOf(current as (typeof LAUNCH_WINDOW_ORDER)[number])
+  return LAUNCH_WINDOW_ORDER[(at + 1) % LAUNCH_WINDOW_ORDER.length] ?? 'minimise'
+}
 const SOUND_FOR: Record<InputAction, SfxName> = {
   'nav-left': 'cursor',
   'nav-right': 'cursor',
@@ -961,11 +974,10 @@ const store = create<LauncherStore>()((set, get) => {
         void get().patchConfig({ launchThroughSteam: !(config?.launchThroughSteam ?? false) })
         return
       case 'window':
-        // Both arrows flip it, like every other two-value row: there is no direction to a
-        // choice between two things.
-        void get().patchConfig({
-          launchWindowMode: config?.launchWindowMode === 'stay' ? 'minimise' : 'stay'
-        })
+        // One cycle, either arrow, in the order the values read: get out of the way, put the game
+        // inside the launcher, or leave the launcher up behind it. Two arrows that did different
+        // things would be the worse surprise.
+        void get().patchConfig({ launchWindowMode: nextLaunchWindowMode(config?.launchWindowMode ?? 'minimise') })
         return
       case 'scanlines':
         void get().patchConfig({

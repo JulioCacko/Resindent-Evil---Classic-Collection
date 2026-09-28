@@ -131,7 +131,10 @@ function isRe2Scenario(value: unknown): value is Re2Scenario {
  * launch path, where an unrecognised value would silently mean "stay".
  */
 function readLaunchWindowMode(value: unknown, fallback: LaunchWindowMode): LaunchWindowMode {
-  return value === 'minimise' || value === 'stay' ? value : fallback
+  // positioned moves the game's own window onto the launcher's content area, so the game runs inside
+  // the launcher rather than beside it. Middle option rather than default: it changes what the desktop
+  // looks like while a game runs, and minimise changes nothing.
+  return value === 'minimise' || value === 'positioned' || value === 'stay' ? value : fallback
 }
 
 function readBoolean(value: unknown, fallback: boolean): boolean {

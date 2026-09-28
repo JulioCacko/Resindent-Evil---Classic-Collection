@@ -284,6 +284,17 @@ export const SETTINGS_LABEL = {
   auto: 'AUTOMATIC',
   on: 'ON',
   off: 'OFF',
+  /**
+   * The three launch-window behaviours, as the row shows them.
+   *
+   * A map rather than three named constants, so the cycle in the store and this readout cannot
+   * disagree about what a value is called.
+   */
+  launchWindowMode: {
+    minimise: 'MINIMISE THE LAUNCHER',
+    positioned: 'GAME INSIDE THE LAUNCHER',
+    stay: 'STAY ON NOW PLAYING'
+  } as const,
   minimise: 'MINIMISE THE LAUNCHER',
   ingameCrtNote: 'NEEDS RE-ENHANCE',
   steamLaunchNote: 'STEAM INSTALLS ONLY',
