@@ -277,6 +277,8 @@ export interface LauncherActions {
   openCredentials(): void
   closeCredentials(): void
   saveCredentials(user: string, key: string): void
+  /** Ticks or unticks one RetroAchievements entry, locally. */
+  toggleRetroTick(id: number): void
   openPanel(): void
   closePanel(): void
   setPanelOption(index: number): void

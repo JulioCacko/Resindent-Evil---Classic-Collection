@@ -95,6 +95,7 @@ export function defaultConfig(): LauncherConfig {
     // says so rather than showing an empty list as if the game had no achievements.
     raUser: '',
     raKey: '',
+    raTicked: [],
     // Off by default: handing the launch to Steam trades this launcher's own process tracking
     // for Steam's, and that is the player's choice to make rather than a default.
     launchThroughSteam: false,
@@ -146,6 +147,33 @@ function readBoolean(value: unknown, fallback: boolean): boolean {
  */
 function readNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+/**
+ * How many locally-ticked entries are kept.
+ *
+ * The list grows from user clicks and the settings file is rewritten on every toggle, so an
+ * unbounded array would be an unbounded file. RA's largest list for these games is 131 entries and
+ * this is far above anything RA publishes.
+ */
+const RA_TICK_LIMIT = 2000
+
+/**
+ * A list of finite numbers, deduplicated and capped.
+ *
+ * Duplicates matter because a tick is a set: the same id twice would make toggling it behave
+ * differently depending on which copy was removed.
+ */
+function readNumberList(value: unknown, fallback: number[]): number[] {
+  const safe = Array.isArray(fallback) ? fallback : []
+  if (!Array.isArray(value)) return safe
+  const kept = new Set<number>()
+  for (const entry of value) {
+    if (typeof entry !== 'number' || !Number.isFinite(entry)) continue
+    kept.add(entry)
+    if (kept.size >= RA_TICK_LIMIT) break
+  }
+  return [...kept]
 }
 
 function readString(value: unknown, fallback: string): string {
@@ -202,6 +230,7 @@ function sanitizeConfig(value: unknown, base: LauncherConfig): LauncherConfig {
     inGameCrt: readBoolean(source.inGameCrt, base.inGameCrt),
     raUser: readString(source.raUser, base.raUser),
     raKey: readString(source.raKey, base.raKey),
+    raTicked: readNumberList(source.raTicked, base.raTicked),
     launchThroughSteam: readBoolean(source.launchThroughSteam, base.launchThroughSteam),
     gogPathOverride: readString(source.gogPathOverride, base.gogPathOverride),
     keepLauncherVisible: readBoolean(source.keepLauncherVisible, base.keepLauncherVisible)
@@ -345,6 +374,10 @@ export function migrateLegacyConfig(
   const next: LauncherConfig = {
     ...base,
     modes: { ...base.modes },
+    // An array, so it needs copying too: a shared reference would let one store's edit reach another.
+    // Guarded because this function also runs over configs that predate the key, where spreading
+    // undefined would throw and take the whole load with it.
+    raTicked: [...(base.raTicked ?? [])],
     scenarios: { ...base.scenarios }
   }
 

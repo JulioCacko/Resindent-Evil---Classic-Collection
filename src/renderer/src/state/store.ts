@@ -186,6 +186,7 @@ function offlineConfig(): LauncherConfig {
     raUser: '',
     raKey: '',
     launchThroughSteam: false,
+    raTicked: [],
     gogPathOverride: '',
     keepLauncherVisible: true
   }
@@ -855,6 +856,17 @@ const store = create<LauncherStore>()((set, get) => {
    * owns Tab between them, so the launcher has no field navigation to get wrong. Saving writes
    * through the same patchConfig every other setting uses.
    */
+/**
+ * Ticks or unticks one RetroAchievements entry.
+ *
+ * Written through `patchConfig` like every other setting, so a tick survives a restart.
+ */
+  const toggleRetroTick = (id: number): void => {
+    const ticked = get().config?.raTicked ?? []
+    const next = ticked.includes(id) ? ticked.filter((entry) => entry !== id) : [...ticked, id]
+    void get().patchConfig({ raTicked: next })
+  }
+
   const openCredentials = (): void => {
     set({ credentialsOpen: true })
   }
@@ -1371,6 +1383,7 @@ const store = create<LauncherStore>()((set, get) => {
     closeSettings,
     openAchievements,
     openCredentials,
+    toggleRetroTick,
     closeCredentials,
     saveCredentials,
     closeAchievements,

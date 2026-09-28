@@ -70,6 +70,7 @@ describe('defaultConfig', () => {
     raUser: '',
     raKey: '',
     launchThroughSteam: false,
+    raTicked: [],
       gogPathOverride: '',
       keepLauncherVisible: true
     })
@@ -401,5 +402,32 @@ describe('write resilience', () => {
     expect(config.masterVolume).toBe(0.5)
     expect(store.get().masterVolume).toBe(0.5)
     expect(warn).toHaveBeenCalled()
+  })
+})
+describe('the locally-ticked RetroAchievements list', () => {
+  it('starts empty, so a new install has ticked nothing', async () => {
+    expect((await makeStore().load()).raTicked).toEqual([])
+  })
+
+  it('round-trips ids through a new store reading the same file', async () => {
+    await makeStore().patch({ raTicked: [469906, 84984] })
+    expect((await makeStore().load()).raTicked).toEqual([469906, 84984])
+  })
+
+  it('drops duplicates, because a tick is a set', async () => {
+    // The same id twice would make toggling it behave differently depending on which copy was
+    // removed, which is the kind of bug nobody thinks to look for.
+    await writeFile(configPath, JSON.stringify({ raTicked: [7, 7, 8, 7] }), 'utf8')
+    expect((await makeStore().load()).raTicked).toEqual([7, 8])
+  })
+
+  it('drops anything that is not a finite number', async () => {
+    await writeFile(configPath, JSON.stringify({ raTicked: [1, '2', null, true, 3] }), 'utf8')
+    expect((await makeStore().load()).raTicked).toEqual([1, 3])
+  })
+
+  it('falls back to the default when the value is not an array at all', async () => {
+    await writeFile(configPath, JSON.stringify({ raTicked: 'nope' }), 'utf8')
+    expect((await makeStore().load()).raTicked).toEqual([])
   })
 })

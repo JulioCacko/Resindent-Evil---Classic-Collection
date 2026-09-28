@@ -62,6 +62,7 @@ const CONFIG: LauncherConfig = {
     raUser: '',
     raKey: '',
   launchThroughSteam: false,
+  raTicked: [],
   gogPathOverride: 'D:\\GOG Games',
   keepLauncherVisible: true
 }

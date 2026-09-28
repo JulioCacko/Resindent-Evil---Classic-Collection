@@ -63,22 +63,51 @@ function AchievementRow({ achievement }: { achievement: Achievement }) {
   )
 }
 
-/** One RetroAchievements entry: what RA calls it, what it asks for, and what it is worth. */
-function RetroRow({ entry }: { entry: RaAchievement }) {
+/**
+ * One RetroAchievements entry: what RA calls it, what it asks for, and whether the player has ticked
+ * it here.
+ *
+ * The tick is the whole of "tracked locally", and clicking is the only way to set it - deliberately,
+ * because this list is reference material the launcher cannot verify: a tick is a note to self, not a
+ * claim about the game, and it has no business on the keyboard path that drives every real decision
+ * this launcher makes.
+ *
+ * `onToggle` is optional and the row only looks interactive when it is given: a row that invites a
+ * click and does nothing is worse than one that plainly does not.
+ */
+function RetroRow({
+  entry,
+  ticked,
+  onToggle
+}: {
+  entry: RaAchievement
+  ticked: boolean
+  onToggle?: (() => void) | undefined
+}) {
+  const interactive = onToggle !== undefined
   return (
     <div
-      className="bg-[#1a1a1a] border border-[#4d4d4d] border-solid flex gap-[12px] items-start p-[12px] rounded-[4px] w-full"
+      aria-pressed={interactive ? ticked : undefined}
+      className={`bg-[#1a1a1a] border border-[#4d4d4d] border-solid flex gap-[12px] items-start p-[12px] rounded-[4px] w-full${interactive ? ' cursor-pointer' : ''}`}
       data-name="retro-row"
+      data-ticked={ticked ? 'true' : 'false'}
+      onClick={onToggle}
+      role={interactive ? 'button' : undefined}
     >
       <div className="flex flex-col gap-[4px] min-w-px flex-[1_0_0]">
-        <p className="font-['Actor:Regular',sans-serif] leading-none not-italic text-[20px] text-[#ccc]">
+        <p
+          className={`font-['Actor:Regular',sans-serif] leading-none not-italic text-[20px] ${ticked ? 'text-white' : 'text-[#ccc]'}`}
+        >
           {entry.title}
         </p>
         <p className="font-['Actor:Regular',sans-serif] leading-[1.15] not-italic text-[16px] text-[#999]">
           {entry.description}
         </p>
       </div>
-      <p className="font-['Actor:Regular',sans-serif] leading-none not-italic shrink-0 text-[16px] text-[#999]">
+      <p
+        className="font-['Actor:Regular',sans-serif] leading-none not-italic shrink-0 text-[16px] text-[#999]"
+        data-name="retro-points"
+      >
         {String(entry.points)}
       </p>
     </div>
@@ -100,6 +129,14 @@ export interface AchievementsProps {
    */
   raAchievements: RaAchievement[] | null
   raConnected: boolean
+  /**
+   * RA's numeric ids the player has ticked here, and the way to change one.
+   *
+   * Optional so the surface renders correctly without them: no ticks and nothing to click, rather
+   * than a tick count that would be a guess or a row that invites a click it cannot honour.
+   */
+  raTicked?: number[] | undefined
+  onToggleRa?: ((id: number) => void) | undefined
 }
 
 export function Achievements({
@@ -107,10 +144,14 @@ export function Achievements({
   title,
   onClose,
   raAchievements,
-  raConnected
+  raConnected,
+  raTicked = [],
+  onToggleRa
 }: AchievementsProps) {
   const list = achievements ?? []
   const unlocked = list.filter((achievement) => achievement.unlocked).length
+  const tickedCount =
+    raAchievements === null ? 0 : raAchievements.filter((entry) => raTicked.includes(entry.id)).length
 
   return (
     <div
@@ -161,11 +202,22 @@ export function Achievements({
                 ? raConnected
                   ? ACHIEVEMENTS_LABEL.retroEmpty
                   : ACHIEVEMENTS_LABEL.retroUnconnected
-                : `${String(raAchievements.length)} ${ACHIEVEMENTS_LABEL.retroCount}`}
+                : `${String(raAchievements.length)} ${ACHIEVEMENTS_LABEL.retroCount}${
+                    onToggleRa === undefined
+                      ? ''
+                      : ` ${String(tickedCount)} ${ACHIEVEMENTS_LABEL.retroTicked}`
+                  }`}
           </p>
           {raAchievements === null
             ? null
-            : raAchievements.map((entry) => <RetroRow entry={entry} key={entry.id} />)}
+            : raAchievements.map((entry) => (
+                <RetroRow
+                  entry={entry}
+                  key={entry.id}
+                  onToggle={onToggleRa === undefined ? undefined : () => onToggleRa(entry.id)}
+                  ticked={raTicked.includes(entry.id)}
+                />
+              ))}
         </div>
 
         <p

@@ -185,6 +185,14 @@ export interface LauncherConfig {
    */
   raKey: string
   /**
+   * RetroAchievements entries ticked locally, by RA's own numeric ids.
+   *
+   * 'Tracked locally' is the only honest kind of tracking available here: RA reads an emulator's
+   * memory, so it can never report an unlock for a native Windows build. A tick therefore means
+   * 'the player says they did this', stored beside the rest of their configuration.
+   */
+  raTicked: number[]
+  /**
    * Ask Steam to start Steam-installed games, instead of spawning the executable here.
    *
    * Steam records playtime, shows its overlay and tracks achievements only for games it starts

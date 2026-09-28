@@ -320,7 +320,8 @@ export const ACHIEVEMENTS_LABEL = {
   retroLoading: 'Loading...',
   retroEmpty: 'RetroAchievements has no list for this game.',
   retroUnconnected: 'Not connected. Add your RetroAchievements key in Settings to load its list.',
-  retroCount: 'achievements, from RetroAchievements.',
+  retroCount: 'achievements from RetroAchievements,',
+  retroTicked: 'ticked here.',
   note:
     'These are the launcher\u2019s own definitions, read from your progress file. RetroAchievements cannot unlock anything for a native Windows build - it reads an emulator\u2019s memory, and these games are not emulated - so its lists appear here as reference and are ticked locally.'
 } as const
