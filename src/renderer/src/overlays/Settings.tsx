@@ -28,6 +28,7 @@ import {
 } from '@renderer/data/design'
 import type { SettingsRow } from '@renderer/data/design'
 import { HelperBar } from '@renderer/components/HelperBar'
+import { isPointerMovement } from '@renderer/input/useHoverSelect'
 import { useLauncher } from '@renderer/state/store'
 import type { LauncherConfig } from '@shared/types'
 
@@ -193,7 +194,11 @@ export function Settings() {
                  * rule wanted here: the cursor follows a pointer that moves, and stays where
                  * the keyboard left it otherwise.
                  */
-                onMouseMove={() => {
+                onMouseMove={(event) => {
+                  // The same rule the cards and the version rows use: hover acts only when the
+                  // pointer's coordinates actually change, so an event describing where the cursor
+                  // already was cannot move it. See useHoverSelect.
+                  if (!isPointerMovement({ x: event.clientX, y: event.clientY })) return
                   if (selected) return
                   moveSettingsRow(rowIndex - index)
                   setConfirmReset(false)
