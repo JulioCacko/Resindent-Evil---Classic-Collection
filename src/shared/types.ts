@@ -150,6 +150,19 @@ export interface LauncherConfig {
    * `dgVoodoo.conf`, so there is nothing to write and the launch proceeds untouched.
    */
   inGameCrt: boolean
+  /**
+   * RetroAchievements account name. Optional - the API answers with the key alone - and used
+   * only to build the request URL when it is set.
+   */
+  raUser: string
+  /**
+   * The user's personal RetroAchievements web API key.
+   *
+   * A credential, and treated as one: it is never compiled in, never logged, and is sent to
+   * retroachievements.org and nowhere else. It lives here because this is where the launcher
+   * keeps everything the user configured.
+   */
+  raKey: string
   scanlineIntensity: number
   curvature: number
   crtVignette: number

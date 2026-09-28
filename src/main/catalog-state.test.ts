@@ -59,6 +59,8 @@ const CONFIG: LauncherConfig = {
   scenarios: {},
   launchWindowMode: 'minimise',
   inGameCrt: false,
+    raUser: '',
+    raKey: '',
   gogPathOverride: 'D:\\GOG Games',
   keepLauncherVisible: true
 }

@@ -91,6 +91,10 @@ export function defaultConfig(): LauncherConfig {
     // the launcher, the game's own options - so a user who wants one has not asked for the
     // other, and both start off.
     inGameCrt: false,
+    // Empty until the user supplies them: no key is shipped, and the achievements surface
+    // says so rather than showing an empty list as if the game had no achievements.
+    raUser: '',
+    raKey: '',
     gogPathOverride: '',
     keepLauncherVisible: true
   }
@@ -193,6 +197,8 @@ function sanitizeConfig(value: unknown, base: LauncherConfig): LauncherConfig {
     scenarios: readMap(source.scenarios, isRe2Scenario, base.scenarios),
     launchWindowMode: readLaunchWindowMode(source.launchWindowMode, base.launchWindowMode),
     inGameCrt: readBoolean(source.inGameCrt, base.inGameCrt),
+    raUser: readString(source.raUser, base.raUser),
+    raKey: readString(source.raKey, base.raKey),
     gogPathOverride: readString(source.gogPathOverride, base.gogPathOverride),
     keepLauncherVisible: readBoolean(source.keepLauncherVisible, base.keepLauncherVisible)
   }

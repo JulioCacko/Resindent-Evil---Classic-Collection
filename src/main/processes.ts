@@ -13,6 +13,12 @@
  * `reg query` (docs/ARCHITECTURE.md §1): the project ships no native modules, so nothing has
  * to be rebuilt per Electron or Node ABI. The command runner is injected, so the parsing and
  * the matching are unit-testable without running anything.
+ *
+ * **Not wired yet.** Nothing calls this module: it is the prerequisite for launching through
+ * Steam, which is the change that follows. It is committed on its own because a tested
+ * discovery module is a coherent reviewable unit, and fusing it with a launch-path rewrite is
+ * not - so if you are reading this and no caller exists, that is why, and the work it is for
+ * is `launchThroughSteam` in `launch.ts`.
  */
 import { execFile } from 'node:child_process'
 

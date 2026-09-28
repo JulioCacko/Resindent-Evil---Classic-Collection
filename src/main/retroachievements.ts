@@ -18,6 +18,10 @@
  * **The key is the user's.** It is a personal credential (retroachievements.org → Settings →
  * API keys), read from the launcher's own configuration and never from source: no key is
  * compiled in, committed, or sent anywhere except retroachievements.org.
+ *
+ * **Not wired yet.** Nothing calls this module: the IPC channel, the achievements surface and
+ * the two settings rows that feed it are the change that follows. If you are reading this and
+ * no caller exists, that is why.
  */
 import { log } from './logger'
 

@@ -40,7 +40,17 @@ export function VersionRow({ version, selected, onHover, onActivate }: VersionRo
    */
   const unavailableReason = launchable ? null : version.unavailableReason || null
 
-  const handleMouseEnter = (): void => {
+  /**
+   * The pointer moves the cursor onto a row, but only when it *moves*.
+   *
+   * Bound to `onMouseMove` rather than `onMouseEnter`, for the reason `GameCard` and
+   * `Settings` are: enter fires when a row appears *under* a stationary pointer, so mounting
+   * the version screen while the mouse happens to rest over the list moved the cursor before
+   * the user touched anything. Two e2e specs caught it - "the first row to be selected on
+   * entering the title: still 2 after waiting" and its twin on the menu - because the keyboard
+   * then acted on a row nobody chose.
+   */
+  const handlePointerMove = (): void => {
     onHover()
   }
 
@@ -86,7 +96,7 @@ export function VersionRow({ version, selected, onHover, onActivate }: VersionRo
       }`}
       data-name="btn/menu"
       onClick={handleClick}
-      onMouseEnter={handleMouseEnter}
+      onMouseMove={handlePointerMove}
       role="button"
       tabIndex={0}
     >

@@ -67,6 +67,8 @@ describe('defaultConfig', () => {
       scenarios: {},
       launchWindowMode: 'minimise',
       inGameCrt: false,
+    raUser: '',
+    raKey: '',
       gogPathOverride: '',
       keepLauncherVisible: true
     })

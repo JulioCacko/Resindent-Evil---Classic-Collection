@@ -183,6 +183,8 @@ function offlineConfig(): LauncherConfig {
     scenarios: {},
     launchWindowMode: 'minimise',
     inGameCrt: false,
+    raUser: '',
+    raKey: '',
     gogPathOverride: '',
     keepLauncherVisible: true
   }
