@@ -40,7 +40,7 @@ function AchievementRow({ achievement }: { achievement: Achievement }) {
       */}
       <div
         aria-hidden="true"
-        className="bg-[#0f0f0f] border border-[#4d4d4d] border-solid flex h-[48px] items-center justify-center rounded-[4px] shrink-0 w-[48px]"
+        className="bg-[#0f0f0f] border border-[#4d4d4d] border-solid flex h-[48px] items-center justify-center shrink-0 w-[48px]"
       >
         <p className="font-['Actor:Regular',sans-serif] leading-none not-italic text-[22px] text-[#999]">
           {achievement.name.slice(0, 1).toUpperCase()}
@@ -124,7 +124,7 @@ export function Achievements({ achievements, title, onClose }: AchievementsProps
 
       <button
         aria-label="Close achievements"
-        className="absolute right-[120px] top-[64px] cursor-pointer font-['Actor:Regular',sans-serif] leading-none not-italic text-[#999] text-[20px]"
+        className="absolute right-[120px] top-[64px] cursor-pointer font-['Actor:Regular',sans-serif] leading-none not-italic text-[#999] text-[20px] transition-[scale,color] duration-150 ease-out hover:text-[#ccc] active:scale-[0.96]"
         data-figma-node="achievements-close"
         onClick={() => onClose()}
         type="button"
