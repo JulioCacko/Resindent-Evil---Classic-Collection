@@ -88,6 +88,17 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
   const raKey = useLauncher((state) => state.config?.raKey ?? '')
   const saveCredentials = useLauncher((state) => state.saveCredentials)
   const closeCredentials = useLauncher((state) => state.closeCredentials)
+  /**
+   * The ticked list, selected the way the achievement queue above is and for the same reason.
+   *
+   * The selector returns `state.config` - an object the store owns, with a stable identity - and the
+   * fallback is applied *outside* it. Writing `(state) => state.config?.raTicked ?? []` puts a freshly
+   * built array inside the subscription, whose identity changes on every render, and
+   * `useSyncExternalStore` then re-renders forever: the launcher never leaves its boot screen. That
+   * was a real failure in this file, not a hypothetical one.
+   */
+  const raTicked = useLauncher((state) => state.config)?.raTicked ?? []
+  const toggleRetroTick = useLauncher((state) => state.toggleRetroTick)
   const busy = useLauncher((state) => state.busy)
   const error = useLauncher((state) => state.error)
 
@@ -272,6 +283,8 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
           achievements={achievements}
           onClose={closeAchievements}
           title={achievementsTitle}
+          onToggleRa={toggleRetroTick}
+          raTicked={raTicked}
           raAchievements={raAchievements}
           raConnected={raConnected}
         />
