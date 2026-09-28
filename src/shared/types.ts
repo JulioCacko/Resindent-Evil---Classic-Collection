@@ -324,7 +324,7 @@ export type InputAction =
   /**
    * The dedicated menu key. Opens the settings surface and closes it again, on any screen.
    *
-   * Separate from ack on purpose: ack means 'leave this screen' and is interpreted per screen,
+   * Separate from plain Back on purpose: Back means 'leave this screen' and is interpreted per screen,
    * while this means 'show me the launcher's own additions' wherever the player happens to be.
    */
   | 'menu'

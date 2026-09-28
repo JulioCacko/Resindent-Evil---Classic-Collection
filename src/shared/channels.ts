@@ -39,7 +39,7 @@ export const INVOKE_CHANNELS = {
   /**
    * The RetroAchievements lists for a title, fetched on demand.
    *
-   * Separate from chievementsList, which answers from what the launcher ships: this one leaves
+   * Separate from the bundled list, which answers from what the launcher ships: this one leaves
    * the machine, needs the user's own credentials, and answers an empty array whenever it cannot -
    * so a surface can treat both the same way without either being able to break the launcher.
    */
