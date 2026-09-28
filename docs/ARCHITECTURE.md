@@ -162,12 +162,6 @@ src/
 │   └── index.d.ts               the global type for window.reLauncher
 └── renderer/
     ├── index.html               the single HTML entry
-    ├── design-export/           byte-identical copy of .ref/designref/src/imports/*.tsx
-    │                            plus the export's own interaction pages
-    │                            (reference-MainMenuPage.tsx, reference-VersionSelectPage.tsx,
-    │                            reference-GameplayPage.tsx, reference-routes.ts). The
-    │                            fidelity checker reads the component files; the reference
-    │                            pages are the interaction contract.
     └── src/
         ├── main.tsx             React root + StrictMode
         ├── App.tsx              boot, compose, route, gesture -> action translation
@@ -880,7 +874,10 @@ Two design decisions in the build are load-bearing:
   under `font/` and audio under `audio/` with stable names, so a packaged build can
   be inspected and the fidelity tooling can address the same files.
 
-`src/renderer/design-export/**` is deliberately outside `tsconfig.web.json`'s
-`include`, because it is verbatim Figma output: it imports `figma:asset/…`
-specifiers and uses `React.CSSProperties` casts that would fail a strict
-typecheck. It is a reference artefact, not part of the app.
+**The design export is not in this repository**, and neither `tsconfig` project covers it.
+It is the author's working material from the design tool: verbatim export output that
+imports `figma:asset/…` specifiers and uses `React.CSSProperties` casts which would fail a
+strict typecheck. It sits at `.ref/designref/` (gitignored) as a *reference*, never as a
+dependency — the app imports nothing from it, and `pnpm check:fidelity` is the only thing
+that reads it. In a clone that guard reports that it verified nothing, rather than passing
+quietly: see `docs/DESIGN-FIDELITY.md` §1.

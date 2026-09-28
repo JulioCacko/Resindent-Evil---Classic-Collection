@@ -1,29 +1,46 @@
 # Resident Evil - Classic Collection
 
-A desktop launcher/frontend for the **GOG Resident Evil Classic Bundle** (RE1, RE2,
-RE3), rebuilt as an Electron + React application around a 1:1 recreation of the
-Figma concept — the same UI the original Metal Gear Solid Master Collection-inspired
-design called for, now driven by the design's own measured values instead of by
-hand-written draw calls. It launches all three titles with optional RE-Enhance mod
-support, per-version regional variants, RE2's player scenarios, a CRT filter and an
-achievement system.
+An **unofficial, non-commercial launcher application** for the Resident Evil Classic
+Bundle (RE1, RE2, RE3): a desktop front end that implements a designed user interface
+1:1 and starts games **you already own**. It is an Electron + React application, driven by the
+design's own measured values rather than by hand-written draw calls, and it launches all
+three titles with optional RE-Enhance mod support, per-version regional variants, RE2's
+player scenarios, a CRT filter and an achievement system.
 
-**Fan Concept by Julio CACKO**
+> ### Not affiliated with Capcom, GOG or Valve — and not a game
+>
+> This is an **unofficial project**, made by a fan of the games. It is not authorised,
+> endorsed or sponsored by anyone, and it distributes **no game code, executables, game
+> data or mod payloads**. It cannot run anything without your own legally purchased copy
+> of the games, it modifies nothing unless you press the button, and it costs nothing.
+>
+> *Resident Evil*, *BIOHAZARD* and the associated artwork are the property of **Capcom
+> Co., Ltd.**, and are used here to identify the games the launcher presents.
+>
+> Read **[DISCLAIMER.md](DISCLAIMER.md)** — it states plainly what the project is and is
+> not, which assets belong to whom, and the takedown policy (short version: name the
+> file, and it goes).
+
+**Built by Julio CACKO**
 
 ---
 
-## What this is
+## What this is — and what it is not
 
-This is the second incarnation of the concept. The first was a C++11 / SDL2 /
-OpenGL launcher built around a fixed 1920x1080 offscreen framebuffer; that
-implementation has been replaced by Electron 44 + React 19 + Vite 7 + Tailwind CSS
-v4 + TypeScript, so the concept's own Tailwind classes could be transcribed into
-components rather than re-implemented as immediate-mode draw calls. Everything the
+**It is** software: a working desktop application that implements a designed user
+interface 1:1, with the design's own utility classes transcribed into components instead
+of re-implemented as immediate-mode draw calls. Everything the
 launcher *does* — install detection, validation, RE-Enhance injection and restore,
 `config.ini` patching, the save format, the boot-to-install-status rule — is
-behaviourally the same as before, ported one function at a time from the code it
-replaces. What is new is how it is *drawn*, and how carefully that drawing is
-guarded: see `docs/DESIGN-FIDELITY.md` and `pnpm check:fidelity`.
+behaviourally the same as the C++ launcher it replaces, ported one function at a time.
+What is new is how it is *drawn*, and how carefully that drawing is guarded: see
+`docs/DESIGN-FIDELITY.md` and `pnpm check:fidelity`.
+
+**It is not** a game, an emulator, a loader, a crack, a mod, or a distribution of
+anything Capcom made. It has no engine, no assets pipeline of its own, and no way to
+obtain the games. It is a front end for copies that already exist on your disk, in the
+folder layout GOG and Steam install them in — and if it cannot find them, it tells you
+so and offers to be pointed at them.
 
 `docs/ARCHITECTURE.md` is the full tour: the process split, the IPC contract, the
 catalog, the launch pipeline, the mod algorithm, the config and save formats and the
@@ -36,7 +53,7 @@ input pipeline.
 - **Unified game selection** — three cover cards on a fixed 1920x1080 stage, scaled
   to fit any window without reflowing a single measured value
 - **Version picker** — 8 rows across three titles: regional variants (US / JP),
-  Director's Cut, RE2's two player scenarios as a per-row option, and the concept's
+  Director's Cut, RE2's two player scenarios as a per-row option, and the design's
   BIOHAZARD 1.5 row kept for documentation
 - **RE-Enhance integration** — enhanced/original mode per row, automatic file
   injection with a reversible backup, correct executable switching, and pre-launch
@@ -72,14 +89,23 @@ Install with `pnpm install`; nothing else has to be built or downloaded.
 
 ### Runtime Dependencies (Not Included in Repository)
 
-The following are **not** in this repository, for copyright reasons, and must be
-provided locally. Both folders are gitignored.
+Nothing below is in this repository, and none of it is needed to build or run the
+launcher — only to actually start a game. The first two folders are gitignored.
 
 | What | Where it goes | How to obtain |
 |---|---|---|
-| The Resident Evil Classic Bundle, **GOG or Steam** | GOG: `GOG Games/` next to the launcher, or anywhere the launcher can detect. Steam: install it normally and the launcher finds it | Purchase from GOG.com or Steam |
-| RE-Enhance mods (optional) | `reenhancemods/` next to the launcher | From their respective authors (see Credits) |
-| The concept's textures (optional, only to re-run `pnpm assets:sync`) | `assets/textures/` | **Included in the repository.** Figma's own exports for the eight info-panel logos and the main-menu lockup. Their converted copies are committed under `src/renderer/src/assets/`, so a clone builds without them |
+| The Resident Evil Classic Bundle, **GOG or Steam** | GOG: `GOG Games/` next to the launcher, or anywhere it can detect (including the store's own registry entry). Steam: install it normally and the launcher finds it. Either way you can point the launcher at the folder from **Settings → Games Folder** | Purchase from GOG.com or Steam. **Not distributed here, in any form** |
+| RE-Enhance mods (optional) | `reenhancemods/` next to the launcher | From their respective authors (see Credits). **Not distributed here, and not bundled in the released builds** |
+| The design's textures (optional; only needed to re-run `pnpm assets:sync`) | `assets/textures/` | Included in the repository: the author's own Figma exports for the eight info-panel logos and the main-menu lockup |
+| The source media the assets are converted *from* (optional; only needed to re-run `pnpm assets:sync`) | `media/`, `assets/videos/`, `assets/audio/` | The author's own working folders; gitignored. The converted results are committed under `src/renderer/src/assets/`, so a clone builds and runs without them |
+
+**One thing to be clear about**, because the table above would otherwise read as a claim
+that nothing franchise-related ships here: the converted UI assets *are* committed —
+that is what makes a clone run out of the box — and they include franchise artwork,
+wordmarks, trailer footage and sound effects. They are not the project's to license.
+`DISCLAIMER.md` §5–§6 lists exactly which files those are and where each came from, and
+§7 says how to have any of them removed. What is *not* here is anything that constitutes
+a game: no executables, no game data, no engine code, no mod payloads.
 
 ### GOG or Steam
 
@@ -154,8 +180,8 @@ if it exists and holds at least one entry.
 
 ## Game catalog
 
-Eight rows, three titles. The **Release shown** column is the date the concept draws
-on the row; **Originally released** is the concept's own `originally released in …`
+Eight rows, three titles. The **Release shown** column is the date the design draws
+on the row; **Originally released** is the design's own `originally released in …`
 line, reproduced verbatim (`docs/DESIGN-FIDELITY.md` §7.3).
 
 ### Resident Evil (GOG id `1580232252`, folder `Resident Evil`)
@@ -175,7 +201,7 @@ line, reproduced verbatim (`docs/DESIGN-FIDELITY.md` §7.3).
 | 2 | BIO HAZARD 2 | JP | September 29, 1998 | 29 January 1998 | `LeonU.exe` / `ClaireU.exe` (scenario) | RE-Enhance v2.0.1 (`Resident Evil 2.exe`) |
 
 > **Row 1 cannot be launched.** BIOHAZARD 1.5 is the internal name of the Resident Evil
-> 2 prototype that was cancelled in early 1997 and rebuilt from scratch. The concept
+> 2 prototype that was cancelled in early 1997 and rebuilt from scratch. The design
 > devotes a row to it — with its own artwork, description and the note *"Planned
 > Release IN March 1997 (Scrapped and remade.)"* — so the row is kept and labelled
 > `CONCEPT — NEVER RELEASED`. It has no executable, its LAUNCH row is disabled, and
@@ -323,7 +349,7 @@ sound the renderer imports. It is a build step, not a manual one, and it is the 
 thing that writes into `src/renderer/src/assets/`.
 
 - **Sources.** The eight info-panel logos and the main-menu badge come from
-  `assets/textures/` — the concept's own texture exports, named the way Figma names
+  `assets/textures/` — the design's own texture exports, named the way the design tool names
   layers (`Game=1, Type=Default.png`, `main-logo.png`). Each logo has the exact aspect
   ratio of the box the design draws it in (`Game=1, Type=Default` is 409x109 against a
   262.686x70 box) and is about 1.55x the `media/` file of the same art, so the
@@ -333,7 +359,7 @@ thing that writes into `src/renderer/src/assets/`.
   Unsplash backdrop, the three cover portraits, the two gameplay stills — come from
   `.ref/designref/src/assets/`.
 - **The badge.** It is cropped out of `main-logo.png` rather than re-typeset: the sync
-  finds the lockup's lowest opaque band, trims the drop shadow Figma flattened into the
+  finds the lockup's lowest opaque band, trims the drop shadow the export flattened into the
   texture (the CSS one from the export is drawn instead) and reports the rectangle it
   used, which is also recorded in the manifest. See `docs/DESIGN-FIDELITY.md` §7.2.
 - **Re-encoding.** Everything becomes WebP (`sharp`) so the renderer stays small;
@@ -343,7 +369,7 @@ thing that writes into `src/renderer/src/assets/`.
   are the three WAV cues and the Actor font.
 - **Records.** `src/renderer/src/assets/MANIFEST.json` lists every output with its
   source path, size and — for the badge — the crop rectangle; `design-map.json` maps
-  the export's `figma:asset/<hash>` specifiers to converted files. Neither is
+  the export's asset-hash specifiers to converted files. Neither is
   hand-edited.
 - `node tools/sync-design-assets.mjs --check` reports what would be missing without
   writing anything.
@@ -366,7 +392,7 @@ pnpm test:watch     # the same, in watch mode
 pnpm typecheck      # tsc over the main/preload, renderer and e2e projects
 pnpm compile        # build main, preload and renderer into out/
 pnpm test:e2e       # compile, then run the Playwright specs from tests/e2e/
-pnpm check:fidelity # the design-drift guard: the live UI vs the Figma export
+pnpm check:fidelity # the design-drift guard: the live UI vs the design export
 ```
 
 ### The one spec that starts a game
@@ -389,11 +415,13 @@ repeatable; the game and the mod injection are not, and are not meant to be. It
 force-kills anything it started on the way out, including a failure midway.
 
 `pnpm check:fidelity` is the one to run after touching any component, any measured
-value or the catalog: it reads the vendored Figma export and fails if a design class
+value or the catalog: it reads the design export and fails if a design class
 string, measured number, gradient stop or mask offset is no longer present in the
-renderer. It verifies the vendored copy is still byte-identical to
-`.ref/designref/src/imports/`, and it can run in `--strict` mode, which also fails
-when a value has moved to a different file. The three-step fidelity procedure — the
+renderer. It reads the design export, which is **not** in this repository: the exported components
+are the author's working material, so they are kept beside the working tree and
+gitignored. In a clone the guard says so and reports that nothing was verified rather
+than passing silently. It can run in `--strict` mode, which also fails when a value has
+moved to a different file. The three-step fidelity procedure — the
 guard, the Playwright geometry spec and the human side-by-side against the export —
 is written up in `docs/DESIGN-FIDELITY.md` §8.
 
@@ -421,9 +449,10 @@ is written up in `docs/DESIGN-FIDELITY.md` §8.
 
 ## Credits
 
-- **Concept & Development**: Julio CACKO
+- **Design & Development**: Julio CACKO
 - **RE-Enhance mods**: Classic REbirth, Seamless HD Project, TeamX HD
-- **Game art and trailers**: CAPCOM CO., LTD. — used here as a fan concept
+- **Game art and trailers**: CAPCOM CO., LTD. — reproduced so the launcher can present the
+  games, and removed on request (see [DISCLAIMER.md](DISCLAIMER.md) §7)
 - **Actor typeface**: released under the SIL Open Font License; see
   `assets/fonts/OFL.txt`
 - **Engine reference for the original implementation**: `powerslave_ex` (KEX engine)
@@ -432,21 +461,45 @@ is written up in `docs/DESIGN-FIDELITY.md` §8.
 
 ## Legal notice
 
-This is a **fan concept**. It is not affiliated with, endorsed by or sponsored by
+**The full statement is [DISCLAIMER.md](DISCLAIMER.md)**: what the project is and is
+not, whose content is whose (asset by asset), the trademark position, the takedown
+policy and how to request a removal, and an honest account of what a disclaimer can and
+cannot do. The summary below is the short version.
+
+This is **unofficial software**. It is not affiliated with, endorsed by or sponsored by
 CAPCOM CO., LTD.
 
 Resident Evil, BIOHAZARD and all related names, characters, artwork and trademarks
 are the property of CAPCOM CO., LTD. All game assets, logos, cover art and trailer
 footage belong to their respective owners.
 
-**This repository ships no copyrighted game files.** The `GOG Games/` folder, the
-`reenhancemods/` folder and the development-only `.ref/` reference tree are all
-gitignored and must be supplied by the user. What the repository contains is
-launcher source code, the concept's own generated art (derived from the design
-export), and achievement definitions.
+**Nothing in this repository constitutes a game.** It ships no executables, no game
+data, no engine code, no mod payloads and nothing that defeats copy protection. The
+`GOG Games/`, `reenhancemods/`, `media/`, `assets/videos/`, `assets/audio/` and
+development-only `.ref/` folders are all gitignored and must be supplied by the user;
+`DISCLAIMER.md` §2 lists what is excluded and why.
+
+**What the repository *does* contain, stated without euphemism:** the launcher's source
+code, the author's own user-interface work (layout, measurements, typography), the
+achievement definitions, and the generated UI assets under
+`src/renderer/src/assets/` — which include franchise cover art, promotional art,
+wordmarks, trailer footage and sound effects. Those belong to **Capcom Co., Ltd.**, not to
+this project, and no licence over them is claimed or granted here. `DISCLAIMER.md` §5–§6
+identifies every one of them by path and source, and §7 is the takedown policy: name the
+file and it will be removed promptly.
+
+**The design export is not in the repository.** The design was drawn in a separate design
+tool and its exported components are the author's working material, so they are kept
+beside the working tree (gitignored) rather than published here. That is why
+`pnpm check:fidelity` reports "not verified" on a fresh clone instead of passing quietly —
+see the Testing section.
+
+A disclaimer does not make someone else's material lawful, and this one does not
+pretend to — see `DISCLAIMER.md` §8 for what it does and does not do. It is also not
+legal advice.
 
 One typeface is bundled and it is redistributable: **Actor** (SIL OFL 1.1, licence at
-`assets/fonts/OFL.txt`), which sets the entire interface. The concept's other face —
+`assets/fonts/OFL.txt`), which sets the entire interface. The design's other face —
 the one it draws `Classic Collection` in — is Peter Jonca's **"Resident Evil Classic
 Game Font"** (CC BY-ND 3.0), which is *not* redistributed here because its download
 requires a DeviantArt login. No font is needed for it either way: the badge renders

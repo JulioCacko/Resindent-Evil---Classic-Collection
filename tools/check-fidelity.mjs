@@ -65,11 +65,33 @@ import { fileURLToPath } from 'node:url'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
-/** The vendored export: read-only input to every check below. */
-const EXPORT_DIR = join(repoRoot, 'src', 'renderer', 'design-export')
-
-/** The authoritative Figma export. Compared against, never read for tokens. */
+/**
+ * The authoritative design export, and where this check reads its tokens from.
+ *
+ * It is **not** part of the repository. The launch design was drawn in a separate design
+ * tool, and the exported components are the author's own working material rather than part
+ * of the product: shipping them made the repository carry a second copy of a design tool's
+ * output, which is not something this project distributes. So the export lives beside the
+ * working tree, gitignored, and this guard is a *development* check: it reads the export
+ * when it is there and says so plainly when it is not.
+ *
+ * That ordering matters. The `.ref` copy is the ground truth, so it is preferred; the
+ * previously vendored copy under `src/renderer/design-export/` is still accepted for a
+ * working tree that has one, which is what makes the removal a no-op for anyone who
+ * already had it checked out.
+ */
 const REF_EXPORT_DIR = join(repoRoot, '.ref', 'designref', 'src', 'imports')
+const LEGACY_VENDORED_DIR = join(repoRoot, 'src', 'renderer', 'design-export')
+const EXPORT_DIR = existsSync(REF_EXPORT_DIR) ? REF_EXPORT_DIR : LEGACY_VENDORED_DIR
+
+/**
+ * Whether the design export is available at all.
+ *
+ * Every token below is *read* from it, so without it there is nothing to check against:
+ * the guard reports that plainly and exits successfully rather than failing a build for
+ * the absence of a file the repository deliberately does not contain.
+ */
+const EXPORT_AVAILABLE = existsSync(EXPORT_DIR)
 
 /** Where a token is looked for: the renderer, plus the shared catalog it draws from. */
 const LIVE_SCAN_ROOTS = [join(repoRoot, 'src', 'renderer', 'src'), join(repoRoot, 'src', 'shared')]
@@ -715,19 +737,23 @@ function report(severity, message) {
 }
 
 /**
- * Guards the vendored copy against the export it claims to be a copy of.
+ * Guards the exported components against the tree they were taken from.
  *
- * The vendored files are what every token below is read from, so if one stops
- * being byte-identical to `.ref/designref/src/imports/<name>` the whole check is
- * being run against something that is no longer the design. Skipped, with a note,
- * when `.ref/` is absent (it is gitignored): the check still runs, just without the
- * provenance guarantee.
+ * Only meaningful when both copies exist: with the vendored copy gone from the repository
+ * (see `EXPORT_DIR`), there is nothing to compare, and the check says so and moves on.
+ * The guard is kept because a working tree that still has the older vendored copy should
+ * still be told if it has drifted from the export.
  */
 async function checkVendoredCopyIsFaithful(exportNames) {
   if (!existsSync(REF_EXPORT_DIR)) {
     process.stderr.write(
-      'check-fidelity: note — .ref/designref/src/imports is absent, so the vendored copy could not be verified against the export\n'
+      'check-fidelity: note — the design export is absent (.ref/designref/src/imports), so tokens could not be read and nothing was verified\n'
     )
+    return
+  }
+  if (EXPORT_DIR === REF_EXPORT_DIR) {
+    // Reading the export directly: it *is* the ground truth, so there is no second copy to
+    // compare it against.
     return
   }
 
@@ -751,6 +777,24 @@ async function checkVendoredCopyIsFaithful(exportNames) {
 }
 
 async function main() {
+  /**
+   * No export, nothing to check.
+   *
+   * The repository does not ship the design export (see `EXPORT_DIR`), so in a clone this
+   * guard has no reference to compare the UI against. Saying so and exiting successfully is
+   * the honest outcome: a build must not fail because a file the project deliberately does
+   * not contain is missing, and silence would be worse - it would read as "verified".
+   */
+  if (!EXPORT_AVAILABLE) {
+    process.stderr.write(
+      'check-fidelity: not verified — the design export is not present.\n' +
+        `  looked in: ${EXPORT_DIR}\n` +
+        '  every token this guard checks is read from it, so with it absent there is nothing\n' +
+        '  to verify. Put the export back at one of those paths to run the full check.\n'
+    )
+    return
+  }
+
   const exportNames = [
     ...new Set([...TRACKED.map((entry) => entry.export), ...TRANSLATED.map((entry) => entry.export)])
   ].sort()

@@ -7,19 +7,24 @@ place where the shipped app deliberately does not match the concept.
 
 Sources, in order of authority:
 
-1. `.ref/designref/` — the authoritative Figma export (read-only).
-   `.ref/designref/src/imports/*.tsx` is verbatim Figma output and is the ground
-   truth for geometry.
-2. `src/renderer/design-export/*.tsx` — a **byte-identical** copy of those files,
-   vendored so the fidelity guard has a stable input and no dependency on
-   `.ref/` being present. `tools/check-fidelity.mjs` verifies the identity on
-   every run.
-3. `.ref/designref/src/app/components/*.tsx` — the interaction reference
+1. `.ref/designref/` — the authoritative design export (read-only, **not in this
+   repository**: it is the author's own working material from the design tool, kept
+   beside the working tree and gitignored). `.ref/designref/src/imports/*.tsx` is
+   verbatim export output and is the ground truth for geometry.
+2. `.ref/designref/src/app/components/*.tsx` — the interaction reference
    (`MainMenuPage`, `VersionSelectPage`, `GameplayPage`): selection behaviour,
    keyboard bindings, the 1.02 card scale, the row clamp. These are not a
    geometry source.
-4. The removed C++ launcher, for the surfaces the concept has no frame for
+3. The removed C++ launcher, for the surfaces the design has no frame for
    (`git show HEAD:src/...`).
+
+**The export used to be vendored into the repository** at
+`src/renderer/design-export/*.tsx` — a byte-identical copy, so the guard had a stable
+input that did not depend on `.ref/` being present. It is gone: publishing a second copy
+of a design tool's output was not something this project needed to distribute, and the
+copy was imported by nothing. `tools/check-fidelity.mjs` now reads the export directly
+when it is there, accepts the old vendored path if a working tree still has one, and
+otherwise reports that it verified **nothing** rather than passing quietly.
 
 Nothing below is measured by eye: every number is either a class string in the
 export or a constant recorded in `src/renderer/src/data/design.ts`, which is the
@@ -85,7 +90,7 @@ Provenance is the export file and line the value was read from. "Live owner" is 
 file that must still carry it — the same mapping `tools/check-fidelity.mjs`
 enforces.
 
-### Main menu — `src/renderer/design-export/MainMenu.tsx`
+### Main menu — the export's `MainMenu.tsx`
 
 | Value | Design | Export | Live owner |
 |---|---|---|---|
@@ -309,11 +314,11 @@ Two generated files record what happened, and neither is hand-edited:
 - `src/renderer/src/assets/design-map.json` — `figma:asset/<hash>` → converted
   file, for the handful of export hashes a frame references twice.
 
-`electron.vite.config.ts` keeps the vendored export importable by resolving
-`figma:asset/<hash>.png` against `src/renderer/src/assets/design/` (as a `.png`, or
-its `.webp` twin). That folder is only needed if something imports
-`src/renderer/design-export/**`; the app itself does not, because the export is a
-reference artefact. On build, Vite emits the art into stable directories (`art/`,
+`electron.vite.config.ts` resolves `figma:asset/<hash>.png` against
+`src/renderer/src/assets/design/` (as a `.png`, or its `.webp` twin), which is what
+makes an exported component importable if you drop one in beside the working tree. The
+app itself never does: the export is a *reference*, not a dependency, and it is not part
+of the repository (§1). On build, Vite emits the art into stable directories (`art/`,
 `video/`, `font/`, `audio/`) so a packaged build can be inspected.
 
 `node tools/sync-design-assets.mjs --check` reports what is missing without
@@ -550,8 +555,10 @@ that the live renderer still carries what the design writes:
   `h-[70px]` logo box is `logoHeight: 70` in the catalog, the mask offsets are
   percentages in CSS, the gameplay offsets are `GAMEPLAY_LAYOUTS` data. Both halves
   are checked, so changing either side fails.
-- The vendored copy must stay **byte-identical** to
-  `.ref/designref/src/imports/<name>`.
+- With the export present, the components it is read from must be the export's
+  own: `.ref/designref/src/imports/<name>`. Without it, the guard says so and
+  verifies nothing (see the note in §1) — it never reports "ok" for a check it
+  could not run.
 - **Comments are stripped** before the search: a design value that survives only in
   a header comment is drift.
 - A token that has moved to another live file is reported as a *relocation*
