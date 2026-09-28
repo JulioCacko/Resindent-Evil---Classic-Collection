@@ -52,7 +52,8 @@ import type {
   Re2Scenario,
   ScreenId,
   TitleId
-} from '@shared/types'
+,
+  RaAchievement} from '@shared/types'
 
 // ---------------------------------------------------------------------------
 // stage
@@ -236,6 +237,8 @@ export interface LauncherState {
   achievements: Achievement[] | null
   /** The title the list belongs to, for the surface's own heading. */
   achievementsTitle: string
+  /** The RetroAchievements list for the same title, or null before its fetch answers. */
+  raAchievements: RaAchievement[] | null
   gameplay: { titleId: TitleId; versionId: string } | null
   catalog: CatalogSnapshot | null
   config: LauncherConfig | null

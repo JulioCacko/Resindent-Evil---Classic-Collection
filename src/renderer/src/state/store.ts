@@ -549,6 +549,7 @@ const INITIAL_STATE: LauncherState = {
   achievementsOpen: false,
   achievements: null,
   achievementsTitle: '',
+  raAchievements: null,
   panelOptionIndex: 0,
   gameplay: null,
   catalog: null,
@@ -852,6 +853,12 @@ const store = create<LauncherStore>()((set, get) => {
     set({ achievementsOpen: true, achievements: null, achievementsTitle: title })
     const outcome = await invoke(INVOKE_CHANNELS.achievementsList, { gameId })
     if (get().achievementsOpen) set({ achievements: outcome.ok ? outcome.value : [] })
+
+    // The RetroAchievements half, fetched on the same open. It leaves the machine, so its failure
+    // is its own: an empty list either way, and the surface tells the two apart by asking whether a
+    // key is configured rather than by guessing from the length.
+    const retro = await invoke(INVOKE_CHANNELS.achievementsRetro, { gameId })
+    if (get().achievementsOpen) set({ raAchievements: retro.ok ? retro.value : [] })
   }
 
   const closeAchievements = (): void => {
