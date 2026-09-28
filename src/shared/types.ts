@@ -134,6 +134,22 @@ export type LaunchWindowMode = 'minimise' | 'stay'
 
 export interface LauncherConfig {
   crtEnabled: boolean
+  /**
+   * Ask the *game* for a CRT look, on top of the launcher's own filter.
+   *
+   * The launcher's CSS filter draws in the launcher's window and can never cover the game,
+   * which renders in its own DirectDraw window that these builds refuse to let anyone
+   * reparent (docs/ARCHITECTURE.md §6). The game's own tools can do it, though, and the
+   * launcher already writes into the file that configures them before every launch:
+   * RE-Enhance's `[DLL] RetroMode` for all three titles, and dgVoodoo's
+   * `[General] ScalingMode` - whose enum includes `stretched_4_3_crt` - for the titles that
+   * ship a `dgVoodoo.conf`. Both are written from this flag and both are put back to the
+   * payload's own defaults when it is off, so turning it off really turns it off.
+   *
+   * It needs RE-Enhance injected: a retail install has no `config.ini` `[DLL]` section and no
+   * `dgVoodoo.conf`, so there is nothing to write and the launch proceeds untouched.
+   */
+  inGameCrt: boolean
   scanlineIntensity: number
   curvature: number
   crtVignette: number

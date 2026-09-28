@@ -53,7 +53,7 @@ import type {
 } from '@shared/types'
 
 import { createConfigStore } from './config-store'
-import type { LaunchDeps, PreparedLaunch } from './contracts'
+import type { LaunchDeps, MainPaths, PreparedLaunch } from './contracts'
 import { resolveVersionInstall } from './detect/install'
 import type { ResolvedSource } from './detect/install'
 import { patchIniFile } from './ini'
@@ -67,7 +67,6 @@ import { modsAvailable, probeVersion, stateFromProbe } from './validate'
 
 /** The game's own settings file, at the root of the install (every GOG build ships one). */
 const CONFIG_INI_NAME = 'config.ini'
-
 /** Section both RE-Enhance keys live in. `ini.ts` takes the bare name, not `[DLL]`. */
 const DLL_SECTION = 'DLL'
 
@@ -79,6 +78,32 @@ const BOOT_CONFIG_OFF = '0'
 const JAPANESE_ENABLE_KEY = 'JapaneseEnable'
 const JAPANESE_ENABLE_ON = '1'
 const JAPANESE_ENABLE_OFF = '0'
+
+/**
+ * RE-Enhance's own retro rendering, in the same `[DLL]` block.
+ *
+ * Its two values are the payloads' own: every RE-Enhance `config.ini` ships `RetroMode = 0`,
+ * so `0` is what "off" means to the mod. What `1` renders is not documented anywhere in the
+ * payloads - see `tools/probe-crt.ps1`, which exists to measure that rather than assume it.
+ */
+const RETRO_MODE_KEY = 'RetroMode'
+const RETRO_MODE_ON = '1'
+const RETRO_MODE_OFF = '0'
+
+/** dgVoodoo's own file, shipped by the RE1 payload only, with its scaling under `[General]`. */
+const DGVOODOO_CONF_NAME = 'dgVoodoo.conf'
+const GENERAL_SECTION = 'General'
+/**
+ * dgVoodoo's CRT scaling, and the value it ships with.
+ *
+ * From the enum its own conf documents: "unspecified", "centered", "stretched",
+ * "centered_ar", "stretched_ar", "stretched_ar_crt", "stretched_4_3", "stretched_4_3_crt",
+ * "stretched_4_3_c64". `centered` is the payload's default, so that is what turning the
+ * setting off restores.
+ */
+const SCALING_MODE_KEY = 'ScalingMode'
+const SCALING_MODE_CRT = 'stretched_4_3_crt'
+const SCALING_MODE_DEFAULT = 'centered'
 
 /**
  * Wording of the legacy error overlay for an unusable install
@@ -265,6 +290,25 @@ async function readGogPathOverride(configPath: string, legacyConfigPath: string)
   }
 }
 
+/**
+ * The in-game CRT setting, read the same way and for the same reason as the GOG override.
+ *
+ * A damaged or absent settings file means "off": the flag only ever *adds* writes to a game's
+ * own files, so the safe answer when it cannot be read is to leave them alone.
+ */
+async function readInGameCrt(paths: MainPaths): Promise<boolean> {
+  try {
+    const store = createConfigStore({
+      configPath: paths.configPath,
+      legacyConfigPath: paths.legacyConfigPath
+    })
+    const config = await store.load()
+    return config.inGameCrt
+  } catch {
+    return false
+  }
+}
+
 let resolveInstallContext: InstallContextResolver = resolveLocalInstallContext
 
 /** Replaces (or, with `null`, restores) the install-context resolver. */
@@ -405,7 +449,16 @@ export async function prepareLaunch(request: LaunchRequest): Promise<PrepareOutc
     return failure('executable-missing', `The game executable is missing: ${executable}`)
   }
 
-  if (!(await patchGameConfig(version, context.installPath))) {
+  if (
+    !(await patchGameConfig(
+      version,
+      context.installPath,
+      // Read per launch, like the GOG override: a setting changed moments before pressing
+      // LAUNCH is the one that should apply. The injected value wins when a test provides
+      // one, so a test never reads the developer's own profile.
+      moduleDeps.inGameCrt ?? (await readInGameCrt(getMainPaths()))
+    ))
+  ) {
     return failure('config-unwritable', `Could not update ${join(context.installPath, CONFIG_INI_NAME)}.`)
   }
 
@@ -469,14 +522,24 @@ async function chooseExecutable(
 }
 
 /**
- * Writes the two `[DLL]` rows the game reads on boot.
+ * Writes the `[DLL]` rows the game reads on boot, and - when asked - the two rows that give
+ * the game a CRT look.
  *
  * Sequential, never `Promise.all`: each patch reads and rewrites the whole file,
  * so two overlapping calls would each write a copy without the other's change.
  * Both are attempted even when the first fails — the values are independent, and
  * a half-patched file is repaired by the next launch.
+ *
+ * The CRT patches are deliberately **excluded** from the returned value. That value answers
+ * "is this install's config writable", which the caller turns into `config-unwritable`; a
+ * retail install has no `[DLL]` section and no `dgVoodoo.conf` to write, and that is not a
+ * reason to refuse to launch it.
  */
-async function patchGameConfig(version: GameVersion, installPath: string): Promise<boolean> {
+async function patchGameConfig(
+  version: GameVersion,
+  installPath: string,
+  inGameCrt: boolean
+): Promise<boolean> {
   const patch: PatchConfigFn = moduleDeps.patchConfig ?? patchIniFile
   const configPath = join(installPath, CONFIG_INI_NAME)
 
@@ -488,6 +551,23 @@ async function patchGameConfig(version: GameVersion, installPath: string): Promi
     version.japaneseMode ? JAPANESE_ENABLE_ON : JAPANESE_ENABLE_OFF
   )
 
+  // RE-Enhance's own retro rendering, in the same `[DLL]` block, for every title.
+  await applyPatch(patch, configPath, RETRO_MODE_KEY, inGameCrt ? RETRO_MODE_ON : RETRO_MODE_OFF)
+
+  // dgVoodoo's CRT scaling, in its own file and its own `[General]` section. Only the RE1
+  // payload ships one, so this is skipped silently everywhere else - guarded on the file
+  // existing rather than on the title, so an install that gains one starts working.
+  const dgVoodooPath = join(installPath, DGVOODOO_CONF_NAME)
+  if (await isFile(dgVoodooPath)) {
+    await applyPatch(
+      patch,
+      dgVoodooPath,
+      SCALING_MODE_KEY,
+      inGameCrt ? SCALING_MODE_CRT : SCALING_MODE_DEFAULT,
+      GENERAL_SECTION
+    )
+  }
+
   return bootConfigPatched && japanesePatched
 }
 
@@ -496,10 +576,11 @@ async function applyPatch(
   patch: PatchConfigFn,
   configPath: string,
   key: string,
-  value: string
+  value: string,
+  section: string = DLL_SECTION
 ): Promise<boolean> {
   try {
-    return await patch(configPath, DLL_SECTION, key, value)
+    return await patch(configPath, section, key, value)
   } catch {
     return false
   }

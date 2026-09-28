@@ -87,6 +87,10 @@ export function defaultConfig(): LauncherConfig {
     // These games cannot be embedded in the launcher window (docs/ARCHITECTURE.md
     // section 6), so the launcher minimises and lets the game be the thing on screen.
     launchWindowMode: 'minimise',
+    // The launcher's own CRT filter and the in-game one are different mechanisms - CSS over
+    // the launcher, the game's own options - so a user who wants one has not asked for the
+    // other, and both start off.
+    inGameCrt: false,
     gogPathOverride: '',
     keepLauncherVisible: true
   }
@@ -188,6 +192,7 @@ function sanitizeConfig(value: unknown, base: LauncherConfig): LauncherConfig {
     modes: readMap(source.modes, isLaunchMode, base.modes),
     scenarios: readMap(source.scenarios, isRe2Scenario, base.scenarios),
     launchWindowMode: readLaunchWindowMode(source.launchWindowMode, base.launchWindowMode),
+    inGameCrt: readBoolean(source.inGameCrt, base.inGameCrt),
     gogPathOverride: readString(source.gogPathOverride, base.gogPathOverride),
     keepLauncherVisible: readBoolean(source.keepLauncherVisible, base.keepLauncherVisible)
   }

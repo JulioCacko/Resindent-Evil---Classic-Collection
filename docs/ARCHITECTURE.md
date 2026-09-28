@@ -572,6 +572,38 @@ Two details earn their own note:
 - **`GameStatus.startedAt`** is set by main when it spawns, and cleared with the exit. The
   renderer counts from it rather than from its own mount time.
 
+### In-game CRT: what the launcher can and cannot do about it
+
+The launcher draws its CRT filter in its own window, so it has never applied to a game that
+renders in its own — and §6 is the measurement showing those windows cannot be reparented or
+reliably repositioned. The game's *own* tools can, though, and both live in files the
+launcher already writes before every launch:
+
+| Setting | File, section | On | Off | Titles |
+|---|---|---|---|---|
+| RetroMode | config.ini, [DLL] | 1 |   | all three (RE-Enhance ships it) |
+| ScalingMode | dgVoodoo.conf, [General] | stretched_4_3_crt | centered | RE1 only (only its payload ships the file) |
+
+Both are written from the one inGameCrt setting, and both are put back to **the payload's
+own defaults** when it is off —   and centered, which is what RE-Enhance and dgVoodoo ship
+— so turning the setting off really turns it off rather than leaving a previous launch's
+effect in place. The patches are deliberately excluded from the config-unwritable decision:
+a retail install has no [DLL] section and no dgVoodoo.conf, and that is not a reason to
+refuse to launch it.
+
+**What is not established, and is recorded rather than glossed:** what RetroMode = 1
+actually renders. No readme, comment or config in any of the three payloads documents it, and
+	ools/probe-crt.ps1 - which launches the game, dismisses the loader dialog and scores the
+frame's row-alternation for a scanline signature - found **no measurable difference** between
+RetroMode = 0 and RetroMode = 1 (score 0.55 in both). That measurement is weak by
+construction: without input automation the only frames reachable are RE1's opening movie, which
+is dark (mean 20-28 of 255), and a scanline effect is multiplicative, so a black frame cannot
+show one either way. ScalingMode = stretched_4_3_crt has not been measured at all.
+
+So the plumbing is real and verified (unit tests assert the exact rows and values written, in
+order, for both the on and off cases); the *visual* result needs one human looking at the game
+with the setting on. Treat the feature as unconfirmed until someone does.
+
 ### The settings surface
 
 `overlays/Settings.tsx`, reached from a `SETTINGS` row the panel now carries directly above

@@ -60,6 +60,10 @@ export function settingsValue(row: SettingsRow, config: LauncherConfig | null): 
       return percent(config.sfxVolume)
     case 'music':
       return percent(config.musicVolume)
+    case 'ingameCrt':
+      // The honest readout: the setting is on, but with nothing injected there is no file to
+      // write it into, so saying ON alone would promise an effect that cannot happen.
+      return config.inGameCrt ? SETTINGS_LABEL.on : SETTINGS_LABEL.off
     case 'window':
       return config.launchWindowMode === 'stay' ? SETTINGS_LABEL.stay : SETTINGS_LABEL.minimise
     case 'installRoot':

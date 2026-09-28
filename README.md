@@ -68,6 +68,12 @@ input pipeline.
   actions, with on-screen key hints per screen
 - **CRT filter** — scanlines, phosphor mask, vignette, grain and barrel curvature,
   all configurable
+- **In-game CRT** — a separate switch that asks the *game* for a CRT look, because the
+  launcher's own filter cannot cover a game that renders in its own window: it writes
+  RE-Enhance's RetroMode and dgVoodoo's stretched_4_3_crt scaling before launch. Needs
+  RE-Enhance injected, and the dgVoodoo half only applies where that file exists (the RE1
+  payload ships one; RE2 and RE3 do not). **Its visual result is not yet confirmed** — see
+  docs/ARCHITECTURE.md section 6
 - **Settings screen** — CRT, volumes, what the window does when a game starts, where the
   games are (with the OS folder chooser and a re-scan) and a reset, reached from the launch
   panel's SETTINGS row

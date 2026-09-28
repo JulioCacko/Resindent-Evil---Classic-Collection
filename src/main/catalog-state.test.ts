@@ -58,6 +58,7 @@ const CONFIG: LauncherConfig = {
   modes: {},
   scenarios: {},
   launchWindowMode: 'minimise',
+  inGameCrt: false,
   gogPathOverride: 'D:\\GOG Games',
   keepLauncherVisible: true
 }

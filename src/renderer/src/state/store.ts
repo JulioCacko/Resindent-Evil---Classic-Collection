@@ -182,6 +182,7 @@ function offlineConfig(): LauncherConfig {
     modes: {},
     scenarios: {},
     launchWindowMode: 'minimise',
+    inGameCrt: false,
     gogPathOverride: '',
     keepLauncherVisible: true
   }
@@ -858,6 +859,9 @@ const store = create<LauncherStore>()((set, get) => {
     switch (row.id) {
       case 'crt':
         void get().patchConfig({ crtEnabled: !(config?.crtEnabled ?? CRT_DEFAULTS.enabled) })
+        return
+      case 'ingameCrt':
+        void get().patchConfig({ inGameCrt: !(config?.inGameCrt ?? false) })
         return
       case 'window':
         // Both arrows flip it, like every other two-value row: there is no direction to a

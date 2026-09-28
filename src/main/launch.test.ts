@@ -432,14 +432,16 @@ describe('prepareLaunch', () => {
     expect(readIniValue(englishRow, 'BootConfig')).toBe('0')
   })
 
-  it('asks the config patcher for exactly the two [DLL] rows, in order', async () => {
+  it('asks the config patcher for the [DLL] rows, in order, and adds the CRT row when asked', async () => {
     await installExecutable(RETAIL_EXECUTABLE)
     const calls: PatchCall[] = []
     setLaunchDeps({
       patchConfig: async (filePath, section, key, value) => {
         calls.push({ filePath, section, key, value })
         return true
-      }
+      },
+      // Injected, so this test does not read the developer's own settings file.
+      inGameCrt: true
     })
     useInstallContext({})
 
@@ -447,7 +449,44 @@ describe('prepareLaunch', () => {
 
     expect(calls).toEqual([
       { filePath: join(installDir, CONFIG_INI), section: 'DLL', key: 'BootConfig', value: '0' },
-      { filePath: join(installDir, CONFIG_INI), section: 'DLL', key: 'JapaneseEnable', value: '1' }
+      { filePath: join(installDir, CONFIG_INI), section: 'DLL', key: 'JapaneseEnable', value: '1' },
+      // The in-game CRT, from the same `[DLL]` block. No dgVoodoo row: this fixture install
+      // has no `dgVoodoo.conf`, and the patch is skipped rather than invented.
+      { filePath: join(installDir, CONFIG_INI), section: 'DLL', key: 'RetroMode', value: '1' }
+    ])
+  })
+
+  it('turns the in-game CRT off by writing the payloads own defaults back', async () => {
+    await installExecutable(RETAIL_EXECUTABLE)
+    // A fixture install that also has dgVoodoo's file, which only the RE1 payload ships.
+    await writeFile(
+      join(installDir, 'dgVoodoo.conf'),
+      '[General]\nScalingMode = stretched_4_3_crt\n',
+      'utf8'
+    )
+    const calls: PatchCall[] = []
+    setLaunchDeps({
+      patchConfig: async (filePath, section, key, value) => {
+        calls.push({ filePath, section, key, value })
+        return true
+      },
+      inGameCrt: false
+    })
+    useInstallContext({})
+
+    expectPrepared(await prepareLaunch(request('re1_us')))
+
+    const crtCalls = calls.filter((call) => call.key === 'RetroMode' || call.key === 'ScalingMode')
+    expect(crtCalls).toEqual([
+      { filePath: join(installDir, CONFIG_INI), section: 'DLL', key: 'RetroMode', value: '0' },
+      // `centered` is what the payload itself ships, so "off" restores the mod's own default
+      // rather than inventing one.
+      {
+        filePath: join(installDir, 'dgVoodoo.conf'),
+        section: 'General',
+        key: 'ScalingMode',
+        value: 'centered'
+      }
     ])
   })
 

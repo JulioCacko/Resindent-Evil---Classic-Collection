@@ -219,6 +219,14 @@ export interface LaunchDeps {
    * signal one.
    */
   kill?: (pid: number) => void
+  /**
+   * Injected in tests. Overrides the persisted `inGameCrt` setting.
+   *
+   * The real value is read from the config file, and a test must not read the developer's own
+   * profile to decide what a launch writes into a game - so this is the same kind of seam as
+   * `spawn` and `patchConfig`, for the same reason.
+   */
+  inGameCrt?: boolean
 }
 
 export interface PreparedLaunch {

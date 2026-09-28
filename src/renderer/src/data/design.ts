@@ -216,6 +216,7 @@ export type SettingsRowId =
   | 'sfx'
   | 'music'
   | 'window'
+  | 'ingameCrt'
   | 'installRoot'
   | 'redetect'
   | 'reset'
@@ -236,6 +237,11 @@ export const SETTINGS_ROWS: readonly SettingsRow[] = [
   { id: 'sfx', label: 'Effects Volume', kind: 'step' },
   { id: 'music', label: 'Music Volume', kind: 'step' },
   { id: 'window', label: 'When A Game Starts', kind: 'toggle' },
+  // The launcher's CSS filter cannot reach the game (docs/ARCHITECTURE.md section 6), so this
+  // row is the only CRT the game itself can have. It writes RE-Enhance's RetroMode and
+  // dgVoodoo's CRT scaling before launch, and needs RE-Enhance injected to have anywhere to
+  // write them.
+  { id: 'ingameCrt', label: 'In-Game CRT', kind: 'toggle' },
   { id: 'installRoot', label: 'Games Folder', kind: 'action' },
   { id: 'redetect', label: 'Scan For Games', kind: 'action' },
   { id: 'reset', label: 'Reset Settings', kind: 'action' }
@@ -269,6 +275,7 @@ export const SETTINGS_LABEL = {
   on: 'ON',
   off: 'OFF',
   minimise: 'MINIMISE THE LAUNCHER',
+  ingameCrtNote: 'NEEDS RE-ENHANCE',
   stay: 'STAY ON NOW PLAYING',
   resetConfirm: 'RESET SETTINGS?',
   resetDetail: 'Enter again to put every setting back to its default.'
