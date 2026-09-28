@@ -710,3 +710,56 @@ describe('onGameExit', () => {
     expect(events).toEqual([])
   })
 })
+
+describe('launching through Steam', () => {
+  it('asks Steam instead of spawning, and tracks the game by its image', async () => {
+    await installExecutable(RETAIL_EXECUTABLE)
+    const opened: string[] = []
+    let spawned = 0
+    setLaunchDeps({
+      launchThroughSteam: true,
+      openUrl: async (url) => {
+        opened.push(url)
+        return true
+      },
+      spawn: () => {
+        spawned += 1
+        throw new Error('the launcher must not spawn anything on the Steam path')
+      }
+    })
+    useInstallContext({ source: 'steam' })
+
+    const prepared = expectPrepared(await prepareLaunch(request('re1_us')))
+    expect(prepared.steam?.url).toBe('steam://rungameid/4249100')
+
+    const result = await performLaunch(prepared)
+    expect(result.ok).toBe(true)
+    expect(opened).toEqual(['steam://rungameid/4249100'])
+    expect(spawned, 'nothing was spawned').toBe(0)
+    if (result.ok) expect(result.pid).toBe(0)
+  })
+
+  it('stays on the ordinary path when the setting is off', async () => {
+    await installExecutable(RETAIL_EXECUTABLE)
+    setLaunchDeps({ launchThroughSteam: false })
+    useInstallContext({ source: 'steam' })
+    expect(expectPrepared(await prepareLaunch(request('re1_us'))).steam).toBeUndefined()
+  })
+
+  it('never sends a GOG row to Steam, even with the setting on', async () => {
+    await installExecutable(RETAIL_EXECUTABLE)
+    setLaunchDeps({ launchThroughSteam: true })
+    useInstallContext({ source: 'gog' })
+    expect(expectPrepared(await prepareLaunch(request('re1_us'))).steam).toBeUndefined()
+  })
+
+  it('reports a launch failure when the shell refuses the URL', async () => {
+    await installExecutable(RETAIL_EXECUTABLE)
+    setLaunchDeps({ launchThroughSteam: true, openUrl: async () => false })
+    useInstallContext({ source: 'steam' })
+
+    const result = await performLaunch(expectPrepared(await prepareLaunch(request('re1_us'))))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.code).toBe('spawn-failed')
+  })
+})

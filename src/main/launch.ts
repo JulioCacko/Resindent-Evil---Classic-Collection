@@ -56,7 +56,10 @@ import { createConfigStore } from './config-store'
 import type { LaunchDeps, MainPaths, PreparedLaunch } from './contracts'
 import { resolveVersionInstall } from './detect/install'
 import type { ResolvedSource } from './detect/install'
+import { TITLES } from '@shared/catalog'
 import { patchIniFile } from './ini'
+import { steamLaunchFor } from './steam-launch'
+import { imageNameOf, isImageRunning } from './processes'
 import { hasBackup } from './mods'
 import { getMainPaths } from './paths'
 import { modsAvailable, probeVersion, stateFromProbe } from './validate'
@@ -296,6 +299,26 @@ async function readGogPathOverride(configPath: string, legacyConfigPath: string)
  * A damaged or absent settings file means "off": the flag only ever *adds* writes to a game's
  * own files, so the safe answer when it cannot be read is to leave them alone.
  */
+/**
+ * The Steam-launch setting, read the same way and for the same reason as the CRT one.
+ *
+ * A damaged or absent settings file means "off": handing a launch to Steam changes what the player
+ * gets (Steam's tracking instead of the launcher's), so the safe answer when the file cannot be read
+ * is the behaviour that changes nothing.
+ */
+async function readLaunchThroughSteam(paths: MainPaths): Promise<boolean> {
+  try {
+    const store = createConfigStore({
+      configPath: paths.configPath,
+      legacyConfigPath: paths.legacyConfigPath
+    })
+    const config = await store.load()
+    return config.launchThroughSteam
+  } catch {
+    return false
+  }
+}
+
 async function readInGameCrt(paths: MainPaths): Promise<boolean> {
   try {
     const store = createConfigStore({
@@ -335,6 +358,14 @@ interface TrackedGame {
    * listeners are told exactly once.
    */
   settled: boolean
+  /**
+   * The image name to watch instead of the pid, when Steam owns the game.
+   *
+   * A game the launcher spawns is a child process: a handle, a pid, an exit event. A game Steam
+   * spawns is none of those - the process the launcher started is `steam.exe`, which exits at once -
+   * so status and the kill-on-quit guarantee come from finding the game by the name of its image.
+   */
+  image?: string
 }
 
 let tracked: TrackedGame | null = null
@@ -441,6 +472,23 @@ export async function prepareLaunch(request: LaunchRequest): Promise<PrepareOutc
   // scenario to its own executable, and a Steam install names it differently from a
   // GOG one (`LeonJ.exe` against `LeonU.exe`).
   const retailExecRelPath = retailExecutableFor(row, context.source, scenario)
+  /**
+   * Whether this launch goes to Steam, and what to watch if it does.
+   *
+   * Three facts have to agree (see `steam-launch.ts`): the row's files came from Steam, the player
+   * asked for this, and the title has an app id. The image name comes from the row's own retail
+   * executable, because that is the process Steam will start - and for RE1 it is the same binary
+   * either way, since RE-Enhance replaces the launcher rather than the game.
+   */
+  const steamRequest = steamLaunchFor({
+    source: context.source,
+    enabled: moduleDeps.launchThroughSteam ?? (await readLaunchThroughSteam(getMainPaths())),
+    appId: TITLES.find((title) => title.id === version.titleId)?.steamAppId ?? ''
+  })
+  const steam =
+    steamRequest === null
+      ? undefined
+      : { url: steamRequest.url, appId: steamRequest.appId, image: imageNameOf(retailExecRelPath) }
   const relativeExecutable = await chooseExecutable(version, request.mode, retailExecRelPath, context.installPath)
   const executable = join(context.installPath, relativeExecutable)
   // `relativeExecutable === ''` is tested first on purpose: `join(root, '')` is a
@@ -469,7 +517,8 @@ export async function prepareLaunch(request: LaunchRequest): Promise<PrepareOutc
       executable,
       mode: request.mode,
       scenario,
-      cwd: context.installPath
+      cwd: context.installPath,
+      ...(steam === undefined ? {} : { steam })
     }
   }
 }
@@ -611,6 +660,32 @@ export async function performLaunch(prepared: PreparedLaunch, deps?: LaunchDeps)
     )
   }
 
+  // Handed to Steam, so there is no child to hold: open the URL the client registered, and track the
+  // game by its image name instead. Everything downstream that reads `tracked` keeps working, with
+  // `pid: 0` meaning "nothing to signal here".
+  if (prepared.steam !== undefined) {
+    const open = deps?.openUrl ?? moduleDeps.openUrl ?? defaultOpenUrl
+    const opened = await open(prepared.steam.url)
+    if (!opened) {
+      return failure(
+        'spawn-failed',
+        `Could not ask Steam to start ${prepared.version.id}. Is the Steam client installed?`
+      )
+    }
+    tracked = {
+      titleId: prepared.version.titleId,
+      versionId: prepared.version.id,
+      pid: 0,
+      image: prepared.steam.image,
+      settled: false,
+      startedAt: Date.now()
+    }
+    // The same result shape the spawn path returns, with pid: 0 meaning there is nothing here to
+    // signal. injectedMod describes the same fact it does there: which executable is being started,
+    // since the injection itself happens before this function runs.
+    return { ok: true, pid: 0, executable: prepared.executable, injectedMod: usesModExecutable(prepared) }
+  }
+
   const spawnFn = deps?.spawn ?? moduleDeps.spawn ?? defaultSpawn
   const options: SpawnOptions = {
     cwd: prepared.cwd,
@@ -703,6 +778,16 @@ export function killGame(deps: LaunchDeps = {}): void {
   if (game === null) return
   tracked = null
 
+  // Steam's game: there is no pid to signal, so the image name is the only handle left. Recorded as
+  // a requested stop for the same reason the pid path does - a stop the launcher asked for must not
+  // be reported to the player as a crash.
+  if (game.image !== undefined) {
+    stopRequested = true
+    const killByImage = deps.killImage ?? defaultKillImage
+    killByImage(game.image)
+    return
+  }
+
   if (game.pid <= 0) return
 
   // Recorded before the signal, because the child's exit can arrive while `taskkill` is
@@ -713,6 +798,53 @@ export function killGame(deps: LaunchDeps = {}): void {
 
   const kill = deps.kill ?? defaultKill
   kill(game.pid)
+}
+
+/** `taskkill /IM` for a game the launcher did not spawn. See `killGame`. */
+function defaultKillImage(image: string): void {
+  if (process.platform !== 'win32') return
+  spawnSync('taskkill', ['/IM', image, '/T', '/F'], { windowsHide: true, stdio: 'ignore' })
+}
+
+/**
+ * Hands a URL to the OS, which is how Steam is asked to start a game.
+ *
+ * `cmd /c start` rather than Electron's `shell.openExternal`, because this module deliberately knows
+ * nothing about Electron - the same reason it spawns with `node:child_process` rather than anything
+ * from the framework. The empty argument is `start`'s window-title slot: without it, a quoted URL is
+ * taken as the title and nothing opens.
+ */
+async function defaultOpenUrl(url: string): Promise<boolean> {
+  const result =
+    process.platform === 'win32'
+      ? spawnSync('cmd', ['/c', 'start', '', url], { windowsHide: true, stdio: 'ignore' })
+      : spawnSync('xdg-open', [url], { windowsHide: true, stdio: 'ignore' })
+  return result.status === 0
+}
+
+/**
+ * Refreshes a Steam-launched game, and settles it once its image is gone.
+ *
+ * Async because finding a process is; `getGameStatus` stays synchronous and the IPC layer calls this
+ * first. A game that has vanished is settled exactly like a child's exit - same event, same clearing
+ * of the slot - which is what keeps the now-playing bar and the exit report working for a game the
+ * launcher never held.
+ */
+export async function refreshExternalGame(): Promise<void> {
+  const game = tracked
+  if (game === null || game.image === undefined || game.settled) return
+  if (await isImageRunning(game.image)) return
+
+  game.settled = true
+  if (tracked === game) tracked = null
+  lastExitCode = null
+  notifyExit({
+    titleId: game.titleId,
+    versionId: game.versionId,
+    exitCode: null,
+    signal: null,
+    requested: stopRequested,
+  })
 }
 
 /** `taskkill /T /F` on Windows, `process.kill` everywhere else. See `killGame`. */

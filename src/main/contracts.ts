@@ -227,6 +227,25 @@ export interface LaunchDeps {
    * `spawn` and `patchConfig`, for the same reason.
    */
   inGameCrt?: boolean
+  /**
+   * Opens a URL through the OS, for the Steam launch path. Injected in tests.
+   *
+   * Resolves `true` when the shell accepted it. A Steam launch is `steam://rungameid/<appid>`, which
+   * Windows hands to the running client - so there is no child process to hold, and this call is the
+   * whole of what the launcher does to start the game.
+   */
+  openUrl?: (url: string) => Promise<boolean>
+  /**
+   * Ends every process with this image name. Injected in tests.
+   *
+   * The kill-on-quit guarantee for a game the launcher did not spawn: Steam owns it, so there is no
+   * pid to signal and the image name is the only handle left.
+   */
+  killImage?: (image: string) => void
+  /**
+   * Injected in tests. Overrides the persisted `launchThroughSteam` setting, like `inGameCrt`.
+   */
+  launchThroughSteam?: boolean
 }
 
 export interface PreparedLaunch {
@@ -235,6 +254,13 @@ export interface PreparedLaunch {
   mode: LaunchMode
   scenario: Re2Scenario | null
   cwd: string
+  /**
+   * Set when this launch is handed to Steam instead of spawned here.
+   *
+   * Present means: open this URL, expect no child process, and track the game by `image` for as long
+   * as it runs. Absent means the ordinary path - spawn `executable` and hold the child.
+   */
+  steam?: { url: string; appId: string; image: string }
 }
 
 export declare function prepareLaunch(request: LaunchRequest): Promise<
