@@ -32,7 +32,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { BrowserWindow, app, ipcMain, shell } from 'electron'
+import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron'
 
 import { EVENT_CHANNELS, INVOKE_CHANNELS } from '@shared/channels'
 import type { EventChannel, EventMap, InvokeChannel, InvokeMap } from '@shared/channels'
@@ -672,6 +672,43 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
       broadcast(current, EVENT_CHANNELS.catalogChanged, snapshot)
       log.info(`catalog refreshed: needsInstallScreen=${String(snapshot.needsInstallScreen)}`)
       return snapshot
+    }
+  )
+
+  handle(
+    INVOKE_CHANNELS.catalogPickInstallRoot,
+    () => null,
+    async () => {
+      // The picker exists so that a "change install folder" action can mean what it says.
+      // A hand-typed path would be a worse answer to "where are my games" than the OS's own
+      // directory chooser, and the override it writes is the same one
+      // `catalog:set-install-root` has always taken: this only supplies the path.
+      //
+      // `eventTargets` rather than a bare `BrowserWindow.getFocusedWindow()`: the dialog
+      // should parent to the launcher window even when the launcher is not focused, which is
+      // exactly the state it is in after a game has been running.
+      const parent = eventTargets(current)[0] ?? null
+      const chosen =
+        parent === null
+          ? await dialog.showOpenDialog({
+              title: 'Select the folder that contains your games',
+              properties: ['openDirectory']
+            })
+          : await dialog.showOpenDialog(parent, {
+              title: 'Select the folder that contains your games',
+              properties: ['openDirectory']
+            })
+
+      const path = chosen.filePaths[0]
+      if (chosen.canceled || path === undefined) {
+        log.info('install-root picker cancelled')
+        return null
+      }
+
+      const config = await current.config.patch({ gogPathOverride: path })
+      syncCatalogConfig(current, config)
+      log.info(`install root override set to ${path} by the folder picker`)
+      return path
     }
   )
 

@@ -33,6 +33,7 @@ import { useActions } from '@renderer/input/useActions'
 import { AchievementToast } from '@renderer/overlays/AchievementToast'
 import { CrtOverlay } from '@renderer/overlays/CrtOverlay'
 import { ErrorDialog } from '@renderer/overlays/ErrorDialog'
+import { Settings } from '@renderer/overlays/Settings'
 import { InstallStatus } from '@renderer/overlays/InstallStatus'
 import { LaunchPanel } from '@renderer/overlays/LaunchPanel'
 import { Gameplay } from '@renderer/screens/Gameplay'
@@ -70,6 +71,8 @@ export function App() {
   const config = useLauncher((state) => state.config)
   const panelOpen = useLauncher((state) => state.panelOpen)
   const panelOptionIndex = useLauncher((state) => state.panelOptionIndex)
+const openSettings = useLauncher((state) => state.openSettings)
+const settingsOpen = useLauncher((state) => state.settingsOpen)
   const busy = useLauncher((state) => state.busy)
   const error = useLauncher((state) => state.error)
 
@@ -219,9 +222,17 @@ export function App() {
           onLaunch={() => {
             void launch()
           }}
+          onOpenSettings={openSettings}
           onClose={closePanel}
         />
       ) : null}
+
+      {/*
+        The settings surface, over the screens and under the error dialog: it is reached from
+        the launch panel, and a failure that happens while it is up (a folder that cannot be
+        read, say) has to be reportable above it.
+      */}
+      {settingsOpen ? <Settings /> : null}
 
       {error === null ? null : <ErrorDialog error={error} onDismiss={dismissError} />}
 

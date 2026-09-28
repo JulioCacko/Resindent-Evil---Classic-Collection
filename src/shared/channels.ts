@@ -24,6 +24,7 @@ export const INVOKE_CHANNELS = {
   catalogGet: 'catalog:get',
   catalogRefresh: 'catalog:refresh',
   catalogSetInstallRoot: 'catalog:set-install-root',
+  catalogPickInstallRoot: 'catalog:pick-install-root',
   modesSet: 'modes:set',
   configPatch: 'config:patch',
   configReset: 'config:reset',
@@ -55,6 +56,13 @@ export interface InvokeMap {
   [INVOKE_CHANNELS.catalogGet]: { request: void; response: CatalogSnapshot }
   [INVOKE_CHANNELS.catalogRefresh]: { request: void; response: CatalogSnapshot }
   [INVOKE_CHANNELS.catalogSetInstallRoot]: { request: { path: string }; response: CatalogSnapshot }
+  /**
+   * The OS directory chooser, then the same override `catalog:set-install-root` takes.
+   *
+   * `null` means the user cancelled. The path is *not* applied by the renderer: the handler
+   * does both halves so a cancelled dialog cannot half-set anything.
+   */
+  [INVOKE_CHANNELS.catalogPickInstallRoot]: { request: void; response: string | null }
   [INVOKE_CHANNELS.modesSet]: {
     request: { versionId: string; mode?: 'enhanced' | 'original'; scenario?: Re2Scenario }
     response: LauncherConfig

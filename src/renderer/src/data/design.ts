@@ -197,6 +197,90 @@ export interface HelperHint {
  * the app says it instead. `stoppedDetail` stands in for the elapsed time when nothing
  * is running, where a duration would be a claim about a process that is not there.
  */
+/**
+ * Settings rows.
+ *
+ * The surface is an addition (docs/DESIGN-FIDELITY.md 7.1) and the concept has no frame for
+ * it, so the rows are the launcher's whole configuration, named once here and rendered by
+ * `overlays/Settings.tsx`. `kind` is what the surface needs to know about a row in order to
+ * drive it: a toggle flips, a step moves by a fixed increment, and an action runs something
+ * on Enter.
+ */
+export type SettingsRowId =
+  | 'crt'
+  | 'scanlines'
+  | 'curvature'
+  | 'vignette'
+  | 'grain'
+  | 'master'
+  | 'sfx'
+  | 'music'
+  | 'window'
+  | 'installRoot'
+  | 'redetect'
+  | 'reset'
+
+export interface SettingsRow {
+  id: SettingsRowId
+  label: string
+  kind: 'toggle' | 'step' | 'action'
+}
+
+export const SETTINGS_ROWS: readonly SettingsRow[] = [
+  { id: 'crt', label: 'CRT Filter', kind: 'toggle' },
+  { id: 'scanlines', label: 'Scanlines', kind: 'step' },
+  { id: 'curvature', label: 'Curvature', kind: 'step' },
+  { id: 'vignette', label: 'Vignette', kind: 'step' },
+  { id: 'grain', label: 'Grain', kind: 'step' },
+  { id: 'master', label: 'Master Volume', kind: 'step' },
+  { id: 'sfx', label: 'Effects Volume', kind: 'step' },
+  { id: 'music', label: 'Music Volume', kind: 'step' },
+  { id: 'window', label: 'When A Game Starts', kind: 'toggle' },
+  { id: 'installRoot', label: 'Games Folder', kind: 'action' },
+  { id: 'redetect', label: 'Scan For Games', kind: 'action' },
+  { id: 'reset', label: 'Reset Settings', kind: 'action' }
+]
+
+/**
+ * How far one arrow press moves a numeric settings row.
+ *
+ * Here rather than in either the store or the surface, because both need it: the store applies
+ * the step and the surface draws the readout, and two copies of a step size is exactly how a
+ * display ends up disagreeing with the value it displays.
+ */
+export const SETTINGS_STEP = {
+  scanlines: 0.05,
+  curvature: 0.02,
+  vignette: 0.05,
+  grain: 0.02,
+  volume: 0.05
+} as const
+
+/** The legacy Clamp01, with a guard for NaN. */
+export function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  if (value < 0) return 0
+  if (value > 1) return 1
+  return value
+}
+
+export const SETTINGS_LABEL = {
+  auto: 'AUTOMATIC',
+  on: 'ON',
+  off: 'OFF',
+  minimise: 'MINIMISE THE LAUNCHER',
+  stay: 'STAY ON NOW PLAYING',
+  resetConfirm: 'RESET SETTINGS?',
+  resetDetail: 'Enter again to put every setting back to its default.'
+} as const
+
+export const HINTS_SETTINGS: HelperHint[] = [
+  { keys: ['up', 'down'], label: 'Navigate' },
+  { keys: ['left', 'right'], label: 'Change' },
+  { keys: ['enter'], label: 'Select' },
+  { keys: ['esc'], label: 'Back' }
+]
+
 export const NOW_PLAYING_LABEL = {
   running: 'NOW PLAYING',
   stopped: 'NOT RUNNING',

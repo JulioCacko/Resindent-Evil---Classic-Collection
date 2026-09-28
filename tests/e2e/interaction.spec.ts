@@ -255,6 +255,120 @@ test.describe('the launcher flow', () => {
     await waitForScreen(page, 'version')
   })
 
+  /**
+   * The settings surface, reached from the panel's SETTINGS row.
+   *
+   * The point of this test is not that a screen appears: it is that a change made on it
+   * *persists*, because every row is live rather than staged. So it changes two different
+   * kinds of row (a toggle and a stepped range), reads the value back through
+   * `catalog:get` — the config the main process actually holds, not the renderer's copy — and
+   * then puts both back, so the fixture is left as it was found.
+   */
+  test('settings: a row changes, persists, and Back leaves the surface', async ({}, testInfo) => {
+    const { app, page } = await sharedApp()
+    await setDesignWindow(app, page)
+    await ensureMenu(page)
+
+    const cards = await cardCount(page)
+    test.skip(cards === 0, 'the catalog is empty: there is no panel to open')
+
+    await press(page, 'Enter')
+    await waitForScreen(page, 'version')
+    await press(page, 'Enter')
+    await waitForPanel(page)
+
+    // Onto the SETTINGS row, which sits directly above LAUNCH.
+    const names = await panelRowNames(page)
+    const settingsIndex = names.indexOf('row-settings')
+    expect(
+      settingsIndex,
+      `the panel has a SETTINGS row; it has ${names.join(', ')}`
+    ).toBeGreaterThanOrEqual(0)
+    for (let step = 0; step < settingsIndex; step += 1) await page.keyboard.press('ArrowDown')
+    await press(page, 'Enter')
+
+    await page.locator('[data-figma-node="settings"]').first().waitFor({ timeout: 10_000 })
+    const surface = await probe(page)
+    expect(surface.panelOpen, 'opening settings closes the launch panel').toBe(false)
+    await captureScreenshot(page, testInfo, 'flow-6-settings')
+
+    const rows = page.locator('[data-figma-node="settings-rows"] [data-name^="setting-"]')
+    expect(await rows.count(), 'every settings row is drawn').toBe(12)
+
+    /** Reads a setting's readout, and the same field from the main process's config. */
+    const readBack = async (id: string): Promise<{ shown: string; persisted: unknown }> => {
+      const shown = (await page.locator(`[data-figma-node="setting-value-${id}"]`).innerText()).trim()
+      const persisted = await page.evaluate(async (rowId) => {
+        const bridge = window.reLauncher
+        if (bridge === undefined) throw new Error('window.reLauncher is missing')
+        const snapshot = (await bridge.invoke('catalog:get', undefined)) as unknown as {
+          config: { crtEnabled: boolean; scanlineIntensity: number }
+        }
+        return rowId === 'crt' ? snapshot.config.crtEnabled : snapshot.config.scanlineIntensity
+      }, id)
+      return { shown, persisted }
+    }
+
+    // --- a toggle: CRT filter -------------------------------------------------
+    const crtBefore = await readBack('crt')
+    /** What the surface looks like from the inside, for a failure message. */
+    const surfaceState = async (): Promise<string> => {
+      const state = await page.evaluate(() => {
+        const focused = document.querySelector('[data-name^="setting-"][class*="0.063"]')
+        return {
+          up: document.querySelector('[data-figma-node="settings"]') !== null,
+          rows: document.querySelectorAll('[data-figma-node="settings-rows"] [data-name^="setting-"]').length,
+          focusedRow: focused === null ? null : focused.getAttribute('data-name')
+        }
+      })
+      return JSON.stringify(state)
+    }
+    await press(page, 'ArrowRight')
+    await waitUntil(() => readBack('crt'), (value) => value.shown !== crtBefore.shown, {
+      label: `ArrowRight to flip the CRT row (surface=${await surfaceState()})`
+    })
+    const crtAfter = await readBack('crt')
+    expect(
+      crtAfter.persisted,
+      `the toggle reached the config: ${JSON.stringify(crtBefore)} -> ${JSON.stringify(crtAfter)}`
+    ).toBe(!crtBefore.persisted)
+
+    // --- a stepped range: scanlines -------------------------------------------
+    await press(page, 'ArrowDown')
+    const scanBefore = await readBack('scanlines')
+    await press(page, 'ArrowRight')
+    await waitUntil(() => readBack('scanlines'), (value) => value.shown !== scanBefore.shown, {
+      label: 'ArrowRight to step the scanline row'
+    })
+    const scanAfter = await readBack('scanlines')
+    expect(
+      scanAfter.persisted,
+      `the step reached the config: ${String(scanBefore.persisted)} -> ${String(scanAfter.persisted)}`
+    ).not.toBe(scanBefore.persisted)
+    testInfo.annotations.push({
+      type: 'settings-round-trip',
+      description: `crt ${String(crtBefore.persisted)}->${String(crtAfter.persisted)} scanlines ${String(scanBefore.persisted)}->${String(scanAfter.persisted)}`
+    })
+
+    // --- put both back, so the fixture is not left changed ---------------------
+    await press(page, 'ArrowLeft')
+    await waitUntil(() => readBack('scanlines'), (value) => value.shown === scanBefore.shown, {
+      label: 'ArrowLeft to put the scanline step back'
+    })
+    await press(page, 'ArrowUp')
+    await press(page, 'ArrowRight')
+    await waitUntil(() => readBack('crt'), (value) => value.shown === crtBefore.shown, {
+      label: 'ArrowRight to put the CRT toggle back'
+    })
+
+    // --- Back leaves the surface ----------------------------------------------
+    await press(page, 'Escape')
+    await waitUntil(() => page.locator('[data-figma-node="settings"]').count(), (count) => count === 0, {
+      label: 'Escape to close the settings surface'
+    })
+    expect((await probe(page)).screen, 'closing settings leaves the version screen up').toBe('version')
+  })
+
   test('gamepad: the D-pad navigates and A/B confirm and go back', async ({}, testInfo) => {
     const { app, page } = await sharedApp()
     await setDesignWindow(app, page)

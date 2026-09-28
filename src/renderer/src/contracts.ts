@@ -165,6 +165,8 @@ export interface LaunchPanelProps {
   onSetMode: (mode: LaunchMode) => void
   onSetScenario: (scenario: Re2Scenario) => void
   onLaunch: () => void
+  /** Opens the settings surface, from the panel's SETTINGS row. */
+  onOpenSettings: () => void
   onClose: () => void
 }
 
@@ -219,6 +221,10 @@ export interface LauncherState {
   titleId: TitleId
   versionIndex: number
   panelOpen: boolean
+  /** The settings surface is up (an addition; reached from the panel's SETTINGS row). */
+  settingsOpen: boolean
+  /** Row under the cursor on that surface, wrapped over SETTINGS_ROWS. */
+  settingsIndex: number
   panelOptionIndex: number
   gameplay: { titleId: TitleId; versionId: string } | null
   catalog: CatalogSnapshot | null
@@ -245,6 +251,11 @@ export interface LauncherActions {
   moveMenu(delta: number): void
   setVersionIndex(index: number): void
   moveVersion(delta: number): void
+  openSettings(): void
+  closeSettings(): void
+  moveSettingsRow(delta: number): void
+  changeSetting(delta: number): void
+  activateSetting(): void
   openPanel(): void
   closePanel(): void
   setPanelOption(index: number): void

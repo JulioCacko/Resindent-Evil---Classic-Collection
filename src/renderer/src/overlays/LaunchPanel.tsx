@@ -48,7 +48,7 @@ import { useLauncher } from '@renderer/state/store'
  * src/renderer/src/contracts.ts is an ambient `declare`, and a contracts file
  * emits no runtime code — the *value* comes from data/derive.ts.
  */
-type PanelOptionKind = 'mode' | 'crt' | 'scenario' | 'launch'
+type PanelOptionKind = 'mode' | 'crt' | 'scenario' | 'settings' | 'launch'
 
 /** The CRT row's two words. The caller owns the toggle; the panel only states it. */
 const CRT_ON = 'ON'
@@ -210,6 +210,16 @@ function buildRows(
           disabled: !version.launchable || version.scenarios.length < 2
         }
 
+      case 'settings':
+        return {
+          kind,
+          label: 'SETTINGS',
+          value: '',
+          valueIsNote: false,
+          selected,
+          disabled: false
+        }
+
       case 'launch':
         return {
           kind,
@@ -233,6 +243,7 @@ export function LaunchPanel({
   onSetMode,
   onSetScenario,
   onLaunch,
+  onOpenSettings,
   onClose
 }: LaunchPanelProps) {
   /**
@@ -275,6 +286,12 @@ export function LaunchPanel({
     // The cursor follows the click, mirroring VersionRow's pointer path, so the row
     // that just acted is the one the keyboard would act on next.
     onSelectOption(index)
+
+    if (row.kind === 'settings') {
+      // Like LAUNCH, one click opens it whether or not the row already held the cursor.
+      onOpenSettings()
+      return
+    }
 
     if (row.kind === 'launch') {
       // One click starts the game whether or not the row already held the cursor:

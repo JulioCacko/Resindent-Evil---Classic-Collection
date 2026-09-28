@@ -51,6 +51,9 @@ input pipeline.
   actions, with on-screen key hints per screen
 - **CRT filter** — scanlines, phosphor mask, vignette, grain and barrel curvature,
   all configurable
+- **Settings screen** — CRT, volumes, what the window does when a game starts, where the
+  games are (with the OS folder chooser and a re-scan) and a reset, reached from the launch
+  panel's SETTINGS row
 - **No native modules** — nothing to rebuild per Electron version or per ABI
 
 ---

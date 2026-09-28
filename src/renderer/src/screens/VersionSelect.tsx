@@ -126,6 +126,7 @@ export function VersionSelect() {
   const setScenario = useLauncher((state) => state.setScenario)
   const launch = useLauncher((state) => state.launch)
   const closePanel = useLauncher((state) => state.closePanel)
+  const openSettings = useLauncher((state) => state.openSettings)
 
   const versions = title?.versions ?? []
 
@@ -305,6 +306,7 @@ export function VersionSelect() {
                   onLaunch={() => {
                     void launch()
                   }}
+                  onOpenSettings={openSettings}
                   onClose={closePanel}
                 />
               ) : null}

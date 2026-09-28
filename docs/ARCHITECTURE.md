@@ -241,7 +241,7 @@ Two directions, one rule each:
 Every payload arriving from the renderer is re-validated in `ipc.ts` before it can
 reach the filesystem, the registry or a child process.
 
-### Invoke channels (18)
+### Invoke channels (19)
 
 | Channel | Payload | Result | Notes |
 |---|---|---|---|
@@ -261,6 +261,7 @@ reach the filesystem, the registry or a child process.
 | `app:paths` | — | `AppPaths` | The renderer's view of the paths, without `configDir` |
 | `shell:open-external` | `{ url }` | — | http/https only; anything else raises a toast |
 | `shell:reveal-path` | `{ path }` | — | `shell.showItemInFolder`; a missing path raises a toast |
+| `catalog:pick-install-root` | — | `string \| null` | The OS folder chooser, then the same override `catalog:set-install-root` takes; `null` is a cancel |
 | `app:quit` | — | — | Stops a running game first (see §6) |
 | `app:ping` | — | `{ ok: true, version }` | The authoritative app version |
 
@@ -576,6 +577,37 @@ Two details earn their own note:
   spec asserts both halves now: no dialog after STOP, and one Back returns to the list.
 - **`GameStatus.startedAt`** is set by main when it spawns, and cleared with the exit. The
   renderer counts from it rather than from its own mount time.
+
+### The settings surface
+
+`overlays/Settings.tsx`, reached from a `SETTINGS` row the panel now carries directly above
+LAUNCH. The concept has no settings frame, so this is an addition (docs/DESIGN-FIDELITY.md
+§7.1), and it is placed behind a panel row rather than a key or a new helper-bar group
+specifically so the three designed screens stay pixel-identical at rest.
+
+Twelve rows, all of them live: CRT and its four values, the three volumes, `launchWindowMode`,
+the install-root override, re-scan, and reset. There is deliberately no Apply/Cancel pair — a
+settings screen that can be left in a state that differs from what is saved is a second, worse
+source of truth — so every change goes straight through `config:patch` and the sanitised answer
+from main is what the surface then draws. The increments live once, in `SETTINGS_STEP`, because
+the store applies the step and the surface renders the readout and two copies of a step size is
+exactly how a display ends up disagreeing with the value it shows.
+
+Reset asks twice. The confirmation is local component state rather than a store field: it lives
+only as long as the cursor stays on that row, and moving away clears it.
+
+Two details worth naming:
+
+- **`catalog:pick-install-root`** exists so that a "change install folder" action can mean what
+  it says. The OS chooser is opened by main, which then writes the override and rebuilds the
+  catalog, so a cancelled dialog cannot leave a half-applied setting behind. It also makes the
+  Install Status screen's `CHANGE INSTALL FOLDER` label truthful, which it was not before.
+- **Rows follow the pointer with `onMouseMove`, not `onMouseEnter`.** Enter fires when a row
+  appears *under* a stationary pointer, so opening the surface while the mouse happened to rest
+  over it moved the cursor before the first keypress, and the keyboard's first arrow then acted
+  on a row nobody chose. A browser only sends `mousemove` for real movement, which is exactly
+  the rule wanted. The e2e spec caught this: it asserted a change to the CRT row and the
+  diagnostic showed the cursor sitting on `setting-window`.
 
 ---
 

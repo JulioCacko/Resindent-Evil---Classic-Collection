@@ -59,7 +59,7 @@ import type {
   LauncherStore,
   SfxName
 } from '@renderer/contracts'
-import { CRT_DEFAULTS } from '@renderer/data/design'
+import { CRT_DEFAULTS, SETTINGS_ROWS, SETTINGS_STEP, clamp01 } from '@renderer/data/design'
 import {
   canLaunch,
   currentTitle,
@@ -368,6 +368,11 @@ type Intent =
   | { kind: 'launch' }
   | { kind: 'go-menu' }
   | { kind: 'go-version'; titleId: TitleId }
+  | { kind: 'open-settings' }
+  | { kind: 'close-settings' }
+  | { kind: 'move-setting'; delta: number }
+  | { kind: 'change-setting'; delta: number }
+  | { kind: 'activate-setting' }
 
 /**
  * The single place that interprets the canonical action set.
@@ -391,6 +396,29 @@ function resolveIntent(state: LauncherState, action: InputAction): Intent | null
   // both this store's `launch()` and the main process (`runLaunch` ->
   // `game-already-running`) refuse a second one.
   if (state.busy !== null && action !== 'back') return null
+
+  // Settings is a full surface, so it owns the whole action set while it is up: the rows are
+  // navigated with up/down, changed with left/right, and left with Back. It is checked before
+  // the screens because it can be reached from the panel on the version screen, and Back there
+  // must close the settings rather than the panel behind them.
+  if (state.settingsOpen) {
+    switch (action) {
+      case 'nav-up':
+        return { kind: 'move-setting', delta: -1 }
+      case 'nav-down':
+        return { kind: 'move-setting', delta: 1 }
+      case 'nav-left':
+        return { kind: 'change-setting', delta: -1 }
+      case 'nav-right':
+        return { kind: 'change-setting', delta: 1 }
+      case 'confirm':
+        return { kind: 'activate-setting' }
+      case 'back':
+        return { kind: 'close-settings' }
+      default:
+        return null
+    }
+  }
 
   if (state.screen === 'menu') {
     switch (action) {
@@ -449,14 +477,18 @@ function resolveIntent(state: LauncherState, action: InputAction): Intent | null
         return { kind: 'move-option', delta: 1 }
       case 'nav-left':
       case 'nav-right':
-        // The Change keys are inert on the LAUNCH row — there is no value to move
-        // — but they are the only way to change any other row.
-        return option === 'launch' ? null : { kind: 'toggle-option', option }
+        // The Change keys are inert on the rows that carry no value to move — LAUNCH and
+        // SETTINGS are actions — but they are the only way to change any other row.
+        return option === 'launch' || option === 'settings'
+          ? null
+          : { kind: 'toggle-option', option }
       case 'confirm':
-        // Enter on LAUNCH starts the game; on every other row it is the same
-        // gesture as the Change keys, which is what the legacy screen did
-        // (`screen_launch.cpp`: Enter on the launch row, Left/Right elsewhere).
-        return option === 'launch' ? { kind: 'launch' } : { kind: 'toggle-option', option }
+        // Enter on LAUNCH starts the game; on SETTINGS it opens the settings surface; on
+        // every other row it is the same gesture as the Change keys, which is what the legacy
+        // screen did (`screen_launch.cpp`: Enter on the launch row, Left/Right elsewhere).
+        if (option === 'launch') return { kind: 'launch' }
+        if (option === 'settings') return { kind: 'open-settings' }
+        return { kind: 'toggle-option', option }
       case 'back':
         return { kind: 'close-panel' }
       default:
@@ -508,6 +540,8 @@ const INITIAL_STATE: LauncherState = {
   titleId: DEFAULT_TITLE_ID,
   versionIndex: 0,
   panelOpen: false,
+  settingsOpen: false,
+  settingsIndex: 0,
   panelOptionIndex: 0,
   gameplay: null,
   catalog: null,
@@ -686,6 +720,8 @@ const store = create<LauncherStore>()((set, get) => {
     set({
       screen: 'menu',
       panelOpen: false,
+  settingsOpen: false,
+  settingsIndex: 0,
       menuIndex: index < 0 ? state.menuIndex : index
     })
   }
@@ -702,6 +738,8 @@ const store = create<LauncherStore>()((set, get) => {
       // A fresh entry never has the options panel up: the legacy `ScreenLaunch`
       // reset its option index on every `OnEnter`, and this screen is that surface.
       panelOpen: false,
+  settingsOpen: false,
+  settingsIndex: 0,
       panelOptionIndex: 0
     })
   }
@@ -781,6 +819,120 @@ const store = create<LauncherStore>()((set, get) => {
         return
       }
     }
+  }
+
+  // -- settings surface ----------------------------------------------------
+
+  /**
+   * Opens the settings surface from the launch panel's SETTINGS row.
+   *
+   * The panel closes on the way in: settings is a full surface rather than a second overlay
+   * stacked on the first, so one Escape always leaves it and there is never a question of
+   * which layer a key belongs to.
+   */
+  const openSettings = (): void => {
+    set({ settingsOpen: true, settingsIndex: 0, panelOpen: false })
+  }
+
+  const closeSettings = (): void => {
+    set({ settingsOpen: false })
+  }
+
+  const moveSettingsRow = (delta: number): void => {
+    set({ settingsIndex: wrap(get().settingsIndex + delta, SETTINGS_ROWS.length) })
+  }
+
+  /**
+   * Moves the value of the row under the cursor.
+   *
+   * One action for both arrow keys and Enter, exactly like the panel's own rows: on a
+   * two-value row and on a stepped range they are the same gesture. The numeric rows go
+   * through `patchConfig`, so a change is persisted as it is made and the sanitised answer
+   * from main is what the surface then draws.
+   */
+  const changeSetting = (delta: number): void => {
+    const row = SETTINGS_ROWS[wrap(get().settingsIndex, SETTINGS_ROWS.length)]
+    if (row === undefined) return
+    const config = get().config
+
+    switch (row.id) {
+      case 'crt':
+        void get().patchConfig({ crtEnabled: !(config?.crtEnabled ?? CRT_DEFAULTS.enabled) })
+        return
+      case 'window':
+        // Both arrows flip it, like every other two-value row: there is no direction to a
+        // choice between two things.
+        void get().patchConfig({
+          launchWindowMode: config?.launchWindowMode === 'stay' ? 'minimise' : 'stay'
+        })
+        return
+      case 'scanlines':
+        void get().patchConfig({
+          scanlineIntensity: clamp01((config?.scanlineIntensity ?? 0) + delta * SETTINGS_STEP.scanlines)
+        })
+        return
+      case 'curvature':
+        void get().patchConfig({ curvature: clamp01((config?.curvature ?? 0) + delta * SETTINGS_STEP.curvature) })
+        return
+      case 'vignette':
+        void get().patchConfig({
+          crtVignette: clamp01((config?.crtVignette ?? 0) + delta * SETTINGS_STEP.vignette)
+        })
+        return
+      case 'grain':
+        void get().patchConfig({ crtGrain: clamp01((config?.crtGrain ?? 0) + delta * SETTINGS_STEP.grain) })
+        return
+      case 'master':
+        void get().patchConfig({ masterVolume: clamp01((config?.masterVolume ?? 1) + delta * SETTINGS_STEP.volume) })
+        return
+      case 'sfx':
+        void get().patchConfig({ sfxVolume: clamp01((config?.sfxVolume ?? 1) + delta * SETTINGS_STEP.volume) })
+        return
+      case 'music':
+        void get().patchConfig({ musicVolume: clamp01((config?.musicVolume ?? 1) + delta * SETTINGS_STEP.volume) })
+        return
+      default:
+        // `installRoot`, `redetect` and `reset` are actions, not values: there is
+        // nothing for an arrow key to change.
+        return
+    }
+  }
+
+  /** Runs the row under the cursor: a value row steps, an action row does its thing. */
+  const activateSetting = (): void => {
+    const row = SETTINGS_ROWS[wrap(get().settingsIndex, SETTINGS_ROWS.length)]
+    if (row === undefined) return
+
+    switch (row.id) {
+      case 'installRoot':
+        void pickInstallRoot()
+        return
+      case 'redetect':
+        void get().refreshCatalog()
+        return
+      case 'reset':
+        void get().resetConfig()
+        return
+      default:
+        changeSetting(1)
+    }
+  }
+
+  /**
+   * The OS folder chooser, then the override.
+   *
+   * Main owns both halves — the dialog and the `gogPathOverride` write — so a cancelled
+   * dialog cannot leave a half-applied setting behind. `null` is the cancel case, and the
+   * only thing left to do here is to pick up the new catalog when a folder *was* chosen.
+   */
+  const pickInstallRoot = async (): Promise<void> => {
+    if (get().busy !== null) return
+    set({ busy: busyOnly('CHOOSING A FOLDER') })
+    const outcome = await invoke(INVOKE_CHANNELS.catalogPickInstallRoot, undefined)
+    set({ busy: null })
+
+    if (!outcome.ok || outcome.value === null) return
+    await get().refreshCatalog()
   }
 
   // -- settings ------------------------------------------------------------
@@ -931,6 +1083,8 @@ const store = create<LauncherStore>()((set, get) => {
       // The legacy screen popped itself on a successful launch, and the panel is
       // that surface: it closes here rather than reappearing behind the game view.
       panelOpen: false,
+  settingsOpen: false,
+  settingsIndex: 0,
       // The record Back uses to find its way to the row that is running.
       gameplay: { titleId: title.id, versionId: version.id },
       screen: 'gameplay',
@@ -1035,6 +1189,21 @@ const store = create<LauncherStore>()((set, get) => {
       case 'close-panel':
         get().closePanel()
         return
+      case 'open-settings':
+        get().openSettings()
+        return
+      case 'close-settings':
+        get().closeSettings()
+        return
+      case 'move-setting':
+        get().moveSettingsRow(intent.delta)
+        return
+      case 'change-setting':
+        get().changeSetting(intent.delta)
+        return
+      case 'activate-setting':
+        get().activateSetting()
+        return
       case 'move-option':
         get().movePanelOption(intent.delta)
         return
@@ -1127,9 +1296,14 @@ const store = create<LauncherStore>()((set, get) => {
     moveMenu,
     setVersionIndex,
     moveVersion,
+    openSettings,
     openPanel,
     closePanel,
     setPanelOption,
+    moveSettingsRow,
+    changeSetting,
+    activateSetting,
+    closeSettings,
     movePanelOption,
     setMode,
     setScenario,
