@@ -281,6 +281,25 @@ export const SETTINGS_LABEL = {
   resetDetail: 'Enter again to put every setting back to its default.'
 } as const
 
+export const HINTS_ACHIEVEMENTS: HelperHint[] = [{ keys: ['esc'], label: 'Back' }]
+
+/**
+ * The achievements surface's own text.
+ *
+ * locked is what the launcher can honestly say, because it has never detected an in-game
+ * event - the previous launcher's hook was a stub too - so an achievement is either carried as
+ * unlocked by the player's own progress file or it is not.
+ */
+export const ACHIEVEMENTS_LABEL = {
+  locked: 'LOCKED',
+  unlocked: 'UNLOCKED',
+  of: 'of',
+  unlockedCount: 'UNLOCKED',
+  empty: 'No achievements for this title yet.',
+  note:
+    'These are the launcher\u2019s own definitions, read from your progress file. RetroAchievements cannot unlock anything for a native Windows build - it reads an emulator\u2019s memory, and these games are not emulated - so its lists appear here as reference and are ticked locally.'
+} as const
+
 export const HINTS_SETTINGS: HelperHint[] = [
   { keys: ['up', 'down'], label: 'Navigate' },
   { keys: ['left', 'right'], label: 'Change' },
