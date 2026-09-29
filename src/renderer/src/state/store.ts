@@ -910,6 +910,7 @@ const store = create<LauncherStore>()((set, get) => {
       }
 
       case 'scenario': {
+        if (derived.mode === 'enhanced') return
         const available = version.scenarios
         // Two scenarios are what makes this a choice; one is a fact.
         if (available.length < 2) return

@@ -10,6 +10,14 @@ import { describe, expect, it } from 'vitest'
 import { observedIds, rulesFrom } from './observed'
 import type { ObservedRule } from './observed'
 import type { Achievement } from './types'
+import catalogue from '../../assets/achievements/achievements.json'
+
+it('never infers an Enhanced RE2 character from a launcher preference', () => {
+  const characterRows = catalogue.re2.filter((row) => row.id === 're2_leon' || row.id === 're2_claire')
+  for (const row of characterRows) {
+    expect('observed' in row && row.observed?.mode).toBe('original')
+  }
+})
 
 const RULES: ObservedRule[] = [
   // Any row of the title: "Play Resident Evil 3".

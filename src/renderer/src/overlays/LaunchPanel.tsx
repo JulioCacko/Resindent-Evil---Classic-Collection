@@ -207,11 +207,11 @@ function buildRows(
         return {
           kind,
           label: 'Scenario',
-          value: note ?? scenarioValue(scenario ?? version.defaultScenario),
+          value: note ?? (mode === 'enhanced' ? 'SELECT IN GAME' : scenarioValue(scenario ?? version.defaultScenario)),
           valueIsNote: note !== null,
           selected,
           // Two scenarios are what makes this a choice; one is a fact.
-          disabled: !version.launchable || version.scenarios.length < 2
+          disabled: !version.launchable || version.scenarios.length < 2 || mode === 'enhanced'
         }
 
       case 'settings':

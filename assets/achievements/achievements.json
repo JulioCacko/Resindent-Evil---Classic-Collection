@@ -1481,8 +1481,8 @@
       "icon": ""
     },
     {"id":"re2_play","name":"Raccoon City","desc":"Play Resident Evil 2","icon":"","observed":{"titleId":"re2"}},
-    {"id":"re2_leon","name":"First Day on the Job","desc":"Play Resident Evil 2 as Leon","icon":"","observed":{"titleId":"re2","scenario":"leon"}},
-    {"id":"re2_claire","name":"Looking for Chris","desc":"Play Resident Evil 2 as Claire","icon":"","observed":{"titleId":"re2","scenario":"claire"}},
+    {"id":"re2_leon","name":"First Day on the Job","desc":"Play Resident Evil 2 as Leon (Original mode)","icon":"","observed":{"titleId":"re2","scenario":"leon","mode":"original"}},
+    {"id":"re2_claire","name":"Looking for Chris","desc":"Play Resident Evil 2 as Claire (Original mode)","icon":"","observed":{"titleId":"re2","scenario":"claire","mode":"original"}},
     {"id":"re2_enhanced","name":"Source Material II","desc":"Play Resident Evil 2 with RE-Enhance injected","icon":"","observed":{"titleId":"re2","mode":"enhanced"}}
   ],
   "re3": [

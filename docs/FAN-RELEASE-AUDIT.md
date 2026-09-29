@@ -5,7 +5,7 @@ This ledger tracks the supplied audit against the current implementation. Runtim
 | Item | Status | Disposition |
 |---|---|---|
 | 1 RE1 end-to-end | Awaiting runtime evidence | Payload instructions require the Japanese GOG installation. This checkout has Japanese movies but no `jpn/Data`. Repair guidance is shown; no files are downloaded or relabelled. The owner elected to keep RE1 blocked on 2026-09-28. |
-| 2 RE2 launcher path | Awaiting runtime evidence | Live matrix includes Leon and Claire in Original and Enhanced modes. |
+| 2 RE2 launcher path | Awaiting runtime evidence | Live matrix includes both launcher requests. Original selects the player executable; Enhanced requires in-game character selection. A launcher request alone does not verify that scenario. |
 | 3 RE2 resolution | Confirmed limitation | No external resolution control is advertised as working. Native configuration route is available with RE-Enhance. |
 | 4 RE3 fullscreen | Resolved by removal | Forced mode 4 was removed. Fullscreen remains hidden until window-style and geometry evidence exists. |
 | 5 Automatic achievements | Resolved disclosure | Automatic launch milestones and manual checklist totals are distinguished. Milestones are awarded after successful spawn, not before. Gameplay completion is not detected. |

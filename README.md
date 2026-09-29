@@ -604,3 +604,5 @@ Enhanced configuration is preserved before copying/restoring mods, then reapplie
 RetroAchievements credentials use Windows safeStorage. A legacy plaintext key is removed only after encryption and persistence verification. The renderer receives only raConfigured and the username; credential fields never read the saved key back. Removing the account uses a dedicated IPC operation. Reset Settings preserves credentials; Remove Saved Credential deletes them.
 
 User-exported diagnostics include version, installation status and redacted operational logs. They exclude configuration files, API keys, usernames, saves and full paths. Nothing is uploaded automatically.
+
+RE2 scenario selection controls the Original executable. Enhanced mode uses the mod's own character selection; its scenario row says SELECT IN GAME. No Leon/Claire milestone is inferred from an Enhanced-mode preference.

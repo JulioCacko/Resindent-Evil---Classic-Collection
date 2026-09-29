@@ -633,7 +633,6 @@ async function launchSequence(current: IpcState, payload: LaunchRequest): Promis
    * Found by measuring RE3's resolution and then asking why the value the launcher writes was not the value
    * the game used. The patcher is idempotent, so a second call here is the whole of the fix.
    */
-  const launchConfig = await current.config.load()
   if (mode === 'enhanced') await restoreEnhancedConfig(current.paths.configDir, installPath, version.titleId === 're3')
   if (mode === 'enhanced' && !await patchGameConfig(version, installPath, false)) {
     return fail('config-unwritable', 'The game configuration could not be saved. No game was started.')
@@ -670,7 +669,7 @@ async function launchSequence(current: IpcState, payload: LaunchRequest): Promis
       mode,
       // RE2's scenario is a launch choice; every other row has none, which is a wildcard for the rules that
       // do not name one and a non-match for the rules that do.
-      scenario: launchConfig.scenarios[version.id]
+      scenario: mode === 'original' ? prepared.prepared.scenario ?? undefined : undefined
     },
     rulesFrom(current.achievements.all())
   )
