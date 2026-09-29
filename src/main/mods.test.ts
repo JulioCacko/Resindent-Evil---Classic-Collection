@@ -397,4 +397,25 @@ describe('mods', () => {
     expect(result.message).toContain('ENOENT')
     expect(result.message).toContain(missingFolder)
   })
+
+  it('records a file in the manifest before it overwrites it', async () => {
+    /*
+     * This ordering is invisible in a successful injection - the file is copied and recorded either
+     * way - and it is the difference between a recoverable injection and a destructive one. `removeMod`
+     * walks the manifest and then deletes `.mod_backup` wholesale, so an overwrite that never reached
+     * the manifest loses the retail original permanently instead of merely staying injected.
+     *
+     * A directory standing where the mod wants to write a file is the cheapest way to fail the copy at
+     * exactly that point: the destination is not a regular file, so nothing is backed up, and the only
+     * thing that can be on disk by then is the manifest line.
+     */
+    await writeTree(join(modsDir, 'RE-ENHANCE_COLLISION'), { 'collide.bin': 'mod-payload' })
+    await mkdir(installFile('collide.bin'))
+
+    const result = await injectMod(context({ modPath: 'RE-ENHANCE_COLLISION' }))
+
+    expect(result.ok).toBe(false)
+    expect(result.filesDone).toBe(0)
+    expect(await readManifest(installPath)).toEqual(['collide.bin'])
+  })
 })

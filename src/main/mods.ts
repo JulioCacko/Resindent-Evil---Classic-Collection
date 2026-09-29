@@ -47,14 +47,6 @@ const MANIFEST_FILE_NAME = 'manifest.txt'
  */
 const SKIPPED_NAME_FRAGMENTS = ['readme', 'changelog']
 
-/**
- * Manifest lines are buffered and appended in batches. Appending per file would
- * mean ~30k open/write/close cycles for a real mod; batching keeps the manifest
- * written *during* the copy (so a crash or an abort still leaves a manifest that
- * describes the files already overlayed) without that cost.
- */
-const MANIFEST_FLUSH_LINES = 128
-
 /** One file of the mod source tree, with the install-relative path it maps to. */
 interface SourceFile {
   absolute: string
@@ -311,9 +303,11 @@ export async function readManifest(installPath: string): Promise<string[]> {
  * Overlays `<modsDir>/<modPath>` onto `context.installPath`.
  *
  * For every source file, in this order: if the destination already exists it is
- * copied into `.mod_backup/<same relative path>`, then the mod file overwrites
- * it, then its relative path is appended to the manifest. That ordering is the
- * whole point — a file is never overwritten before its original is saved.
+ * copied into `.mod_backup/<same relative path>`, then its relative path is
+ * recorded in the manifest, and only then does the mod file overwrite it. That
+ * ordering is the whole point, and it has two halves: a file is never overwritten
+ * before its original is saved, and never overwritten before the manifest says so
+ * — see `recordOverlay` for what the second half costs.
  *
  * Files whose names contain `readme` or `changelog` are skipped and are not
  * counted in `filesTotal`, so a consumer's progress bar reaches 100% exactly at
@@ -353,15 +347,24 @@ export async function injectMod(
     ensuredDirectories.add(directory)
   }
 
-  let pendingManifestLines: string[] = []
-  const flushManifest = async (): Promise<void> => {
-    if (pendingManifestLines.length === 0) {
-      return
-    }
-    const payload = pendingManifestLines.join('')
-    pendingManifestLines = []
+  /**
+   * Records one overlayed file in the manifest, durably, BEFORE its destination is overwritten.
+   *
+   * The order is the whole point, and it is not the order the copy used to use. `removeMod` walks the
+   * manifest and then deletes `.mod_backup` wholesale, so an overwritten file that never reached the
+   * manifest does not merely stay injected: its backup is orphaned and then removed along with the
+   * tree, and the retail original is gone for good. The previous version buffered 128 lines and
+   * appended them in batches, which left up to 127 overwritten files in exactly that window — and a
+   * hard kill or a power loss during the copy is precisely when it would be hit, because no `finally`
+   * runs to flush what is still in memory.
+   *
+   * One small append per file is what closing that window costs, against a `copyFile` that has just
+   * touched the same directory tree. Recording a path whose copy then fails is harmless by comparison:
+   * `removeMod` restores its backup, or deletes a file that was never written.
+   */
+  const recordOverlay = async (relative: string): Promise<void> => {
     await ensureDirectory(backupDir)
-    await appendFile(manifestPath, payload, 'utf8')
+    await appendFile(manifestPath, `${relative}\n`, 'utf8')
   }
 
   let filesDone = 0
@@ -481,13 +484,12 @@ export async function injectMod(
         currentTarget = destination
       }
 
+      // Recorded before the overwrite, never after it: a path whose copy then fails is recoverable,
+      // and an overwrite that was never recorded is not.
+      await recordOverlay(file.relative)
+
       await ensureDirectory(dirname(destination))
       await copyFile(file.absolute, destination)
-
-      pendingManifestLines.push(`${file.relative}\n`)
-      if (pendingManifestLines.length >= MANIFEST_FLUSH_LINES) {
-        await flushManifest()
-      }
 
       filesDone += 1
       report('copy', filesDone, filesTotal)
@@ -505,17 +507,6 @@ export async function injectMod(
     return { ok: true, filesDone, filesTotal }
   } catch (error) {
     return failure(error, currentTarget, filesDone, filesTotal)
-  } finally {
-    // The manifest is the only record of what was overlayed, so it is flushed on
-    // every exit path — including a failure or an abort, where the files copied
-    // before it happened must still be restorable.
-    try {
-      await flushManifest()
-    } catch {
-      // The primary failure is already built; a manifest flush failure here would
-      // only mask it. A missing manifest makes `removeMod` fall back to "delete
-      // `.mod_backup`", which is the documented behaviour for such an install.
-    }
   }
 }
 
