@@ -17,7 +17,7 @@ player scenarios, a CRT filter and an achievement system.
   <a href="https://github.com/JulioCacko/Resindent-Evil---Classic-Collection/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/JulioCacko/Resindent-Evil---Classic-Collection?label=download&color=8b1a1a"></a>
   <img alt="Platform: Windows" src="https://img.shields.io/badge/platform-Windows-2f6f9f">
   <img alt="Built with Electron and React" src="https://img.shields.io/badge/Electron%2044-React%2019-3b3b3b">
-  <img alt="Tests passing" src="https://img.shields.io/badge/tests-377%20passing-2f7a4f">
+  <img alt="Tests passing" src="https://img.shields.io/badge/tests-379%20passing-2f7a4f">
   <img alt="Not affiliated with Capcom" src="https://img.shields.io/badge/unofficial-not%20affiliated%20with%20Capcom-6b6b6b">
 </p>
 
