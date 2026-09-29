@@ -25,7 +25,7 @@ for (const entry of cases) for (const mode of ['original', 'enhanced'] as Launch
     test.skip(Boolean(process.env.RE_LIVE_CASE) && process.env.RE_LIVE_CASE !== label, 'Filtered case; not full release evidence.')
     test.setTimeout(cycles * 240_000 + 60_000)
     const profile = await mkdtemp(join(tmpdir(), 're-live-matrix-'))
-    await writeFile(join(profile, 'config.json'), JSON.stringify({ onboardingComplete: true, lastSelectedTitle: entry.titleId, modes: { [entry.versionId]: mode }, scenarios: { [entry.versionId]: entry.scenario }, launchWindowMode: 'stay', inGameCrt: false }))
+    await writeFile(join(profile, 'config.json'), JSON.stringify({ onboardingComplete: true, lastSelectedTitle: entry.titleId, modes: { [entry.versionId]: mode }, scenarios: { [entry.versionId]: entry.scenario }, launchWindowMode: 'minimise', inGameCrt: false }))
     const app = await _electron.launch({ args: ['out/main/index.js'], cwd: process.cwd(), env: { ...process.env, RE_TEST_CONFIG_DIR: profile, RE_GAME_FRAME_CAPTURE: '1' } as Record<string, string> })
     const page = await app.firstWindow()
     const evidence: unknown[] = []
