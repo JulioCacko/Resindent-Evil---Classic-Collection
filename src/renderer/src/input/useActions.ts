@@ -12,7 +12,7 @@ import { useEffect, useRef } from 'react'
 import type { ActionHandler, ActionsOptions } from '@renderer/contracts'
 import { THROTTLE_MS, eventToAction } from './actions'
 import { useGamepad } from './useGamepad'
-import { launcherStore } from '@renderer/state/store'
+import { launcherStore, recordInputDevice } from '@renderer/state/store'
 
 /**
  * Keys whose browser default the launcher owns: the arrows scroll the document
@@ -22,14 +22,7 @@ import { launcherStore } from '@renderer/state/store'
  * Escape is deliberately absent — it is how the user leaves fullscreen — and so
  * are the WASD/E keys, which have no default worth suppressing.
  */
-const PREVENT_DEFAULT_KEYS: ReadonlySet<string> = new Set([
-  'ArrowLeft',
-  'ArrowRight',
-  'ArrowUp',
-  'ArrowDown',
-  'Enter',
-  'NumpadEnter'
-])
+
 
 /**
  * True for a focused control that consumes typing, so the menu does not move
@@ -87,12 +80,11 @@ export function useActions(handler: ActionHandler, options?: ActionsOptions): vo
 
       const action = eventToAction(event, launcherStore().config?.keyBindings)
       if (action === null) return
+      recordInputDevice('keyboard')
 
       // Suppressed before the throttle test: a rate-limited auto-repeat must
       // still not scroll the canvas or re-activate a focused control.
-      if (PREVENT_DEFAULT_KEYS.has(event.code) || PREVENT_DEFAULT_KEYS.has(event.key)) {
-        event.preventDefault()
-      }
+      event.preventDefault()
 
       // The first press always fires; only the browser's ~30/s auto-repeat is
       // rate-limited, so holding ◄ walks the menu at a readable pace instead of
@@ -101,6 +93,11 @@ export function useActions(handler: ActionHandler, options?: ActionsOptions): vo
       const stamp = Date.now()
       if (event.repeat === true && stamp - lastKeyboardAt.current < THROTTLE_MS) return
       lastKeyboardAt.current = stamp
+
+      if (action === 'confirm' && event.target instanceof HTMLButtonElement) {
+        event.target.click()
+        return
+      }
 
       handlerRef.current(action, 'keyboard')
     }
@@ -115,5 +112,5 @@ export function useActions(handler: ActionHandler, options?: ActionsOptions): vo
   // keyboard-after-pad device lock (`ActionsOptions.deviceLockMs`) from its own
   // keydown stamp — which is why the raw handler and options are forwarded
   // as-is rather than wrapped.
-  useGamepad(handler, options)
+  useGamepad((action, device) => { recordInputDevice(device); handler(action, device) }, options)
 }

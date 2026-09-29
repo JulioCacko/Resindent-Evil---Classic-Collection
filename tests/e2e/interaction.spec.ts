@@ -336,6 +336,7 @@ test.describe('the launcher flow', () => {
 
     // --- a stepped range: scanlines -------------------------------------------
     await press(page, 'ArrowDown')
+    await expect(page.locator('[data-name="setting-scanlines"]')).toBeFocused()
     const scanBefore = await readBack('scanlines')
     await press(page, 'ArrowRight')
     await waitUntil(() => readBack('scanlines'), (value) => value.shown !== scanBefore.shown, {

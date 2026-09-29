@@ -640,6 +640,8 @@ const store = create<LauncherStore>()((set, get) => {
   /** Memoised first load; also what makes `init()` idempotent. */
   let initPromise: Promise<void> | null = null
   const toastExpiry = new Map<string, ReturnType<typeof setTimeout>>()
+  let settingsReturnPanel = false
+  let achievementsReturn: 'settings' | 'panel' | null = null
 
   /**
    * Publishes a config that came back from main (or was merged locally). The
@@ -1004,6 +1006,7 @@ const store = create<LauncherStore>()((set, get) => {
   }
 
   const openAchievements = async (): Promise<void> => {
+    achievementsReturn = get().settingsOpen ? 'settings' : get().panelOpen ? 'panel' : null
     const gameId = get().titleId
     const title = get().catalog?.titles.find((candidate) => candidate.id === gameId)?.name ?? ''
     set({ achievementsOpen: true, achievements: null, raAchievements: null, achievementsTitle: title, settingsOpen: false, panelOpen: false, credentialsOpen: false })
@@ -1018,7 +1021,7 @@ const store = create<LauncherStore>()((set, get) => {
   }
 
   const closeAchievements = (): void => {
-    set({ achievementsOpen: false })
+    set({ achievementsOpen: false, settingsOpen: achievementsReturn === 'settings', panelOpen: achievementsReturn === 'panel' })
   }
 
   /**
@@ -1056,11 +1059,12 @@ const store = create<LauncherStore>()((set, get) => {
   }
 
   const openSettings = (): void => {
+    settingsReturnPanel = get().panelOpen
     set({ settingsOpen: true, panelOpen: false, achievementsOpen: false, credentialsOpen: false })
   }
 
   const closeSettings = (): void => {
-    set({ settingsOpen: false })
+    set({ settingsOpen: false, panelOpen: settingsReturnPanel && get().screen === 'version' })
   }
 
   const moveSettingsRow = (delta: number): void => {
@@ -1617,6 +1621,10 @@ const store = create<LauncherStore>()((set, get) => {
  */
 export function launcherStore(): LauncherStore {
   return store.getState()
+}
+
+export function recordInputDevice(device: InputDevice): void {
+  if (store.getState().inputDevice !== device) store.setState({ inputDevice: device })
 }
 
 /**

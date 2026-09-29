@@ -18,7 +18,8 @@ import { useModalFocus } from '@renderer/input/useModalFocus'
  * like the same kind of thing, and the panel's row is the closest thing the concept has to a
  * setting.
  */
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { keyLabel } from '@shared/controls'
 
 import {
   SETTINGS_LABEL,
@@ -131,14 +132,17 @@ export function Settings() {
   const activate = useLauncher((state) => state.activateSetting)
   const close = useLauncher((state) => state.closeSettings)
   const overlayReason = useLauncher((state) => state.overlayReason)
+  const device = useLauncher((state) => state.inputDevice)
   const root = useRef<HTMLDivElement>(null)
   useModalFocus(root)
   const [confirmReset, setConfirmReset] = useState(false)
   const focused = SETTINGS_ROWS[index] ?? SETTINGS_ROWS[0]
   const group = GROUPS.find((entry) => entry.rows.includes(focused.id)) ?? GROUPS[0]
+  useEffect(() => {
+    root.current?.querySelector<HTMLButtonElement>(`[data-name="setting-${focused.id}"]`)?.focus()
+  }, [focused.id])
 
-  return <div ref={root} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Launcher settings" className="collection-dialog" data-figma-node="settings"
-    onKeyDown={(event) => { if ((event.key === 'Enter' || event.key === ' ') && (event.target as HTMLElement).closest('button')) event.stopPropagation() }}>
+  return <div ref={root} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Launcher settings" className="collection-dialog" data-figma-node="settings">
     <header><p className="eyebrow">CLASSIC COLLECTION / SETTINGS</p><h1>SETTINGS</h1><p data-figma-node="settings-hint">Changes are saved as you make them.</p></header>
     <div className="settings-layout">
       <nav aria-label="Settings categories">{GROUPS.map((entry) => <button key={entry.name} aria-current={group.name === entry.name ? 'page' : undefined} onClick={() => {
@@ -162,7 +166,7 @@ export function Settings() {
       <p data-figma-node="settings-focused">FOCUSED: {focused.label.toUpperCase()}</p>
       </section>
     </div>
-    <footer><button data-figma-node="settings-close" aria-label="Close settings" onClick={close}>BACK</button><span>Up / Down select · Left / Right change · Enter confirm</span></footer>
+    <footer><button data-figma-node="settings-close" aria-label="Close settings" onClick={close}>BACK</button><span>{device === 'gamepad' ? 'D-pad select / change · A / × confirm · B / ○ back' : `${keyLabel(config?.keyBindings['nav-up'][0] ?? 'ArrowUp')} / ${keyLabel(config?.keyBindings['nav-down'][0] ?? 'ArrowDown')} select · ${keyLabel(config?.keyBindings.confirm[0] ?? 'Enter')} confirm · Escape back`}</span></footer>
   </div>
 }
 export default Settings
