@@ -1,5 +1,7 @@
 # Resident Evil - Classic Collection
 
+> Fan release preparation: local builds are **not release-ready**. See [the audit](docs/FAN-RELEASE-AUDIT.md), [release gates](docs/RELEASE-GATES.md), and [changelog](CHANGELOG.md). Native inline remapping and hardware/gameplay validation remain open.
+
 An **unofficial, non-commercial launcher application** for the Resident Evil Classic
 Bundle (RE1, RE2, RE3): a desktop front end that implements a designed user interface
 1:1 and starts games **you already own**. It is an Electron + React application, driven by the
@@ -15,7 +17,7 @@ player scenarios, a CRT filter and an achievement system.
   <a href="https://github.com/JulioCacko/Resindent-Evil---Classic-Collection/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/JulioCacko/Resindent-Evil---Classic-Collection?label=download&color=8b1a1a"></a>
   <img alt="Platform: Windows" src="https://img.shields.io/badge/platform-Windows-2f6f9f">
   <img alt="Built with Electron and React" src="https://img.shields.io/badge/Electron%2044-React%2019-3b3b3b">
-  <img alt="Tests passing" src="https://img.shields.io/badge/tests-271%20passing-2f7a4f">
+  <img alt="Tests passing" src="https://img.shields.io/badge/tests-377%20passing-2f7a4f">
   <img alt="Not affiliated with Capcom" src="https://img.shields.io/badge/unofficial-not%20affiliated%20with%20Capcom-6b6b6b">
 </p>
 
@@ -84,8 +86,17 @@ input pipeline.
 - **RE-Enhance integration** — enhanced/original mode per row, automatic file
   injection with a reversible backup, correct executable switching, and pre-launch
   `config.ini` patching so the RE-Enhance setup dialog never appears
-- **Achievements** — 365 definitions (RE1 115, RE2 131, RE3 119) with progress saved
-  in the old launcher's own format, so existing unlocks carry over
+- **Achievements** — 373 definitions (RE1 117, RE2 135, RE3 121) with progress saved
+  in the old launcher's own format, so existing unlocks carry over. Eight of them are
+  launcher-observable and tick themselves when you launch the row they describe — see
+  *Achievements* below for which and why there are only eight
+- **In-game achievement overlay** — the unlock toast is drawn *inside the game*, not in the
+  launcher: a 32-bit plugin built from `native/overlay/`, loaded by the ASI loader RE-Enhance
+  already installs, hooks the game's own present call and draws the card into the frame it is
+  about to present. ENHANCED mode only (the loader ships with the mod), on by default and
+  switchable in Settings, and **it cannot detect an unlock** — these are native Windows builds,
+  so nothing reads the game's memory. Measurements, including the three that were wrong first:
+  docs/ARCHITECTURE.md section 12
 - **GOG and Steam auto-detection** — GOG first (local `GOG Games/`, then the Windows
   registry, then the usual roots, with an explicit override), then Steam (its registry
   entry, every library in `libraryfolders.vdf`, and each app's own `appmanifest`), so
@@ -94,16 +105,15 @@ input pipeline.
   actions, with on-screen key hints per screen
 - **CRT filter** — scanlines, phosphor mask, vignette, grain and barrel curvature,
   all configurable
-- **In-game CRT** — a separate switch that asks the *game* for a CRT look, because the
-  launcher's own filter cannot cover a game that renders in its own window: it writes
-  RE-Enhance's RetroMode and dgVoodoo's stretched_4_3_crt scaling before launch. Needs
-  RE-Enhance injected, and the dgVoodoo half only applies where that file exists (the RE1
-  payload ships one; RE2 and RE3 do not). **Its visual result is not yet confirmed** — see
-  docs/ARCHITECTURE.md section 6
+- **Game effects** — unverified in-game CRT and fullscreen controls are hidden. Launcher-only CRT remains available.
+
 - **Settings screen** — CRT, volumes, what the window does when a game starts, where the
   games are (with the OS folder chooser and a re-scan) and a reset, reached from the launch
   panel's SETTINGS row
-- **No native modules** — nothing to rebuild per Electron version or per ABI
+- **No native modules in the app** — the Electron side is pure JavaScript, so there is nothing to
+  rebuild per Electron version or per ABI. The one native artifact in the project is the overlay
+  plugin above: our own 32-bit DLL, built from source by `pnpm build:overlay`, and the only reason
+  `pnpm build` needs a C++ toolchain
 
 ---
 
@@ -177,13 +187,21 @@ generated into `src/renderer/src/assets/`, not committed.
 ### Building
 
 ```bash
-pnpm build          # typecheck -> compile -> Windows installer + portable exe (release/)
-pnpm build:dir      # compile -> unpacked build only (release/win-unpacked/)
+pnpm build          # typecheck -> overlay -> compile -> installer + portable exe (release/)
+pnpm build:dir      # overlay -> compile -> unpacked build only (release/win-unpacked/)
+pnpm build:overlay  # just the in-game overlay plugin + its hermetic test host
 pnpm start          # preview a compiled build with electron-vite
 ```
 
 `pnpm build` produces an NSIS installer and a portable executable, both x64. The
 build output lands in `release/`.
+
+**`pnpm build` needs a C++ toolchain** (Visual Studio with the C++ workload, found through
+`vswhere`): it builds the in-game overlay plugin, which is a 32-bit DLL — the ASI loader inside these
+games is x86, so a 64-bit build would never be loaded and would never say why. `tools/build-native.mjs`
+asserts the machine type and that the artifact needs no VC redistributable. This is the one thing a
+contributor needs that `pnpm dev` and `pnpm test` do not: those work with no compiler at all, and the
+overlay's native tests skip with a visible reason until `pnpm build:overlay` has been run.
 
 ### Where the game folders must live
 
@@ -295,7 +313,7 @@ Settings live in a JSON file the launcher owns, **not** beside the executable
 (`Program Files` is not writable for a standard user):
 
 ```
-%APPDATA%\re-classic-collection\config.json
+%APPDATA%\Resident Evil - Classic Collection\config.json
 ```
 
 | Key | Type | Default | Meaning |
@@ -313,9 +331,9 @@ Settings live in a JSON file the launcher owns, **not** beside the executable
 | `scenarios` | object | `{}` | Per-version `leon` / `claire`; a missing entry uses the row's default |
 | `gogPathOverride` | string | `""` | Explicit GOG root; empty means auto-detect |
 | `keepLauncherVisible` | boolean | `true` | Keep the launcher window up while a game runs |
+| `inGameOverlay` | boolean | `true` | Draw the achievement toast inside the game's own frame |
 
-Writes are atomic (temp file + rename) and a failed write is logged rather than
-fatal, so a read-only profile keeps working for the session. Malformed values fall
+Writes are atomic (temp file + rename). A failed write preserves the previous settings and reports an error. Malformed values fall
 back to their defaults instead of breaking the launcher.
 
 **Upgrading from the old launcher:** the first run reads the legacy
@@ -330,7 +348,15 @@ only ever read, never written.
 
 ## Achievements
 
-365 definitions ship with the launcher: **115** for RE1, **131** for RE2 and **119**
+**The unlock toast is drawn inside the game**, not in the launcher: a 32-bit ASI plugin (built from
+`native/overlay/`, loaded by the ASI loader RE-Enhance already installs) hooks the game's own present
+call and draws the card into the frame it is about to present — the Steam overlay's route, with our
+code inside the game's process. It is on by default, can be switched off in Settings, and only ever
+happens in ENHANCED mode, because the loader that loads it ships with the mod. What it cannot do is
+*detect* an unlock: these are native Windows builds, so nothing reads the game's memory. `docs/
+ARCHITECTURE.md` §12 has the measurements, including the ones that were wrong first.
+
+373 definitions ship with the launcher: **117** for RE1, **135** for RE2 and **121**
 for RE3, in `assets/achievements/achievements.json`:
 
 ```json
@@ -338,10 +364,18 @@ for RE3, in `assets/achievements/achievements.json`:
   "re1": [
     { "id": "re1_001", "name": "A Member of S.T.A.R.S.", "desc": "Complete the game as Jill on Standard", "icon": "" }
   ],
-  "re2": [ "... 131 entries ..." ],
-  "re3": [ "... 119 entries ..." ]
+  "re2": [ "... 135 entries ..." ],
+  "re3": [ "... 121 entries ..." ]
 }
 ```
+
+**Eight of those the launcher can award by itself**, and they are the only eight it ever will: an entry
+carries an `observed` condition naming what the launcher itself did — the title, the row, RE2's scenario, or
+ENHANCED mode — and it is ticked when that row launches. They read as "Play Resident Evil 3", "Play Resident
+Evil 2 as Claire", "Play Resident Evil in ENHANCED mode". Everything else in the file is an in-game
+condition ("Finish the game with an A rank") that nothing outside the game can verify: these are native
+Windows binaries, so the launcher does not read their memory, and marking one of those observable would put
+an unearned tick in your own progress file.
 
 You can override or extend it without rebuilding, because the last readable file in
 this order wins:
@@ -425,7 +459,28 @@ pnpm typecheck      # tsc over the main/preload, renderer and e2e projects
 pnpm compile        # build main, preload and renderer into out/
 pnpm test:e2e       # compile, then run the Playwright specs from tests/e2e/
 pnpm check:fidelity # the design-drift guard: the live UI vs the design export
+pnpm probe:overlay  # measure the in-game toast over a real game (see below)
 ```
+
+Most of the overlay is tested without a game at all: `native/testhost` creates a real Direct3D device,
+the plugin draws into it, and `src/main/overlay-link.test.ts` reads the plugin's counters over its own
+pipe. Those tests skip, with a visible reason, until `pnpm build:overlay` has produced the plugin.
+
+### Measuring the toast over a real game
+
+```bash
+pnpm build:overlay
+pwsh -File tools/probe-overlay.ps1 -Title RE3 -Dir "GOG Games\Resident Evil 3" `
+  -Exe 'BIOHAZARD(R) 3 PC.exe'
+```
+
+It copies the plugin and its typeface into the install, launches the game the way the launcher does,
+links to the plugin over its pipe, sends one toast, and then **reads the frame back off the game's
+device** and counts the design's gold inside the toast's rectangle. That readback is the measurement
+that matters, and it is deliberate: a screen capture reads the *screen*, so it returns whatever window
+happens to be on top, and Windows will not let a background process bring a game to the foreground.
+The tool puts the install back afterwards — plugin, typeface and `config.ini` — including on its own
+failure paths. Add `-Inspect` to print every window the game's process owns instead of measuring.
 
 ### The one spec that starts a game
 
@@ -465,7 +520,7 @@ is written up in `docs/DESIGN-FIDELITY.md` §8.
 |---|---|
 | **Game not detected** | The launcher boots to Install Status and shows where each title was expected. Put `GOG Games/<exact folder name>/` beside the executable, or install through GOG so the registry entry exists, or set `gogPathOverride` in `config.json` to the folder that *contains* `Resident Evil/` |
 | **Install Status says PARTIAL** | The install root was found but a probe failed — the row lists the reason (`Executable not found`, `Game data incomplete`). Re-verify the GOG install files |
-| **The RE-Enhance setup dialog appears on launch** | The game's own `config.ini` could not be patched. Check the install folder is writable; the launcher writes `[DLL] BootConfig=0` before every launch |
+| **The RE-Enhance setup dialog appears on launch** | `[DLL] BootConfig=0` is what suppresses it, and the launcher writes it — twice, in fact: once while preparing the launch and again *after* the mod is injected, because the payload ships its own `config.ini` and used to overwrite the patch on every enhanced launch. Before that ordering was fixed there was nothing to check here; if the dialog still appears, check the install folder is writable |
 | **Wrong language / US-JP mix-up** | Language is driven by `[DLL] JapaneseEnable`, set from the row you launched. Launch the JP row for Japanese, the US row for English |
 | **Mods are not applied** | `reenhancemods/` must be beside the executable with the exact folder names in *Where the game folders must live*. A row with no mod folder is locked to ORIGINAL mode |
 | **Enhanced mode starts the retail game** | The row's mod executable was not found after injection, so the launcher fell back to retail instead of failing the launch. Re-download the RE-Enhance release for that title |
@@ -475,6 +530,7 @@ is written up in `docs/DESIGN-FIDELITY.md` §8.
 | **CRT filter looks wrong / too strong** | `scanlineIntensity`, `curvature`, `crtVignette` and `crtGrain` are all live settings. Set `curvature` to `0` to disable the warp filter |
 | **Art or videos are missing after a fresh clone** | `pnpm assets:sync` has not run. It generates everything under `src/renderer/src/assets/` |
 | **The window is smaller than 1920x1080** | The launcher renders a fixed 1920x1080 canvas and scales it to fit, letterboxing the remainder. Nothing reflows; a 1920x1080 window simply shows it at 1:1 |
+| **The game opens in a small window** | RE3 Enhanced offers four window sizes under its Display page. Game setting removes the override and restores its captured value. Fullscreen remains unverified. RE1/RE2 external resolution controls remain unverified; use native configuration where available. |
 | **Where are the logs?** | `%APPDATA%\re-classic-collection\re-log.txt` (also stdout in development). `RE_LOG_LEVEL=debug` turns on debug lines |
 
 ---
@@ -538,3 +594,13 @@ requires a DeviantArt login. No font is needed for it either way: the badge rend
 the designer's own cropped texture (`assets/textures/main-logo.png`), so the lettering
 is exact without shipping anyone else's file. If you use his font in your own work,
 credit Peter Jonca.
+
+## Fan release additions
+
+Settings are grouped into Presentation, Audio, Controls, Accounts and Installation. Launcher keyboard bindings are configurable; Escape remains an always-available cancellation route. The selected game's Start menu includes Display, Controls and Achievements.
+
+Enhanced configuration is preserved before copying/restoring mods, then reapplied after injection. RE3 display overrides are stored per installation in the user's native-settings profiles. Selecting Game setting restores the captured value on the next Enhanced launch. Original game files use the existing mod backup/restore path.
+
+RetroAchievements credentials use Windows safeStorage. A legacy plaintext key is removed only after encryption and persistence verification. The renderer receives only raConfigured and the username; credential fields never read the saved key back. Removing the account uses a dedicated IPC operation. Reset Settings preserves credentials; Remove Saved Credential deletes them.
+
+User-exported diagnostics include version, installation status and redacted operational logs. They exclude configuration files, API keys, usernames, saves and full paths. Nothing is uploaded automatically.

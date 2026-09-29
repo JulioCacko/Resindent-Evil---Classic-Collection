@@ -22,10 +22,11 @@
  *    logged rather than thrown, so a read-only disk cannot take the launcher
  *    down.
  */
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 import { DEFAULT_TITLE_ID, TITLES } from '@shared/catalog'
+import { DEFAULT_BINDINGS, validBindings } from '@shared/controls'
 import type { LauncherConfig, LaunchMode, LaunchWindowMode, Re2Scenario, TitleId } from '@shared/types'
 
 import type { ConfigStore, ConfigStoreOptions } from './contracts'
@@ -73,6 +74,8 @@ function isMissingFile(error: unknown): boolean {
  */
 export function defaultConfig(): LauncherConfig {
   return {
+    keyBindings: structuredClone(DEFAULT_BINDINGS),
+    onboardingComplete: false,
     crtEnabled: false,
     scanlineIntensity: 0.3,
     curvature: 0.08,
@@ -91,10 +94,14 @@ export function defaultConfig(): LauncherConfig {
     // the launcher, the game's own options - so a user who wants one has not asked for the
     // other, and both start off.
     inGameCrt: false,
+    // On by default: the in-game toast only exists while a game runs, and a player who has not asked
+    // for it simply never sees the launcher's toast leave the launcher. Turning it off is the way to
+    // refuse having our code inside the game's process at all.
+    inGameOverlay: true,
     // Empty until the user supplies them: no key is shipped, and the achievements surface
     // says so rather than showing an empty list as if the game had no achievements.
     raUser: '',
-    raKey: '',
+    raConfigured: false,
     raTicked: [],
     // Off by default: handing the launch to Steam trades this launcher's own process tracking
     // for Steam's, and that is the player's choice to make rather than a default.
@@ -218,6 +225,8 @@ function readMap<T extends string>(
 function sanitizeConfig(value: unknown, base: LauncherConfig): LauncherConfig {
   const source: Record<string, unknown> = isRecord(value) ? value : {}
   return {
+    keyBindings: validBindings(source.keyBindings) ? structuredClone(source.keyBindings) : structuredClone(base.keyBindings),
+    onboardingComplete: readBoolean(source.onboardingComplete, base.onboardingComplete),
     crtEnabled: readBoolean(source.crtEnabled, base.crtEnabled),
     scanlineIntensity: readNumber(source.scanlineIntensity, base.scanlineIntensity),
     curvature: readNumber(source.curvature, base.curvature),
@@ -231,8 +240,9 @@ function sanitizeConfig(value: unknown, base: LauncherConfig): LauncherConfig {
     scenarios: readMap(source.scenarios, isRe2Scenario, base.scenarios),
     launchWindowMode: readLaunchWindowMode(source.launchWindowMode, base.launchWindowMode),
     inGameCrt: readBoolean(source.inGameCrt, base.inGameCrt),
+    inGameOverlay: readBoolean(source.inGameOverlay, base.inGameOverlay),
     raUser: readString(source.raUser, base.raUser),
-    raKey: readString(source.raKey, base.raKey),
+    raConfigured: base.raConfigured,
     raTicked: readNumberList(source.raTicked, base.raTicked),
     launchThroughSteam: readBoolean(source.launchThroughSteam, base.launchThroughSteam),
     gogPathOverride: readString(source.gogPathOverride, base.gogPathOverride),
@@ -511,7 +521,7 @@ async function readLegacyIni(path: string): Promise<Record<string, string> | nul
  * degrades to `null` so `load()` can fall back to defaults, and is reported
  * without throwing.
  */
-async function readExistingConfig(configPath: string): Promise<LauncherConfig | null> {
+async function readExistingConfig(configPath: string): Promise<Record<string, unknown> | null> {
   let contents: string
   try {
     contents = await readFile(configPath, 'utf8')
@@ -524,14 +534,16 @@ async function readExistingConfig(configPath: string): Promise<LauncherConfig | 
   try {
     parsed = JSON.parse(contents)
   } catch (error) {
-    warn(`ignoring malformed config at ${configPath}: ${describeError(error)}`)
+    warn('Malformed configuration preserved for recovery; using defaults.')
+    await copyFile(configPath, `${configPath}.corrupt-${Date.now()}`)
     return null
   }
   if (!isRecord(parsed)) {
-    warn(`ignoring config at ${configPath}: expected a JSON object`)
+    warn('Configuration is not an object; preserving it for recovery.')
+    await copyFile(configPath, `${configPath}.corrupt-${Date.now()}`)
     return null
   }
-  return sanitizeConfig(parsed, defaultConfig())
+  return parsed
 }
 
 export function createConfigStore(options: ConfigStoreOptions): ConfigStore {
@@ -545,6 +557,23 @@ export function createConfigStore(options: ConfigStoreOptions): ConfigStore {
    * awaits `load()` twice cannot observe two different configs.
    */
   let loaded = false
+  let loading: Promise<LauncherConfig> | null = null
+  let encrypted = ''
+  let legacyKey = ''
+  let writes: Promise<unknown> = Promise.resolve()
+
+  function serial<T>(work: () => Promise<T>): Promise<T> {
+    const next = writes.then(work)
+    writes = next.catch(() => undefined)
+    return next
+  }
+
+  function encrypt(key: string): string {
+    if (!options.secrets?.isEncryptionAvailable()) throw new Error('Windows credential encryption is unavailable. No key was saved.')
+    const bytes = options.secrets.encryptString(key)
+    if (options.secrets.decryptString(bytes) !== key) throw new Error('Credential encryption verification failed.')
+    return bytes.toString('base64')
+  }
 
   /**
    * Writes the config atomically: a temp file in the target directory, then a
@@ -561,18 +590,25 @@ export function createConfigStore(options: ConfigStoreOptions): ConfigStore {
     const tempPath = `${options.configPath}.${process.pid}.tmp`
     try {
       await mkdir(dirname(options.configPath), { recursive: true })
-      await writeFile(tempPath, `${JSON.stringify(next, null, 2)}\n`, 'utf8')
+      if (legacyKey !== '') throw new Error('Legacy credential migration must succeed before settings can be saved.')
+      const document = encrypted === '' ? next : { ...next, raSecret: encrypted }
+      await writeFile(tempPath, `${JSON.stringify(document, null, 2)}\n`, 'utf8')
+      if (encrypted !== '') {
+        const saved = JSON.parse(await readFile(tempPath, 'utf8')) as { raSecret: string }
+        if (saved.raSecret !== encrypted) throw new Error('Credential persistence verification failed.')
+      }
       await rename(tempPath, options.configPath)
     } catch (error) {
       warn(`could not write ${options.configPath}: ${describeError(error)}`)
       await rm(tempPath, { force: true }).catch(() => undefined)
+      throw new Error('Settings could not be saved. Your previous settings were preserved.')
     }
   }
 
   /** Sets in-memory state before persisting, so a failed write is not a lost change. */
   async function commit(next: LauncherConfig): Promise<LauncherConfig> {
-    current = next
     await persist(next)
+    current = next
     return current
   }
 
@@ -591,7 +627,7 @@ export function createConfigStore(options: ConfigStoreOptions): ConfigStore {
    * in the file. `load()` is idempotent and never throws, so this is safe.
    */
   async function ensureLoaded(): Promise<void> {
-    if (!loaded) await load()
+    if (!loaded) await loadOnce()
   }
 
   async function load(): Promise<LauncherConfig> {
@@ -599,7 +635,17 @@ export function createConfigStore(options: ConfigStoreOptions): ConfigStore {
 
     const existing = await readExistingConfig(options.configPath)
     if (existing) {
-      current = existing
+      current = sanitizeConfig(existing, defaultConfig())
+      encrypted = typeof existing.raSecret === 'string' ? existing.raSecret : ''
+      legacyKey = typeof existing.raKey === 'string' ? existing.raKey : ''
+      if (legacyKey !== '' && options.secrets !== undefined) {
+        const key = legacyKey
+        encrypted = encrypt(key)
+        legacyKey = ''
+        try { await persist({ ...current, raConfigured: true }) }
+        catch (error) { legacyKey = key; throw error }
+      }
+      current.raConfigured = encrypted !== ''
       loaded = true
       return current
     }
@@ -615,13 +661,36 @@ export function createConfigStore(options: ConfigStoreOptions): ConfigStore {
     } else {
       current = defaultConfig()
     }
-    loaded = true
     await persist(current)
+    loaded = true
     return current
   }
 
+  function loadOnce(): Promise<LauncherConfig> {
+    loading ??= load().catch((error: unknown) => { loading = null; throw error })
+    return loading
+  }
+
   return {
-    load,
+    load: loadOnce,
+
+    async getCredential() {
+      await loadOnce()
+      if (encrypted === '') return ''
+      if (!options.secrets?.isEncryptionAvailable()) throw new Error('Windows credential encryption is unavailable.')
+      return options.secrets.decryptString(Buffer.from(encrypted, 'base64'))
+    },
+
+    setCredential(user, key) {
+      return serial(async () => {
+        await loadOnce()
+        if (user.length > 128 || key.length > 1024) throw new Error('Credential is too long.')
+        const previous = encrypted
+        encrypted = key === '' ? '' : encrypt(key)
+        try { return await commit({ ...current, raUser: user, raConfigured: key !== '' }) }
+        catch (error) { encrypted = previous; throw error }
+      })
+    },
 
     get: () => current,
 
@@ -630,7 +699,7 @@ export function createConfigStore(options: ConfigStoreOptions): ConfigStore {
       // A shallow merge, as the contract states: a patch that carries `modes`
       // replaces the whole map, which is what the renderer's `patchConfig` sends.
       // Sanitising the result keeps a malformed IPC payload from reaching the file.
-      return commit(sanitizeConfig({ ...current, ...partial }, current))
+      return serial(() => commit(sanitizeConfig({ ...current, ...partial }, current)))
     },
 
     async setMode(versionId: string, mode: LaunchMode): Promise<LauncherConfig> {
@@ -639,10 +708,10 @@ export function createConfigStore(options: ConfigStoreOptions): ConfigStore {
         warn(`ignoring setMode(${JSON.stringify(versionId)}, ${String(mode)})`)
         return current
       }
-      return commit({
+      return serial(() => commit({
         ...current,
         modes: { ...current.modes, [versionId]: mode }
-      })
+      }))
     },
 
     async setScenario(versionId: string, scenario: Re2Scenario): Promise<LauncherConfig> {
@@ -651,15 +720,15 @@ export function createConfigStore(options: ConfigStoreOptions): ConfigStore {
         warn(`ignoring setScenario(${JSON.stringify(versionId)}, ${String(scenario)})`)
         return current
       }
-      return commit({
+      return serial(() => commit({
         ...current,
         scenarios: { ...current.scenarios, [versionId]: scenario }
-      })
+      }))
     },
 
     async reset(): Promise<LauncherConfig> {
       await ensureLoaded()
-      return commit(defaultConfig())
+      return serial(() => commit({ ...defaultConfig(), raUser: current.raUser, raConfigured: current.raConfigured }))
     }
   }
 }

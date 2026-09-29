@@ -12,6 +12,7 @@
  * (.ref/designref/src/imports/MainMenu.tsx lines 219-296).
  */
 import { useEffect, useRef, useState } from 'react'
+import { launcherStore } from '@renderer/state/store'
 import type { InputAction } from '@shared/types'
 import type { ActionHandler, ActionsOptions } from '@renderer/contracts'
 import { GAMEPAD_BUTTON_ACTIONS, PAD_THROTTLE_MS, axisToAction, eventToAction } from './actions'
@@ -223,7 +224,7 @@ export function useGamepad(handler: ActionHandler, options?: ActionsOptions): vo
       // Only a key that means something counts as keyboard activity: modifiers
       // and unmapped keys must not lock the pad.
       if (event.ctrlKey || event.metaKey) return
-      if (eventToAction(event) === null) return
+      if (eventToAction(event, launcherStore().config?.keyBindings) === null) return
       lastKeyboardAt.current = Date.now()
     }
 

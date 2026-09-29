@@ -30,9 +30,11 @@
  * Implements the IPC slice of the frozen `src/main/contracts.ts` surface.
  */
 import { existsSync } from 'node:fs'
+import { writeFile } from 'node:fs/promises'
+import { platform, release } from 'node:os'
 import { join } from 'node:path'
 
-import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron'
+import { BrowserWindow, app, dialog, ipcMain, shell, safeStorage } from 'electron'
 
 import { EVENT_CHANNELS, INVOKE_CHANNELS } from '@shared/channels'
 import type { EventChannel, EventMap, InvokeChannel, InvokeMap } from '@shared/channels'
@@ -57,18 +59,32 @@ import type {
 import { createAchievementStore } from './achievements'
 import { buildCatalogSnapshot } from './catalog-state'
 import { createConfigStore } from './config-store'
-import type { AchievementStore, ConfigStore, MainPaths, ModContext, ModResult } from './contracts'
+import { getDisplayMode, setDisplayMode, rememberEnhancedConfig, restoreEnhancedConfig } from './native-settings'
+import { patchIniFile } from './ini'
+import { redactDiagnostics } from './diagnostics'
+import type {
+  AchievementStore,
+  ConfigStore,
+  MainPaths,
+  ModContext,
+  ModResult
+} from './contracts'
 import {
   getGameStatus,
   killGame,
   onGameExit,
+  patchGameConfig,
   performLaunch,
   prepareLaunch,
   refreshExternalGame
 } from './launch'
 import { log } from './logger'
 import { hasBackup, injectMod, removeMod } from './mods'
-import { getMainPaths, toAppPaths } from './paths'
+import { readBadge } from './badges'
+import { observedIds, rulesFrom } from '@shared/observed'
+import { createOverlaySession, overlayArtifacts, shouldLinkOverlay } from './overlay-session'
+import type { OverlaySession } from './overlay-session'
+import { getMainPaths, resolveShippedFile, toAppPaths } from './paths'
 
 // ---------------------------------------------------------------------------
 // options and state
@@ -98,6 +114,7 @@ export interface IpcOptions {
  * singletons instead of inheriting half of a previous one.
  */
 interface IpcState {
+  nativeWriteInFlight: boolean
   paths: MainPaths
   config: ConfigStore
   achievements: AchievementStore
@@ -115,6 +132,13 @@ interface IpcState {
 }
 
 let state: IpcState | null = null
+
+/**
+ * The in-game overlay's link, at module scope for the same reason `state` is: the launch sequence and
+ * the game-exit listener are separate functions from the registration that creates it, and there is
+ * exactly one launcher. Null before registration, which every use tolerates.
+ */
+let activeOverlay: OverlaySession | null = null
 const disposers: (() => void)[] = []
 
 /** Status reported when the game-process module cannot answer (`game:status`). */
@@ -190,8 +214,10 @@ function achievementDefinitionPaths(paths: MainPaths): string[] {
 function createState(options: IpcOptions): IpcState {
   const paths = options.paths ?? getMainPaths()
   return {
+    nativeWriteInFlight: false,
     paths,
     config: createConfigStore({
+      secrets: safeStorage,
       configPath: paths.configPath,
       legacyConfigPath: paths.legacyConfigPath
     }),
@@ -247,6 +273,9 @@ function handle<C extends InvokeChannel>(
 ): void {
   ipcMain.handle(channel, async (_event, payload: InvokeMap[C]['request']) => {
     try {
+      if (state === null || !eventTargets(state).some((window) => window.webContents === _event.sender) || _event.senderFrame !== _event.sender.mainFrame) {
+        throw new Error('Untrusted IPC sender.')
+      }
       return await handler(payload)
     } catch (error) {
       log.error(`ipc ${channel} failed`, error)
@@ -380,7 +409,8 @@ function parseLaunchRequest(payload: unknown): LaunchRequest | null {
   if (mode !== 'enhanced' && mode !== 'original') return null
   if (scenario !== undefined && scenario !== null && parseScenarioValue(scenario) === null) return null
 
-  return { titleId, versionId, mode, scenario: parseScenarioValue(scenario) }
+  if (payload.configure !== undefined && typeof payload.configure !== 'boolean') return null
+  return { titleId, versionId, mode, scenario: parseScenarioValue(scenario), configure: payload.configure === true }
 }
 
 /**
@@ -418,10 +448,26 @@ function reportModProgress(current: IpcState): (progress: ModProgress) => void {
  * filesystem failure the mod loader did not classify itself, and it is still an
  * injection failure, so it reports through the same channel rather than escaping
  * as a rejected promise.
+ *
+ * The launcher's own artifacts ride the same pass: the in-game overlay plugin and the typeface its
+ * card is drawn with. They are not part of RE-Enhance's payload, but they belong in the game folder
+ * for exactly the same reason RE-Enhance's `.asi` does, and going through the injection means the
+ * manifest removes them when a row is switched to ORIGINAL — no second mechanism, and no file left
+ * behind in a retail install. Resolved on every launch rather than cached, so a build that gains the
+ * plugin starts delivering it without a restart.
  */
 async function injectOverlay(current: IpcState, context: ModContext): Promise<ModResult> {
   try {
-    return await injectMod(context, reportModProgress(current))
+    /*
+     * The setting gates the DELIVERY as well as the link, and that is the point of it rather than a
+     * detail. With the overlay switched off the plugin must not be copied into the game folder at all:
+     * RE-Enhance's ASI loader would load it regardless of whether this launcher ever links to it, so a
+     * plugin left there is our code running inside a game the player asked us not to touch - and the
+     * hook it installs is real even when nothing ever sends it a toast.
+     */
+    const config = await current.config.load()
+    const launcherFiles = overlayArtifacts(config.inGameOverlay, resolveShippedFile)
+    return await injectMod(context, reportModProgress(current), undefined, launcherFiles)
   } catch (error) {
     return {
       ok: false,
@@ -432,6 +478,15 @@ async function injectOverlay(current: IpcState, context: ModContext): Promise<Mo
   }
 }
 
+/**
+ * What the launcher puts in the install alongside the mod, whether or not it is built.
+ *
+ * Only called when the overlay is enabled (`injectOverlay`), because a plugin left in a game folder is
+ * loaded by RE-Enhance's ASI loader whether or not this launcher links to it.
+ *
+ * An empty list is a legitimate answer - a clone that has not run `pnpm build:overlay` - and
+ * `injectMod` skips entries whose source is absent, so this never fails a launch.
+ */
 /** `removeMod` with its exceptions turned into a typed result. See `injectOverlay`. */
 async function restoreOverlay(current: IpcState, context: ModContext): Promise<ModResult> {
   try {
@@ -482,13 +537,15 @@ async function launchSequence(current: IpcState, payload: LaunchRequest): Promis
     return fail('not-launchable', `The catalog has no version "${request.versionId}".`)
   }
 
+  const installPath = version.installPath || title.installPath
+
   if (!version.launchable) {
     return fail('not-launchable', version.unavailableReason ?? `${version.displayName} cannot be launched.`)
   }
 
   // The legacy ScreenLaunch rejected an empty install path before anything else,
   // with exactly this message.
-  if (title.installPath === '') {
+  if (installPath === '') {
     return fail('not-installed', 'Game is not installed or path is unknown.')
   }
 
@@ -502,7 +559,7 @@ async function launchSequence(current: IpcState, payload: LaunchRequest): Promis
   if (version.execRelPath === '') {
     return fail('executable-missing', `${version.displayName} has no executable in the catalog.`)
   }
-  const retailExecutable = join(title.installPath, version.execRelPath)
+  const retailExecutable = join(installPath, version.execRelPath)
   if (!existsSync(retailExecutable)) {
     return fail('executable-missing', `Executable not found: ${retailExecutable}`)
   }
@@ -522,13 +579,16 @@ async function launchSequence(current: IpcState, payload: LaunchRequest): Promis
     versionId: version.id,
     mode,
     scenario: normalizeScenario(version, request.scenario)
-  })
+  }, { patchConfiguration: false })
   if (!prepared.ok) {
     return fail(prepared.code, prepared.message)
   }
 
-  const context = modContext(current, version, title.installPath)
+  const context = modContext(current, version, installPath)
   let injectedMod = false
+  if (await overlayBackupExists(installPath)) {
+    await rememberEnhancedConfig(current.paths.configDir, installPath)
+  }
 
   if (mode === 'enhanced' && version.hasMod && version.modPath !== '') {
     broadcast(current, EVENT_CHANNELS.launchPhase, { phase: 'injecting-mod', versionId: version.id })
@@ -545,7 +605,7 @@ async function launchSequence(current: IpcState, payload: LaunchRequest): Promis
     // Only restore when the install actually carries the overlay's backups. A
     // clean install has nothing to restore, and running `removeMod` anyway would
     // rewrite its manifest for no reason.
-    if (await overlayBackupExists(title.installPath)) {
+    if (await overlayBackupExists(installPath)) {
       broadcast(current, EVENT_CHANNELS.launchPhase, { phase: 'restoring-mod', versionId: version.id })
       const restore = await restoreOverlay(current, context)
       if (!restore.ok) {
@@ -561,12 +621,69 @@ async function launchSequence(current: IpcState, payload: LaunchRequest): Promis
     return fail('executable-missing', `Executable not found: ${prepared.prepared.executable}`)
   }
 
+  /*
+   * THE CONFIG PATCHES GO IN LAST, AFTER THE INJECTION, and this is a bug fix rather than tidiness.
+   *
+   * `prepareLaunch` already patched `config.ini` - and then the injection copied the mod payload over the
+   * install, `config.ini` included, because the payload ships one and the manifest records it. So every
+   * patch was reverted before the game started: `BootConfig = 0` (which is what suppresses the RE-Enhance
+   * setup dialog the troubleshooting notes complain about), `JapaneseEnable`, `RetroMode`, and RE3's
+   * `Display_mode` all lost to the payload's own values, on every enhanced launch.
+   *
+   * Found by measuring RE3's resolution and then asking why the value the launcher writes was not the value
+   * the game used. The patcher is idempotent, so a second call here is the whole of the fix.
+   */
+  const launchConfig = await current.config.load()
+  if (mode === 'enhanced') await restoreEnhancedConfig(current.paths.configDir, installPath, version.titleId === 're3')
+  if (mode === 'enhanced' && !await patchGameConfig(version, installPath, false)) {
+    return fail('config-unwritable', 'The game configuration could not be saved. No game was started.')
+  }
+  if (request.configure === true) {
+    if (mode !== 'enhanced') return fail('not-launchable', 'Native configuration requires RE-Enhance. Use the original game controls menu instead.')
+    if (!await patchIniFile(join(installPath, 'config.ini'), 'DLL', 'BootConfig', '1')) return fail('config-unwritable', 'Could not open native configuration.')
+  }
+
+  /*
+   * THE OBSERVED UNLOCKS - the achievements the launcher can vouch for itself.
+   *
+   * What they describe is the choice the player just made, not anything that happens inside the game, which
+   * is the only kind of achievement a launcher can honestly award for a native Windows binary it cannot read.
+   *
+   * Ticked here, after every check has passed and immediately before the process is spawned, because "Play
+   * Resident Evil 3" was earned the moment the player launched that row. If the game then fails to appear,
+   * that is a broken install rather than an unplayed game.
+   *
+   * `unlock` is idempotent, so relaunching ticks nothing and shows no second toast. The rules are derived
+   * from the catalogue rather than kept in a table beside it, so a definition and the launch that earns it
+   * cannot disagree - see `rulesFrom` and `readObservedCondition`.
+   *
+   * `init()` first, like every other use of this store: it is what loads the definitions from the catalogue,
+   * so without it `all()` returns nothing, no rule is derived, and the whole feature silently does nothing.
+   * That is not hypothetical - this wiring shipped without it for one round, and the live spec caught it by
+   * finding no progress file at all.
+   */
+  await current.achievements.init()
+  const earned = observedIds(
+    {
+      titleId: version.titleId,
+      versionId: version.id,
+      mode,
+      // RE2's scenario is a launch choice; every other row has none, which is a wildcard for the rules that
+      // do not name one and a non-match for the rules that do.
+      scenario: launchConfig.scenarios[version.id]
+    },
+    rulesFrom(current.achievements.all())
+  )
+
+
   broadcast(current, EVENT_CHANNELS.launchPhase, { phase: 'spawning', versionId: version.id })
 
   const result = await performLaunch(prepared.prepared)
   if (!result.ok) {
     return fail(result.code, result.message)
   }
+
+
 
   // Remembered so `game:exit` can name the row even if the exit event arrives
   // without one.
@@ -581,6 +698,26 @@ async function launchSequence(current: IpcState, payload: LaunchRequest): Promis
   const config = await current.config.load()
   current.options.onGameLaunched?.(config.launchWindowMode)
 
+  /*
+   * The overlay is linked only where an ASI loader can exist, which is enhanced mode with a mod
+   * payload (`overlay-session.ts` states why). Anywhere else it is explicitly stopped rather than left
+   * from a previous game: a stale "available" would silence the launcher's own toast in a session that
+   * has nothing to draw one.
+   */
+  if (shouldLinkOverlay({ mode, hasMod: version.hasMod, enabled: config.inGameOverlay })) {
+    log.info(`in-game overlay: linking to pid ${String(result.pid)} (mode=${mode})`)
+    void activeOverlay?.start(result.pid)
+  } else {
+    log.info(
+      `in-game overlay: not linked (mode=${mode}, mod=${String(version.hasMod)}, enabled=${String(config.inGameOverlay)})`
+    )
+    activeOverlay?.stop()
+  }
+
+  for (const earnedId of earned) {
+    await current.achievements.unlock(earnedId)
+  }
+
   return { ok: true, pid: result.pid, executable: result.executable, injectedMod }
 }
 
@@ -591,7 +728,7 @@ async function launchSequence(current: IpcState, payload: LaunchRequest): Promis
  * prevent.
  */
 async function runLaunch(current: IpcState, payload: LaunchRequest): Promise<LaunchResult> {
-  if (current.launchInFlight !== null) {
+  if (current.launchInFlight !== null || current.nativeWriteInFlight) {
     return fail('game-already-running', 'A launch is already in progress.')
   }
 
@@ -661,6 +798,57 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
 
   const current = createState(options)
   state = current
+
+  handle(INVOKE_CHANNELS.gameSettings, () => ({ displaySupported: false, display: null, nativeSetup: false, note: 'Settings could not be read. Re-detect the installation.' }), async (payload) => {
+    const snapshot = await ensureCatalog(current)
+    const version = snapshot.titles.flatMap((title) => title.versions).find((row) => row.id === readIdentifier(payload, 'versionId'))
+    const enhanced = readField(payload, 'mode') === 'enhanced'
+    if (!version || version.installPath === '') throw new Error('No detected installation.')
+    return {
+      displaySupported: enhanced && version.hasMod && version.titleId === 're3',
+      display: await getDisplayMode(current.paths.configDir, version.installPath),
+      nativeSetup: enhanced && version.hasMod,
+      note: 'Native action-to-slot mappings have not been verified. Use the game\'s configuration screen for keyboard and controller changes. Enhanced configuration is preserved across mod switching. Fullscreen and external RE1/RE2 resolution control remain unverified.'
+    }
+  })
+  handle(INVOKE_CHANNELS.gameDisplaySet, () => ({ ok: false, message: 'Display setting could not be saved.' }), async (payload) => {
+    if (current.launchInFlight || current.nativeWriteInFlight || getGameStatus().running) return { ok: false, message: 'Stop the game before changing its settings.' }
+    current.nativeWriteInFlight = true
+    try {
+      const snapshot = await ensureCatalog(current)
+      const version = snapshot.titles.flatMap((title) => title.versions).find((row) => row.id === readIdentifier(payload, 'versionId'))
+      const display = readField(payload, 'display')
+      if (!version || version.titleId !== 're3' || !version.hasMod || version.installPath === '' || readField(payload, 'mode') !== 'enhanced' || (display !== null && (typeof display !== 'number' || !Number.isInteger(display) || display < 0 || display > 3))) throw new Error('Unsupported display configuration.')
+      await setDisplayMode(current.paths.configDir, version.installPath, display as number | null)
+      return { ok: true, message: 'Saved. Applies on the next Enhanced launch.' }
+    } finally { current.nativeWriteInFlight = false }
+  })
+  handle(INVOKE_CHANNELS.diagnosticsExport, () => ({ ok: false, message: 'Diagnostics could not be exported.' }), async () => {
+    const chosen = await dialog.showSaveDialog({ title: 'Export redacted diagnostics', defaultPath: 're-classic-diagnostics.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
+    if (chosen.canceled || !chosen.filePath) return { ok: false, message: 'Export cancelled.' }
+    const catalog = await ensureCatalog(current)
+    const report = {
+      version: app.getVersion(), createdAt: new Date().toISOString(), os: `${platform()} ${release()}`,
+      titles: catalog.titles.map((title) => ({ id: title.id, versions: title.versions.map((row) => ({ id: row.id, state: row.state, hasMod: row.hasMod })) })),
+      log: log.tail(150).map(redactDiagnostics)
+    }
+    await writeFile(chosen.filePath, JSON.stringify(report, null, 2), 'utf8')
+    return { ok: true, message: 'Redacted diagnostics exported.' }
+  })
+
+  handle(INVOKE_CHANNELS.credentialsSet, () => ({ ok: false, message: 'Credential could not be saved securely.' }), async (payload) => {
+    const user = readText(payload, 'user')
+    const key = readText(payload, 'key')
+    if (user === null || key === null || key === '') return { ok: false, message: 'Enter an API key.' }
+    const config = await current.config.setCredential(user, key)
+    syncCatalogConfig(current, config)
+    return { ok: true, config }
+  })
+  handle(INVOKE_CHANNELS.credentialsRemove, () => ({ ok: false, message: 'Credential could not be removed.' }), async () => {
+    const config = await current.config.setCredential('', '')
+    syncCatalogConfig(current, config)
+    return { ok: true, config }
+  })
 
   // -- catalog ------------------------------------------------------------
 
@@ -769,7 +957,10 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
 
   handle(
     INVOKE_CHANNELS.configPatch,
-    () => current.config.get(),
+    () => {
+      broadcast(current, EVENT_CHANNELS.toast, { kind: 'error', title: 'SETTINGS NOT SAVED', message: 'The previous settings were preserved. Check free space and folder access.' })
+      return current.config.get()
+    },
     async (payload) => {
       const previousRoot = current.config.get().gogPathOverride
       // Delegated as-is: the store rebuilds the config field by field and drops
@@ -860,6 +1051,24 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
     }
   )
 
+  // -- the in-game overlay --------------------------------------------------
+
+  /**
+   * The overlay lives here, and not in `index.ts` with the window host, because the three facts its
+   * lifecycle needs are already in scope in this module: the launched row's mode and whether it has a
+   * mod payload, the process id of a successful spawn, and `broadcast`, which is how the renderer
+   * learns who owns the toast. It holds no `BrowserWindow`, so the rule this module follows - "the
+   * window belongs to `index.ts`" - is not being bent.
+   */
+  const overlay = createOverlaySession({
+    onDelivered: (id) => broadcast(current, EVENT_CHANNELS.overlayDelivered, { id }),
+    onState: (state) => {
+      log.info(`in-game overlay: available=${String(state.available)} api=${state.api} (${state.reason})`)
+      broadcast(current, EVENT_CHANNELS.overlayState, state)
+    }
+  })
+  activeOverlay = overlay
+
   // -- achievements -------------------------------------------------------
 
   handle(INVOKE_CHANNELS.achievementsList, () => [], async (payload) => {
@@ -881,6 +1090,7 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
     // No push here on purpose: the store notifies `onUnlock` subscribers, and
     // this module is one of them, so pushing here too would toast twice.
     await current.achievements.init()
+    if (current.achievements.all().find((row) => row.id === id)?.observed) return null
     return await current.achievements.unlock(id)
   })
 
@@ -899,9 +1109,20 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
     const config = await current.config.load()
     const game = await fetchGameAchievements(Number(seed.raGameId), {
       user: config.raUser,
-      key: config.raKey
+      key: await current.config.getCredential()
     })
     return game?.achievements ?? []
+  })
+
+  // The badge art for one RA entry, fetched on demand and cached under the player's profile.
+  //
+  // Its own channel rather than a field on the list above, because a list of 130 rows would otherwise
+  // trigger 130 fetches before anything rendered. Here each row asks for what it is about to draw, and the
+  // cache answers most of them from disk without touching the network.
+  handle(INVOKE_CHANNELS.achievementsBadge, () => null, async (payload) => {
+    const badgeName = readText(payload, 'name')
+    if (badgeName === null) return null
+    return await readBadge(badgeName, { cacheDir: current.paths.badgesDir })
   })
 
   handle(INVOKE_CHANNELS.achievementsReset, () => current.achievements.all(), async (payload) => {
@@ -976,6 +1197,16 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
     current.achievements.onUnlock((achievement) => {
       log.info(`achievement unlocked: ${achievement.id}`)
       broadcast(current, EVENT_CHANNELS.achievementUnlock, achievement)
+
+      /*
+       * And into the game's own frame, when there is a game and a plugin to draw it.
+       *
+       * Deliberately fire-and-forget with the launcher's broadcast happening first: the renderer is
+       * told who owns the toast by `overlay:state`, so if the plugin has died since it was linked the
+       * launcher's own toast still has the achievement. Nothing is lost by a failed send here, and
+       * waiting on a pipe inside the unlock path would put a game's frame timing behind a plugin.
+       */
+      void overlay?.unlocked({ id: achievement.id, name: achievement.name, desc: achievement.desc })
     })
   )
 
@@ -989,6 +1220,8 @@ export function registerIpcHandlers(options: IpcOptions = {}): () => void {
       // window that stepped aside has to come back: leaving the user on the desktop with
       // neither launcher nor game is the worst possible outcome here.
       current.options.onGameStopped?.()
+      /* The game is gone, so its plugin is too. The launcher owns the toast again from here. */
+      activeOverlay?.stop()
       if (attributed === null) {
         log.warn('game:exit arrived with no known title or version to attribute it to')
         return

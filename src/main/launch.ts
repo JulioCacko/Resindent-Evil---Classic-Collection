@@ -93,6 +93,21 @@ const RETRO_MODE_KEY = 'RetroMode'
 const RETRO_MODE_ON = '1'
 const RETRO_MODE_OFF = '0'
 
+/**
+ * RE3's window size, in its own `[GAME]` section rather than the `[DLL]` block the keys above share.
+ *
+ * MEASURED on this install, nine launches, one value each: `[GAME] Display_mode` is a window-size
+ * selector, not a fullscreen toggle — 0 gives 640x480, 1 gives 960x720, 2 gives 1280x960, 3 gives
+ * 1600x1200, and 4 fills the monitor at its native resolution. Values 5 and up behave like 0.
+ *
+ * The RE-Enhance payload ships `6`, which is one of the no-ops, so RE3 has always opened in its smallest
+ * mode — a default nobody chose. `4` is therefore what a player means by "launch it properly".
+ *
+ * Only RE3 has this key. RE2's `config.ini` has no display setting the game honours — eleven measured
+ * attempts across its file and `HKCU\Software\CAPCOM\RESIDENT EVIL2` changed nothing — so nothing is
+ * written for RE2 rather than something that would silently do nothing.
+ */
+
 /** dgVoodoo's own file, shipped by the RE1 payload only, with its scaling under `[General]`. */
 const DGVOODOO_CONF_NAME = 'dgVoodoo.conf'
 const GENERAL_SECTION = 'General'
@@ -346,6 +361,7 @@ export function setInstallContextResolver(resolver: InstallContextResolver | nul
 type ExitListener = (event: GameExitEvent) => void
 
 interface TrackedGame {
+  stopRequested: boolean
   titleId: TitleId
   versionId: string
   /** When the process was spawned, for the renderer's elapsed-time readout. */
@@ -384,7 +400,6 @@ let lastExitCode: number | null = null
  * who ended it - and a `taskkill /F` kill is exit code 1, which reads exactly like a crash.
  * Set by `killGame`, read once by the next exit, then cleared.
  */
-let stopRequested = false
 
 const exitListeners = new Set<ExitListener>()
 
@@ -408,7 +423,7 @@ function failure(code: LaunchFailure, message: string): { ok: false; code: Launc
  * catalog row, then the install, then the executable, and the config is patched
  * last — a rejected launch never touches a file.
  */
-export async function prepareLaunch(request: LaunchRequest): Promise<PrepareOutcome> {
+export async function prepareLaunch(request: LaunchRequest, options: { patchConfiguration?: boolean } = {}): Promise<PrepareOutcome> {
   if (tracked !== null) {
     return failure(
       'game-already-running',
@@ -498,7 +513,7 @@ export async function prepareLaunch(request: LaunchRequest): Promise<PrepareOutc
   }
 
   if (
-    !(await patchGameConfig(
+    options.patchConfiguration !== false && !(await patchGameConfig(
       version,
       context.installPath,
       // Read per launch, like the GOG override: a setting changed moments before pressing
@@ -584,7 +599,18 @@ async function chooseExecutable(
  * retail install has no `[DLL]` section and no `dgVoodoo.conf` to write, and that is not a
  * reason to refuse to launch it.
  */
-async function patchGameConfig(
+/**
+ * Writes the launcher's own settings into the game's files, and is **exported** so the launch sequence can
+ * call it a second time after the mod has been injected.
+ *
+ * That second call is not belt-and-braces, it is the fix for an ordering defect found by measuring RE3's
+ * display mode: `prepareLaunch` runs this, and then the injection copies the mod payload over the install -
+ * `config.ini` among those files, which the payload ships and `.mod_backup/manifest.txt` records. So every
+ * patch written here was overwritten before the game started, on every enhanced launch, for `BootConfig`,
+ * `JapaneseEnable` and `RetroMode` as much as for RE3's `Display_mode`. The patch is idempotent, so applying
+ * it again after the injection is all it takes.
+ */
+export async function patchGameConfig(
   version: GameVersion,
   installPath: string,
   inGameCrt: boolean
@@ -602,6 +628,17 @@ async function patchGameConfig(
 
   // RE-Enhance's own retro rendering, in the same `[DLL]` block, for every title.
   await applyPatch(patch, configPath, RETRO_MODE_KEY, inGameCrt ? RETRO_MODE_ON : RETRO_MODE_OFF)
+
+  /*
+   * RE3's window size, and it has to be written HERE - after the injection, which copies the payload's own
+   * `config.ini` over the install on every enhanced launch and would otherwise put `Display_mode = 6` back
+   * before the game starts. That is also why a player cannot fix this by hand: their edit is reverted by
+   * the next launch, which is exactly the kind of silent revert that reads as "the setting does nothing".
+   *
+   * Deliberately not part of the returned "is this install's config writable" answer, like the CRT
+   * patches: a retail install has no `[GAME]` section, and that is not a reason to refuse a launch.
+   */
+
 
   // dgVoodoo's CRT scaling, in its own file and its own `[General]` section. Only the RE1
   // payload ships one, so this is skipped silently everywhere else - guarded on the file
@@ -678,6 +715,7 @@ export async function performLaunch(prepared: PreparedLaunch, deps?: LaunchDeps)
       pid: 0,
       image: prepared.steam.image,
       settled: false,
+    stopRequested: false,
       startedAt: Date.now()
     }
     // The same result shape the spawn path returns, with pid: 0 meaning there is nothing here to
@@ -708,6 +746,7 @@ export async function performLaunch(prepared: PreparedLaunch, deps?: LaunchDeps)
     // none; `0` then means "nothing to signal" rather than a real process id.
     pid: typeof child.pid === 'number' ? child.pid : 0,
     settled: false,
+    stopRequested: false,
     startedAt: Date.now()
   }
   tracked = game
@@ -726,10 +765,10 @@ export async function performLaunch(prepared: PreparedLaunch, deps?: LaunchDeps)
       signal,
       // Read here rather than passed in: the kill and the child's exit are two separate
       // events, and this flag is what ties them together.
-      requested: stopRequested
+      requested: game.stopRequested
     })
     // One exit consumes one request; a later game's natural exit must not inherit it.
-    stopRequested = false
+    game.stopRequested = false
   }
 
   child.on('exit', (...args: unknown[]) => {
@@ -776,13 +815,12 @@ function usesModExecutable(prepared: PreparedLaunch): boolean {
 export function killGame(deps: LaunchDeps = {}): void {
   const game = tracked
   if (game === null) return
-  tracked = null
 
   // Steam's game: there is no pid to signal, so the image name is the only handle left. Recorded as
   // a requested stop for the same reason the pid path does - a stop the launcher asked for must not
   // be reported to the player as a crash.
   if (game.image !== undefined) {
-    stopRequested = true
+    game.stopRequested = true
     const killByImage = deps.killImage ?? defaultKillImage
     killByImage(game.image)
     return
@@ -794,7 +832,7 @@ export function killGame(deps: LaunchDeps = {}): void {
   // still running. Only set once there is a pid to signal: a game this launcher could not
   // signal is a game it did not stop, and claiming otherwise would suppress a real crash
   // report.
-  stopRequested = true
+  game.stopRequested = true
 
   const kill = deps.kill ?? defaultKill
   kill(game.pid)
@@ -830,10 +868,10 @@ async function defaultOpenUrl(url: string): Promise<boolean> {
  * of the slot - which is what keeps the now-playing bar and the exit report working for a game the
  * launcher never held.
  */
-export async function refreshExternalGame(): Promise<void> {
+export async function refreshExternalGame(isRunning = isImageRunning): Promise<void> {
   const game = tracked
   if (game === null || game.image === undefined || game.settled) return
-  if (await isImageRunning(game.image)) return
+  if (await isRunning(game.image)) return
 
   game.settled = true
   if (tracked === game) tracked = null
@@ -843,7 +881,7 @@ export async function refreshExternalGame(): Promise<void> {
     versionId: game.versionId,
     exitCode: null,
     signal: null,
-    requested: stopRequested,
+    requested: game.stopRequested,
   })
 }
 

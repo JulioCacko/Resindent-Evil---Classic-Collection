@@ -221,3 +221,28 @@
   --re-heading: #CCCCCC;
   --re-red: #FE0000;
 }
+
+/* Collection additions share the existing authored 1920x1080 stage. */
+.collection-dialog { position:absolute; z-index:50; inset:0; background:#0f0f0f; color:#ccc; padding:70px 120px 42px; display:flex; flex-direction:column; gap:28px; font-family:Actor,sans-serif; font-size:22px; }
+.collection-dialog header { border-bottom:1px solid #4d4d4d; padding-bottom:24px; }
+.collection-dialog h1 { font-size:40px; letter-spacing:.04em; color:#fff; }
+.collection-dialog h2 { font-size:25px; margin-bottom:24px; }
+.collection-dialog .eyebrow { color:#ad5656; font-size:18px; letter-spacing:.12em; margin-bottom:12px; }
+.collection-dialog button { font:inherit; text-align:left; padding:16px 22px; border:1px solid #4d4d4d; border-radius:4px; cursor:pointer; background:#171717; color:#ccc; min-height:54px; }
+.collection-dialog button:hover,.collection-dialog button[aria-pressed=true],.collection-dialog button[aria-current=page] { color:#fff; background:#292020; border-color:#ad5656; }
+.collection-dialog button:disabled { opacity:.5; cursor:default; }
+:focus-visible { outline:3px solid #e6b2b2; outline-offset:3px; }
+.collection-dialog footer { margin-top:auto; display:flex; gap:28px; align-items:center; border-top:1px solid #4d4d4d; padding-top:24px; }
+.collection-dialog footer span,.setting-note { color:#999; font-size:18px; }
+.settings-layout { display:grid; grid-template-columns:300px 1fr; gap:60px; min-height:0; flex:1; }
+.settings-layout nav { display:flex; flex-direction:column; gap:10px; }
+.settings-layout section,.preferences-body { overflow:auto; min-height:0; padding:4px; }
+.setting-row { display:flex; justify-content:space-between; width:100%; margin-bottom:10px; gap:20px; }
+.setting-row span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:65%; }
+.setting-note { margin:22px 0; }
+.preferences-body { display:flex; flex-direction:column; gap:24px; }
+.binding-grid { display:grid; grid-template-columns:1fr 260px 260px; align-items:center; gap:10px 24px; }
+.binding-row { display:contents; }
+.binding-row button { text-align:center; }
+.option-list { display:flex; flex-wrap:wrap; gap:12px; }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:0.01ms!important; animation-iteration-count:1!important; transition-duration:0.01ms!important; scroll-behavior:auto!important; } }

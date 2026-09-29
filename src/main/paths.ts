@@ -41,6 +41,8 @@ import type { AppPaths } from '@shared/types'
 const MODS_DIR_NAME = 'reenhancemods'
 /** Loose asset files shipped for the user to override (achievements, etc.). */
 const ASSETS_DIR_NAME = 'assets'
+/** Cached RetroAchievements badge art, inside the per-user profile. */
+const BADGES_DIR_NAME = 'badges'
 /** New per-user config, in `configDir`. */
 const CONFIG_FILE_NAME = 'config.json'
 /** Legacy config the old launcher read from the executable folder. */
@@ -221,10 +223,38 @@ export function getMainPaths(): MainPaths {
     progressPath: join(configDir, PROGRESS_FILE_NAME),
     modsDir: join(appDir, MODS_DIR_NAME),
     assetsDir: join(appDir, ASSETS_DIR_NAME),
+    // RetroAchievements badge art, cached under the player's own profile rather than shipped: RA's badges
+    // are RA's assets, and `badges.ts` fetches them on demand and keeps them here.
+    badgesDir: join(configDir, BADGES_DIR_NAME),
     legacyConfigPath: join(appDir, LEGACY_CONFIG_FILE_NAME),
     legacyProgressPath: join(appDir, PROGRESS_FILE_NAME),
     isPackaged: packaged
   }
+}
+
+/**
+ * A file the launcher ships *beside its executable*, resolved for a working tree and a packaged build.
+ *
+ * The overlay plugin, its typeface and `window-host.ps1` all live here. The candidate rule is
+ * `host-window.ts`'s, and for the same reason it gives: presence decides, not an `isPackaged` flag,
+ * because `extraFiles` in `electron-builder.yml` has been the thing that was wrong before — and a
+ * missing helper degrades silently rather than failing loudly.
+ *
+ * Returns null when the file is not there, which callers treat as "this build does not have that
+ * artifact yet" rather than as an error.
+ */
+export function resolveShippedFile(name: string): string | null {
+  const candidates = [
+    // Development: straight out of the repository.
+    join(process.cwd(), 'resources', name),
+    // Packaged: `extraFiles` puts it beside the executable.
+    join(dirname(process.execPath), name),
+    join(process.execPath, '..', name)
+  ]
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate
+  }
+  return null
 }
 
 /**

@@ -19,6 +19,7 @@ import { dirname } from 'node:path'
 import type { Achievement, TitleId } from '@shared/types'
 
 import type { AchievementStore, AchievementStoreOptions } from './contracts'
+import { readObservedCondition } from './observed-config'
 // Static import on purpose: the default catalog is then part of the
 // main-process bundle, so the launcher still has achievements when the loose
 // `assets/achievements/` copy is missing or unpacked elsewhere.
@@ -85,12 +86,23 @@ function toDefinitions(value: unknown): Achievement[] | null {
       if (!isRecord(row)) return null
       const rawId = row['id']
       if (typeof rawId !== 'string' || rawId.trim() === '') return null
+      /*
+       * `observed` is read here rather than left out, and that matters more than it looks: this mapping names
+       * every field it keeps, so a field it does not name is a field the launcher never sees. The definitions
+       * would read as observed in the JSON and match nothing at runtime - a feature that looks wired.
+       *
+       * Spread rather than assigned, so a row with no condition does not carry an explicit `undefined`:
+       * `exactOptionalPropertyTypes` treats that as different from absence, and absence is precisely what
+       * "not observable" means.
+       */
+      const observed = readObservedCondition(row['observed'])
       definitions.push({
         id: rawId.trim(),
         gameId,
         name: readOptionalString(row['name']),
         desc: readOptionalString(row['desc']),
         icon: readOptionalString(row['icon']),
+        ...(observed === undefined ? {} : { observed }),
         unlocked: false,
         unlockDate: ''
       })

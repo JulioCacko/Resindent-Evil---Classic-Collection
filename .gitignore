@@ -46,3 +46,18 @@ assets/audio/RE2.wav
 # Local launcher runtime state
 config.ini
 achievements.sav
+
+# Native overlay build output. The plugin is built by `tools/build-native.mjs` (see
+# docs/ARCHITECTURE.md §12) and is deliberately NOT committed: it is a binary that goes
+# inside someone's game process, so it is built from source on the machine that ships it.
+# `native/*/build/` is CMake's own tree; the shipped plugin's artifact lives in
+# `resources/` and is produced by `pnpm build:overlay` before packaging.
+native/*/build/
+native/*/*.asi
+native/*/*.exe
+resources/*.asi
+# Copied from `src/renderer/src/assets/font/` by `pnpm build:overlay`, so the renderer's copy stays
+# the single source of truth for the face both toasts are set in.
+resources/Actor-Regular.ttf
+
+test-results-*/

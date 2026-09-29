@@ -23,6 +23,7 @@
  * launcher can be controller-first with a single, six-action vocabulary.
  */
 import type { InputAction } from '@shared/types'
+import type { KeyBindings } from '@shared/controls'
 
 // ---------------------------------------------------------------------------
 // keyboard
@@ -83,7 +84,10 @@ const LEGACY_KEY_ALIASES: Record<string, string> = {
  * from its physical position; for every other entry the two fields are equal,
  * so the order is only observable there.
  */
-export function eventToAction(event: KeyboardEvent): InputAction | null {
+export function eventToAction(event: KeyboardEvent, bindings?: KeyBindings): InputAction | null {
+  if (bindings !== undefined) {
+    return (Object.keys(bindings) as InputAction[]).find((action) => bindings[action].includes(event.code || event.key)) ?? null
+  }
   const byCode = lookupKey(event.code)
   if (byCode !== null) return byCode
   // Escape also arrives as `key: 'Esc'` from older engines, and a synthetic

@@ -47,6 +47,13 @@ export interface MainPaths {
   assetsDir: string
   legacyConfigPath: string
   legacyProgressPath: string
+  /**
+   * Where cached RetroAchievements badge art lives: `<userData>/badges`.
+   *
+   * Under the profile rather than beside the executable, because these are RA's assets fetched for this
+   * player's own machine — never committed, never shipped, and safe to delete at any time.
+   */
+  badgesDir: string
   isPackaged: boolean
 }
 
@@ -177,6 +184,25 @@ export interface ModResult {
   message?: string
 }
 
+/**
+ * A file the *launcher* puts in the install, rather than one that comes from the mod payload.
+ *
+ * The in-game overlay is exactly this: `re_classic_overlay.asi` and its typeface are the launcher's
+ * own artifacts, not RE-Enhance's, and they still have to land in the game folder for the ASI loader
+ * to find them. Routing them through the injection pass means they are backed up, manifested and
+ * removed by `removeMod` with no new mechanism at all — switching a row to ORIGINAL restores the
+ * retail files *and* takes the overlay out, because the manifest is the record of what was overlayed.
+ *
+ * A file that is not present is skipped rather than fatal: a clone that has not run
+ * `pnpm build:overlay` still launches games, it simply has no in-game toast.
+ */
+export interface LauncherFile {
+  /** Where the launcher keeps it: beside the executable, or in `resources/` in a working tree. */
+  from: string
+  /** Its install-relative name, which is also its manifest entry. */
+  to: string
+}
+
 export declare function hasBackup(installPath: string): Promise<boolean>
 export declare function readManifest(installPath: string): Promise<string[]>
 
@@ -185,11 +211,16 @@ export declare function readManifest(installPath: string): Promise<string[]>
  * relative paths), copies the mod tree over the install, then writes
  * `.mod_backup/manifest.txt`. Files whose names contain `readme` or `changelog`
  * are skipped. Removes a previous injection first when a manifest already exists.
+ *
+ * `launcherFiles` are the launcher's *own* artifacts (the in-game overlay plugin and its typeface),
+ * copied and manifested by the same pass so that a restore removes them too. Files that are not
+ * present are skipped rather than refused.
  */
 export declare function injectMod(
   context: ModContext,
   onProgress?: (progress: ModProgress) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  launcherFiles?: readonly LauncherFile[]
 ): Promise<ModResult>
 
 /** Restores backups and deletes mod-only files, then removes `.mod_backup/`. */
@@ -283,6 +314,11 @@ export declare function onGameExit(listener: (event: GameExitEvent) => void): ()
 // ---------------------------------------------------------------------------
 
 export interface ConfigStoreOptions {
+  secrets?: {
+    isEncryptionAvailable(): boolean
+    encryptString(value: string): Buffer
+    decryptString(value: Buffer): string
+  }
   configPath: string
   legacyConfigPath: string
   /** Parses the legacy `key = value` ini; injected in tests. */
@@ -290,6 +326,8 @@ export interface ConfigStoreOptions {
 }
 
 export interface ConfigStore {
+  getCredential(): Promise<string>
+  setCredential(user: string, key: string): Promise<LauncherConfig>
   load(): Promise<LauncherConfig>
   get(): LauncherConfig
   patch(patch: Partial<LauncherConfig>): Promise<LauncherConfig>

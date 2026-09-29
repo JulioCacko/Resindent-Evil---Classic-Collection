@@ -50,14 +50,15 @@ export function canLaunch(version: GameVersion): boolean {
 /** Launch-panel rows, in the order the design's own box style implies. */
 export function panelOptions(
   version: GameVersion
-): ('mode' | 'crt' | 'scenario' | 'settings' | 'launch')[] {
-  const options: ('mode' | 'crt' | 'scenario' | 'settings' | 'launch')[] = []
+): ('mode' | 'crt' | 'scenario' | 'settings' | 'launch' | 'display' | 'controls' | 'achievements')[] {
+  const options: ('mode' | 'crt' | 'scenario' | 'settings' | 'launch' | 'display' | 'controls' | 'achievements')[] = []
   if (version.launchable && version.hasMod && !version.requiresMod) options.push('mode')
   options.push('crt')
   if (version.scenarios.length > 1) options.push('scenario')
   // SETTINGS sits directly above LAUNCH: it opens the surface for the launcher's own
   // configuration, and LAUNCH stays last because it is the primary action on the screen.
   options.push('settings')
+  options.push('display', 'controls', 'achievements')
   options.push('launch')
   return options
 }

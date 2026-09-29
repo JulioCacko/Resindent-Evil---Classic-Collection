@@ -17,11 +17,36 @@ files:
 # `assets/achievements/achievements.json`. `extraResources` would land them one
 # level down in `resources/`, where nothing looks. Everything else the UI renders
 # is bundled into out/renderer by Vite.
+# Everything the launcher needs beside its executable, in the app's own root
+# (`dirname(process.execPath)`, which `getMainPaths()` calls `appDir`).
+#
+# These three were each, at some point, *not* here, and every one of them fails silently rather than
+# loudly: `window-host.ps1` missing means `positioned` mode degrades to "the game runs as an ordinary
+# window" with one line in the log, and the overlay plugin missing means a launch copies nothing and
+# the launcher quietly keeps its own toast. So they are listed explicitly, and `resolveShippedFile`
+# looks for them by presence for the same reason.
 extraFiles:
   - from: assets/achievements
     to: assets/achievements
   - from: README.md
     to: README.md
+  - from: DISCLAIMER.md
+    to: DISCLAIMER.md
+  - from: CHANGELOG.md
+    to: CHANGELOG.md
+  - from: docs/RELEASE-GATES.md
+    to: docs/RELEASE-GATES.md
+  - from: docs/FAN-RELEASE-AUDIT.md
+    to: docs/FAN-RELEASE-AUDIT.md
+  # Places the game's own window on the design's gameplay card (docs/ARCHITECTURE.md §6).
+  - from: resources/window-host.ps1
+    to: window-host.ps1
+  # The in-game overlay: the ASI plugin, and the typeface it composes the toast with. Both are built
+  # by `pnpm build:overlay` from `native/overlay/`, which `pnpm build` runs first.
+  - from: resources/re_classic_overlay.asi
+    to: re_classic_overlay.asi
+  - from: resources/Actor-Regular.ttf
+    to: Actor-Regular.ttf
 
 asar: true
 

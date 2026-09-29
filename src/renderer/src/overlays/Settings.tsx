@@ -1,3 +1,4 @@
+import { useModalFocus } from '@renderer/input/useModalFocus'
 /**
  * Settings: everything the launcher can be told, on one surface.
  *
@@ -17,19 +18,16 @@
  * like the same kind of thing, and the panel's row is the closest thing the concept has to a
  * setting.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 
 import {
-  HINTS_SETTINGS,
   SETTINGS_LABEL,
   SETTINGS_ROWS,
   SETTINGS_STEP,
   clamp01
 } from '@renderer/data/design'
 import type { SettingsRow } from '@renderer/data/design'
-import { HelperBar } from '@renderer/components/HelperBar'
-import { isPointerMovement } from '@renderer/input/useHoverSelect'
-import { useLauncher } from '@renderer/state/store'
+import { useLauncher, launcherStore } from '@renderer/state/store'
 import type { LauncherConfig } from '@shared/types'
 
 function percent(value: number): string {
@@ -65,12 +63,21 @@ export function settingsValue(row: SettingsRow, config: LauncherConfig | null): 
       // The honest readout: the setting is on, but with nothing injected there is no file to
       // write it into, so saying ON alone would promise an effect that cannot happen.
       return config.inGameCrt ? SETTINGS_LABEL.on : SETTINGS_LABEL.off
+    case 'ingameOverlay':
+      // The readout can only report the setting, not whether it will do anything: the plugin is loaded
+      // by the ASI loader that ships with RE-Enhance, so this toggle says ON in ORIGINAL mode where no
+      // link can be made. What actually happened is reported rather than promised - main logs
+      // `in-game overlay: available=… (reason)` and pushes the same state to the renderer as
+      // `overlay:state`, which is what decides whether the launcher's own toast stays quiet.
+      return config.inGameOverlay ? SETTINGS_LABEL.on : SETTINGS_LABEL.off
     case 'window':
       return SETTINGS_LABEL.launchWindowMode[config.launchWindowMode]
     case 'installRoot':
       // The override is a path; empty means detection's own search order, which is worth
       // naming rather than leaving blank.
       return config.gogPathOverride === '' ? SETTINGS_LABEL.auto : config.gogPathOverride
+    case 'controls':
+    case 'diagnostics':
     case 'redetect':
     case 'reset':
       return ''
@@ -108,163 +115,54 @@ export function settingsStep(row: SettingsRow, config: LauncherConfig | null): n
   }
 }
 
+
+const GROUPS: { name: string; rows: string[] }[] = [
+  { name: 'Presentation', rows: ['crt', 'scanlines', 'curvature', 'vignette', 'grain', 'window', 'ingameOverlay'] },
+  { name: 'Audio', rows: ['master', 'sfx', 'music'] },
+  { name: 'Controls', rows: ['controls'] },
+  { name: 'Accounts', rows: ['retroAccount', 'steamLaunch', 'achievements'] },
+  { name: 'Installation', rows: ['installRoot', 'redetect', 'diagnostics', 'reset'] }
+]
+
 export function Settings() {
   const config = useLauncher((state) => state.config)
   const index = useLauncher((state) => state.settingsIndex)
-  const moveSettingsRow = useLauncher((state) => state.moveSettingsRow)
-  const activateSetting = useLauncher((state) => state.activateSetting)
-  const closeSettings = useLauncher((state) => state.closeSettings)
-  const resetConfig = useLauncher((state) => state.resetConfig)
-
-  /**
-   * Reset is the one row that destroys something, so it asks twice.
-   *
-   * The confirmation is local state, not a store field: it lives exactly as long as the
-   * cursor stays on that row and nothing else needs to see it. Moving the cursor away, or
-   * running anything else, clears it.
-   */
+  const move = useLauncher((state) => state.moveSettingsRow)
+  const activate = useLauncher((state) => state.activateSetting)
+  const close = useLauncher((state) => state.closeSettings)
+  const overlayReason = useLauncher((state) => state.overlayReason)
+  const root = useRef<HTMLDivElement>(null)
+  useModalFocus(root)
   const [confirmReset, setConfirmReset] = useState(false)
-
-  const rootRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    // Focused on open so the dialog's own Escape handler is reachable after a pointer click,
-    // the same reason the launch panel focuses itself. Rows are not focusable.
-    rootRef.current?.focus()
-  }, [])
-
   const focused = SETTINGS_ROWS[index] ?? SETTINGS_ROWS[0]
+  const group = GROUPS.find((entry) => entry.rows.includes(focused.id)) ?? GROUPS[0]
 
-  return (
-    <div
-      className="absolute bg-[#0f0f0f] flex flex-col inset-0"
-      data-figma-node="settings"
-      aria-label="Launcher settings"
-      role="dialog"
-      tabIndex={-1}
-      ref={rootRef}
-    >
-      <div className="flex flex-col flex-[1_0_0] min-h-px min-w-px px-[180px] py-[80px] relative">
-        <p className="font-['Actor:Regular',sans-serif] leading-none not-italic text-[#ccc] text-[32px]">
-          SETTINGS
-        </p>
-        <p
-          className="font-['Actor:Regular',sans-serif] leading-none not-italic mt-[10px] text-[#999] text-[20px]"
-          data-figma-node="settings-hint"
-        >
-          {confirmReset ? SETTINGS_LABEL.resetDetail : 'Changes are saved as you make them.'}
-        </p>
-
-        <div className="flex flex-col gap-[8px] mt-[28px] w-full" data-figma-node="settings-rows">
-          {SETTINGS_ROWS.map((row, rowIndex) => {
-            const selected = rowIndex === index
-            const textClass = selected ? 'text-white' : 'text-[#999]'
-            const value =
-              row.id === 'reset' && confirmReset ? SETTINGS_LABEL.resetConfirm : settingsValue(row, config)
-
-            return (
-              <div
-                aria-label={value === '' ? row.label : `${row.label}: ${value}`}
-                className={`flex h-[48px] items-center px-[20px] relative w-full cursor-pointer${
-                  selected ? ' bg-[rgba(255,255,255,0.063)] rounded-[8px]' : ''
-                }`}
-                data-name={`setting-${row.id}`}
-                key={row.id}
-                onClick={() => {
-                  // Hover first, then act, exactly as the menu cards do: the cursor must
-                  // already be on the row that is about to change.
-                  if (!selected) {
-                    moveSettingsRow(rowIndex - index)
-                    setConfirmReset(false)
-                    return
-                  }
-                  if (row.id === 'reset') {
-                    if (!confirmReset) {
-                      setConfirmReset(true)
-                      return
-                    }
-                    setConfirmReset(false)
-                    void resetConfig()
-                    return
-                  }
-                  setConfirmReset(false)
-                  activateSetting()
-                }}
-                /**
-                 * `onMouseMove`, not `onMouseEnter`.
-                 *
-                 * Enter fires when a row appears *under* a stationary pointer, so opening this
-                 * surface while the mouse happens to rest over it moved the cursor before the
-                 * first keypress — the keyboard's first arrow then acted on a row nobody chose.
-                 * A browser only sends `mousemove` for actual movement, which is exactly the
-                 * rule wanted here: the cursor follows a pointer that moves, and stays where
-                 * the keyboard left it otherwise.
-                 */
-                onMouseMove={(event) => {
-                  // The same rule the cards and the version rows use: hover acts only when the
-                  // pointer's coordinates actually change, so an event describing where the cursor
-                  // already was cannot move it. See useHoverSelect.
-                  if (!isPointerMovement({ x: event.clientX, y: event.clientY })) return
-                  if (selected) return
-                  moveSettingsRow(rowIndex - index)
-                  setConfirmReset(false)
-                }}
-                role="button"
-              >
-                <p
-                  className={`font-['Actor:Regular',sans-serif] leading-none not-italic shrink-0 text-[22px] ${textClass}`}
-                >
-                  {row.label}
-                </p>
-                <p
-                  className={`font-['Actor:Regular',sans-serif] leading-none ml-auto not-italic overflow-clip pl-[16px] text-right text-ellipsis whitespace-nowrap ${
-                    row.id === 'installRoot' ? 'text-[16px]' : 'text-[22px]'
-                  } ${textClass}`}
-                  data-figma-node={`setting-value-${row.id}`}
-                >
-                  {value}
-                </p>
-                {selected ? (
-                  <div
-                    aria-hidden="true"
-                    className="absolute border border-[#4d4d4d] border-solid inset-[-0.5px] pointer-events-none rounded-[8.5px]"
-                  />
-                ) : null}
-              </div>
-            )
-          })}
-        </div>
-
-        <p
-          className="font-['Actor:Regular',sans-serif] leading-none not-italic mt-auto text-[#999] text-[20px]"
-          data-figma-node="settings-focused"
-        >
-          {focused === undefined ? '' : `FOCUSED: ${focused.label.toUpperCase()}`}
-        </p>
-      </div>
-
-      {/*
-        The same helper bar every screen mounts, with the settings set: the panel's own hints
-        plus Back. It is the bar, not a new one, so the key-cap artwork cannot drift.
-      */}
-      <div className="absolute bottom-0 h-[68px] left-0 w-[1920px]" data-figma-node="helper-bar">
-        <HelperBar hints={HINTS_SETTINGS} />
-      </div>
-
-      {/* The panel's own Escape handling is a keyboard concern; the surface also offers a
-          pointer way out, because a settings screen on a controller-first app still gets
-          clicked. */}
-      <button
-        aria-label="Close settings"
-        className="absolute right-[120px] top-[80px] cursor-pointer font-['Actor:Regular',sans-serif] leading-none not-italic text-[#999] text-[20px] transition-[scale,color] duration-150 ease-out active:scale-[0.96]"
-        data-figma-node="settings-close"
-        onClick={() => closeSettings()}
-        type="button"
-      >
-        CLOSE
-      </button>
+  return <div ref={root} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Launcher settings" className="collection-dialog" data-figma-node="settings"
+    onKeyDown={(event) => { if ((event.key === 'Enter' || event.key === ' ') && (event.target as HTMLElement).closest('button')) event.stopPropagation() }}>
+    <header><p className="eyebrow">CLASSIC COLLECTION / SETTINGS</p><h1>SETTINGS</h1><p data-figma-node="settings-hint">Changes are saved as you make them.</p></header>
+    <div className="settings-layout">
+      <nav aria-label="Settings categories">{GROUPS.map((entry) => <button key={entry.name} aria-current={group.name === entry.name ? 'page' : undefined} onClick={() => {
+        const target = SETTINGS_ROWS.findIndex((row) => entry.rows.includes(row.id))
+        move(target - index); setConfirmReset(false)
+      }}>{entry.name}</button>)}</nav>
+      <section><h2>{group.name.toUpperCase()}</h2><div data-figma-node="settings-rows">{SETTINGS_ROWS.map((row, rowIndex) => {
+        if (!group.rows.includes(row.id)) return null
+        const value = row.id === 'reset' && confirmReset ? 'CONFIRM RESET' : settingsValue(row, config)
+        return <button key={row.id} className="setting-row" data-name={`setting-${row.id}`} aria-pressed={rowIndex === index}
+          onFocus={() => move(rowIndex - launcherStore().settingsIndex)}
+          onClick={() => {
+            move(rowIndex - launcherStore().settingsIndex)
+            if (row.id === 'reset' && !confirmReset) { setConfirmReset(true); return }
+            setConfirmReset(false); activate()
+          }}>
+          <span>{row.label}</span><span data-figma-node={`setting-value-${row.id}`}>{value}</span>
+        </button>
+      })}</div>
+      {group.name === 'Presentation' ? <p className="setting-note">In-game overlay: {overlayReason.replaceAll('-', ' ')}. Available only with Enhanced D3D9 games. In-game CRT remains hidden until visually verified.</p> : null}
+      <p data-figma-node="settings-focused">FOCUSED: {focused.label.toUpperCase()}</p>
+      </section>
     </div>
-  )
+    <footer><button data-figma-node="settings-close" aria-label="Close settings" onClick={close}>BACK</button><span>Up / Down select · Left / Right change · Enter confirm</span></footer>
+  </div>
 }
-
 export default Settings

@@ -207,6 +207,8 @@ export interface HelperHint {
  * on Enter.
  */
 export type SettingsRowId =
+  | 'controls'
+  | 'diagnostics'
   | 'crt'
   | 'scanlines'
   | 'curvature'
@@ -217,6 +219,7 @@ export type SettingsRowId =
   | 'music'
   | 'window'
   | 'ingameCrt'
+  | 'ingameOverlay'
   | 'installRoot'
   | 'redetect'
   | 'reset'
@@ -244,7 +247,11 @@ export const SETTINGS_ROWS: readonly SettingsRow[] = [
   // row is the only CRT the game itself can have. It writes RE-Enhance's RetroMode and
   // dgVoodoo's CRT scaling before launch, and needs RE-Enhance injected to have anywhere to
   // write them.
-  { id: 'ingameCrt', label: 'In-Game CRT', kind: 'toggle' },
+  // The in-game achievement toast: the launcher copies its overlay plugin into the install and links
+  // to it, and the plugin draws the toast into the game's own frame (docs/ARCHITECTURE.md §12). Placed
+  // beside the CRT row because both are "something the launcher does to the running game", and after it
+  // rather than before, so the rows above keep the cursor positions the E2E navigation walks.
+  { id: 'ingameOverlay', label: 'In-Game Overlay', kind: 'toggle' },
   { id: 'installRoot', label: 'Games Folder', kind: 'action' },
   { id: 'redetect', label: 'Scan For Games', kind: 'action' },
   { id: 'reset', label: 'Reset Settings', kind: 'action' },
@@ -254,7 +261,9 @@ export const SETTINGS_ROWS: readonly SettingsRow[] = [
   { id: 'retroAccount', label: 'RetroAchievements Login', kind: 'action' },
   // Handing the launch to Steam costs the launcher its own process tracking and buys Steam's playtime
   // and overlay, so it is the player's choice rather than a default.
-  { id: 'steamLaunch', label: 'Launch Through Steam', kind: 'toggle' }
+  { id: 'steamLaunch', label: 'Launch Through Steam', kind: 'toggle' },
+  { id: 'controls', label: 'Keyboard & Controller', kind: 'action' },
+  { id: 'diagnostics', label: 'Export Diagnostics', kind: 'action' }
 ]
 
 /**
@@ -305,7 +314,7 @@ export const SETTINGS_LABEL = {
 
 export const RA_LOGIN_LABEL = {
   heading: 'RETROACHIEVEMENTS LOGIN',
-  blurb: 'Paste your own web API key from retroachievements.org (Settings, then API Keys). It is stored in this launcher\u2019s configuration on your machine and sent only to retroachievements.org.',
+  blurb: 'Paste your own web API key from retroachievements.org (Settings, then API Keys). It is encrypted with Windows credential protection on your machine and sent only to retroachievements.org.',
   userLabel: 'ACCOUNT NAME (OPTIONAL)',
   userHint: 'Only needed if RA ever asks for it; the API answers with the key alone.',
   keyLabel: 'WEB API KEY',
@@ -331,6 +340,14 @@ export const HINTS_ACHIEVEMENTS: HelperHint[] = [
  */
 export const ACHIEVEMENTS_LABEL = {
   locked: 'LOCKED',
+  /**
+   * What a locked row says when it can be marked by hand.
+   *
+   * The launcher has never detected an in-game event - RA reads an emulator's memory and these games
+   * are native Windows builds - so a click is the only way an unlock can happen here, and the row has
+   * to say so rather than leave the player guessing at a pointer cursor.
+   */
+  lockHint: 'CLICK TO MARK UNLOCKED',
   unlocked: 'UNLOCKED',
   of: 'of',
   unlockedCount: 'UNLOCKED',

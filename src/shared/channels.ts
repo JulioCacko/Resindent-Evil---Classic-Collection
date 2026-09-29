@@ -22,6 +22,11 @@ import type {
 } from './types'
 
 export const INVOKE_CHANNELS = {
+  gameSettings: 'game:settings',
+  gameDisplaySet: 'game:display-set',
+  diagnosticsExport: 'diagnostics:export',
+  credentialsSet: 'credentials:set',
+  credentialsRemove: 'credentials:remove',
   catalogGet: 'catalog:get',
   catalogRefresh: 'catalog:refresh',
   catalogSetInstallRoot: 'catalog:set-install-root',
@@ -44,6 +49,17 @@ export const INVOKE_CHANNELS = {
    * so a surface can treat both the same way without either being able to break the launcher.
    */
   achievementsRetro: 'achievements:retro',
+  /**
+   * The badge art for one RetroAchievements entry, as a `data:` URL, or null.
+   *
+   * The renderer receives bytes rather than a path or a URL, on purpose: RA's badges are RA's assets, and a
+   * `data:` URL lets the launcher show them without the renderer ever reaching the network - which is what
+   * `index.html`'s CSP promises and what makes it work in a packaged build, where a `file:` image would not.
+   *
+   * Every failure is null: no network, a rate limit, a body that is not a PNG. The row falls back to the
+   * letter slot it already draws, so a badge that cannot be fetched costs nothing.
+   */
+  achievementsBadge: 'achievements:badge',
   appPaths: 'app:paths',
   openExternal: 'shell:open-external',
   revealPath: 'shell:reveal-path',
@@ -52,16 +68,31 @@ export const INVOKE_CHANNELS = {
 } as const
 
 export const EVENT_CHANNELS = {
+  overlayDelivered: 'overlay:delivered',
   modProgress: 'mod:progress',
   launchPhase: 'launch:phase',
   gameExit: 'game:exit',
   catalogChanged: 'catalog:changed',
   achievementUnlock: 'achievement:unlock',
+  /**
+   * Whether the in-game overlay is live, and which API it hooked.
+   *
+   * The renderer needs this to know *who owns the toast*: while a game is running and the plugin is
+   * linked, the plugin draws it in the game's own frame, and the launcher's own overlay staying quiet
+   * is the point rather than a regression. Reported as a state (with a reason) rather than a boolean,
+   * because "no plugin in this build" and "the game just ended" are different facts.
+   */
+  overlayState: 'overlay:state',
   actionInput: 'input:action',
   toast: 'ui:toast'
 } as const
 
 export interface InvokeMap {
+  [INVOKE_CHANNELS.gameSettings]: { request: { versionId: string; mode: 'original' | 'enhanced' }; response: { displaySupported: boolean; display: number | null; nativeSetup: boolean; note: string } }
+  [INVOKE_CHANNELS.gameDisplaySet]: { request: { versionId: string; mode: 'enhanced'; display: number | null }; response: { ok: boolean; message: string } }
+  [INVOKE_CHANNELS.diagnosticsExport]: { request: void; response: { ok: boolean; message: string } }
+  [INVOKE_CHANNELS.credentialsSet]: { request: { user: string; key: string }; response: { ok: true; config: LauncherConfig } | { ok: false; message: string } }
+  [INVOKE_CHANNELS.credentialsRemove]: { request: void; response: { ok: true; config: LauncherConfig } | { ok: false; message: string } }
   [INVOKE_CHANNELS.catalogGet]: { request: void; response: CatalogSnapshot }
   [INVOKE_CHANNELS.catalogRefresh]: { request: void; response: CatalogSnapshot }
   [INVOKE_CHANNELS.catalogSetInstallRoot]: { request: { path: string }; response: CatalogSnapshot }
@@ -86,6 +117,7 @@ export interface InvokeMap {
   [INVOKE_CHANNELS.achievementsUnlock]: { request: { id: string }; response: Achievement | null }
   [INVOKE_CHANNELS.achievementsReset]: { request: { gameId?: TitleId }; response: Achievement[] }
   [INVOKE_CHANNELS.achievementsRetro]: { request: { gameId: TitleId }; response: RaAchievement[] }
+  [INVOKE_CHANNELS.achievementsBadge]: { request: { name: string }; response: string | null }
   [INVOKE_CHANNELS.appPaths]: { request: void; response: AppPaths }
   [INVOKE_CHANNELS.openExternal]: { request: { url: string }; response: void }
   [INVOKE_CHANNELS.revealPath]: { request: { path: string }; response: void }
@@ -96,11 +128,13 @@ export interface InvokeMap {
 export type InvokeChannel = keyof InvokeMap
 
 export interface EventMap {
+  [EVENT_CHANNELS.overlayDelivered]: { id: string }
   [EVENT_CHANNELS.modProgress]: ModProgress
   [EVENT_CHANNELS.launchPhase]: LaunchPhase
   [EVENT_CHANNELS.gameExit]: GameExitEvent
   [EVENT_CHANNELS.catalogChanged]: CatalogSnapshot
   [EVENT_CHANNELS.achievementUnlock]: Achievement
+  [EVENT_CHANNELS.overlayState]: { available: boolean; api: string; reason: string }
   [EVENT_CHANNELS.actionInput]: { action: string }
   [EVENT_CHANNELS.toast]: { kind: 'info' | 'error'; title: string; message: string }
 }

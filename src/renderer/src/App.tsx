@@ -1,3 +1,4 @@
+import { Preferences } from '@renderer/overlays/Preferences'
 /**
  * The composition root.
  *
@@ -22,12 +23,10 @@
  */
 import { useEffect, useRef } from 'react'
 import type { ComponentType } from 'react'
-import { useShallow } from 'zustand/shallow'
 
 import type { ScreenId } from '@shared/types'
 import { useSfx } from '@renderer/audio/useSfx'
 import { Backdrop } from '@renderer/components/Backdrop'
-import { currentVersion } from '@renderer/data/derive'
 import { BACKDROP } from '@renderer/data/design'
 import { useActions } from '@renderer/input/useActions'
 import { AchievementToast } from '@renderer/overlays/AchievementToast'
@@ -37,7 +36,6 @@ import { Achievements } from '@renderer/overlays/Achievements'
 import { Credentials } from '@renderer/overlays/Credentials'
 import { Settings } from '@renderer/overlays/Settings'
 import { InstallStatus } from '@renderer/overlays/InstallStatus'
-import { LaunchPanel } from '@renderer/overlays/LaunchPanel'
 import { Gameplay } from '@renderer/screens/Gameplay'
 import { MainMenu } from '@renderer/screens/MainMenu'
 import { VersionSelect } from '@renderer/screens/VersionSelect'
@@ -67,13 +65,12 @@ const SCREENS: Record<ScreenId, ComponentType | null> = {
 }
 
 export function App() {
+  const preferences = useLauncher((state) => state.preferences)
   const ready = useLauncher((state) => state.ready)
   const screen = useLauncher((state) => state.screen)
   const catalog = useLauncher((state) => state.catalog)
   const config = useLauncher((state) => state.config)
-  const panelOpen = useLauncher((state) => state.panelOpen)
-  const panelOptionIndex = useLauncher((state) => state.panelOptionIndex)
-const openSettings = useLauncher((state) => state.openSettings)
+
 const settingsOpen = useLauncher((state) => state.settingsOpen)
   const achievementsOpen = useLauncher((state) => state.achievementsOpen)
   const achievements = useLauncher((state) => state.achievements)
@@ -82,10 +79,9 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
   const raAchievements = useLauncher((state) => state.raAchievements)
   // Whether RA can be asked at all. Read from the config rather than inferred from the list being
   // empty, because "no key yet" and "RA has nothing for this game" are different messages.
-  const raConnected = useLauncher((state) => (state.config?.raKey ?? '') !== '')
+  const raConnected = useLauncher((state) => state.config?.raConfigured ?? false)
   const credentialsOpen = useLauncher((state) => state.credentialsOpen)
   const raUser = useLauncher((state) => state.config?.raUser ?? '')
-  const raKey = useLauncher((state) => state.config?.raKey ?? '')
   const saveCredentials = useLauncher((state) => state.saveCredentials)
   const closeCredentials = useLauncher((state) => state.closeCredentials)
   /**
@@ -99,7 +95,12 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
    */
   const raTicked = useLauncher((state) => state.config)?.raTicked ?? []
   const toggleRetroTick = useLauncher((state) => state.toggleRetroTick)
-  const busy = useLauncher((state) => state.busy)
+  const unlockAchievement = useLauncher((state) => state.unlockAchievement)
+  // RetroAchievements badge art: the map the rows read from, and the action that fills it. The rows ask for
+  // what they are about to draw, so the list fetches nothing until the surface is open.
+  const badges = useLauncher((state) => state.badges)
+  const loadBadge = useLauncher((state) => state.loadBadge)
+
   const error = useLauncher((state) => state.error)
 
   /**
@@ -110,22 +111,30 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
    * instead of leaving it in the queue, this single line is the only thing that
    * has to change.
    */
-  const toastAchievement = useLauncher((state) => state.achievementQueue[0] ?? null)
+  /*
+   * The toast on screen is `achievement`, NOT `achievementQueue[0]`.
+   *
+   * This read the head of the queue, and that was a bug with a long life and no test behind it: the
+   * store puts the first unlock into `achievement` and queues only what is waiting behind it, so a
+   * single unlock displayed nothing at all - and a second one displayed the *second* achievement while
+   * the first was left sitting in the slot. `popAchievement` is the other half of the same contract: it
+   * moves the head of the queue into `achievement` when a toast finishes.
+   *
+   * It was found by finally asserting the toast in the E2E, which had only ever checked the achievements
+   * list (tests/e2e/interaction.spec.ts).
+   */
+  const toastAchievement = useLauncher((state) => state.achievement)
 
   const init = useLauncher((state) => state.init)
   const goToMenu = useLauncher((state) => state.goToMenu)
-  const closePanel = useLauncher((state) => state.closePanel)
-  const setPanelOption = useLauncher((state) => state.setPanelOption)
-  const setMode = useLauncher((state) => state.setMode)
-  const setScenario = useLauncher((state) => state.setScenario)
-  const launch = useLauncher((state) => state.launch)
+
   const dismissError = useLauncher((state) => state.dismissError)
   const popAchievement = useLauncher((state) => state.popAchievement)
 
   // Keyboard, gamepad and pointer gestures become the canonical action set here
   // and are forwarded without interpretation: what "back" means on the version
   // screen is the store's decision, not the shell's.
-  useActions(useLauncher((state) => state.handleAction))
+  useActions(useLauncher((state) => state.handleAction), { enabled: error !== null || (preferences === null && !credentialsOpen) })
 
   /**
    * The selected version and its resolved mode/scenario, needed by the launch
@@ -135,7 +144,7 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
    * wrapped in zustand's shallow comparator: it keeps the previous object while
    * the version, mode and scenario are unchanged.
    */
-  const current = useLauncher(useShallow(currentVersion))
+
 
   const sfx = useSfx()
 
@@ -215,7 +224,7 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
         bottomOffset={isMenu ? undefined : BACKDROP.bottomOffset}
       />
 
-      {Screen === null ? null : <Screen />}
+      <div className="contents" inert={settingsOpen || achievementsOpen || credentialsOpen || preferences !== null || error !== null}>{Screen === null ? null : <Screen />}</div>
 
       {screen === 'install' && catalog !== null ? (
         <InstallStatus
@@ -228,76 +237,31 @@ const settingsOpen = useLauncher((state) => state.settingsOpen)
           onContinue={goToMenu}
         />
       ) : null}
-      {/* Above everything: the login panel is modal, and Escape or Save is the way out. */}
-      {credentialsOpen ? (
-        <Credentials
-          key={raKey}
-          onCancel={closeCredentials}
-          onSave={saveCredentials}
-          user={raUser}
-        />
-      ) : null}
-
-      {panelOpen && current !== null ? (
-        <LaunchPanel
-          version={current.version}
-          mode={current.mode}
-          scenario={current.scenario}
-          optionIndex={panelOptionIndex}
-          busy={busy}
-          onSelectOption={setPanelOption}
-          // The store's setters are async (they persist through IPC), so the
-          // promise is discarded explicitly rather than left floating.
-          onSetMode={(mode) => {
-            void setMode(mode)
-          }}
-          onSetScenario={(scenario) => {
-            void setScenario(scenario)
-          }}
-          onLaunch={() => {
-            void launch()
-          }}
-          onOpenSettings={openSettings}
-          onClose={closePanel}
-        />
-      ) : null}
-      {/* Above everything: the login panel is modal, and Escape or Save is the way out. */}
-      {credentialsOpen ? (
-        <Credentials
-          key={raKey}
-          onCancel={closeCredentials}
-          onSave={saveCredentials}
-          user={raUser}
-        />
-      ) : null}
 
       {/*
         The settings surface, over the screens and under the error dialog: it is reached from
         the launch panel, and a failure that happens while it is up (a folder that cannot be
         read, say) has to be reportable above it.
       */}
-      {settingsOpen ? <Settings /> : null}
+      {settingsOpen && !credentialsOpen && !achievementsOpen && error === null ? <Settings /> : null}
       {/* The achievements surface, over everything the settings surface sits over. */}
-      {achievementsOpen ? (
+      {achievementsOpen && !credentialsOpen && error === null ? (
         <Achievements
           achievements={achievements}
           onClose={closeAchievements}
           title={achievementsTitle}
           onToggleRa={toggleRetroTick}
+          onUnlockAchievement={(id) => void unlockAchievement(id)}
           raTicked={raTicked}
           raAchievements={raAchievements}
+          badges={badges}
+          onLoadBadge={loadBadge}
           raConnected={raConnected}
         />
       ) : null}
-      {/* Above everything: the login panel is modal, and Escape or Save is the way out. */}
-      {credentialsOpen ? (
-        <Credentials
-          key={raKey}
-          onCancel={closeCredentials}
-          onSave={saveCredentials}
-          user={raUser}
-        />
-      ) : null}
+
+      {preferences !== null && error === null ? <Preferences /> : null}
+      {credentialsOpen && error === null ? <Credentials user={raUser} onSave={saveCredentials} onCancel={closeCredentials} /> : null}
 
       {error === null ? null : <ErrorDialog error={error} onDismiss={dismissError} />}
 

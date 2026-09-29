@@ -217,6 +217,9 @@ export interface BusyState {
 }
 
 export interface LauncherState {
+  preferences: 'display' | 'controls' | 'launcher-controls' | null
+  inputDevice: InputDevice
+  overlayReason: string
   screen: ScreenId
   menuIndex: number
   titleId: TitleId
@@ -250,6 +253,22 @@ export interface LauncherState {
   busy: BusyState | null
   modProgress: ModProgress | null
   gameStatus: GameStatus
+  /**
+   * Whether main reports a live link to the in-game overlay plugin.
+   *
+   * While this is true *and* a game is running, the plugin owns the toast: it draws the unlock inside
+   * the game's own frame, and this window queues instead of showing, so one achievement is never
+   * announced twice. See `pushAchievement` and `onOverlayState` in `state/store.ts`.
+   */
+  overlayAvailable: boolean
+  /**
+   * RetroAchievements badge art, keyed by the badge name, as `data:` URLs.
+   *
+   * A map rather than a field per row, because the same badge is shared by several entries and the list
+   * re-renders: one lookup per name, and `null` records "asked, and there is no art" so a failed fetch is
+   * not retried on every render. The rows fall back to their letter slot while this is empty.
+   */
+  badges: Record<string, string | null>
   /** Set once the first catalog fetch resolves. */
   ready: boolean
 }
@@ -274,6 +293,23 @@ export interface LauncherActions {
   /** Opens the achievements surface, fetching the current title's list first. */
   openAchievements(): Promise<void>
   closeAchievements(): void
+  /**
+   * Marks one of the launcher's own achievements unlocked, at the player's request.
+   *
+   * The only producer of an unlock this launcher has: RA reads an emulator's memory and these games are
+   * native Windows builds, so nothing can be detected while they run. The main process broadcasts the
+   * result, which is what raises the toast — in the game's own frame when the overlay is linked.
+   */
+  unlockAchievement(id: string): Promise<void>
+  /**
+   * Fetches one RetroAchievements badge into `badges`, and does nothing if it has already been asked for.
+   *
+   * Called by the row that is about to draw it, rather than by the list, so a 130-row list fetches what is
+   * on screen instead of everything at once.
+   */
+  loadBadge(name: string): Promise<void>
+  openPreferences(page: 'display' | 'controls' | 'launcher-controls'): void
+  closePreferences(): void
   openCredentials(): void
   closeCredentials(): void
   saveCredentials(user: string, key: string): void
@@ -287,7 +323,7 @@ export interface LauncherActions {
   setScenario(scenario: Re2Scenario): Promise<void>
   patchConfig(patch: Partial<LauncherConfig>): Promise<void>
   resetConfig(): Promise<void>
-  launch(): Promise<void>
+  launch(configure?: boolean): Promise<void>
   /**
    * Ends the running game.
    *

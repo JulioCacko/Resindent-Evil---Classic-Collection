@@ -1,3 +1,4 @@
+import { DEFAULT_BINDINGS } from '@shared/controls'
 /**
  * store.ts — all launcher state, and the only module that talks to `window.reLauncher`.
  *
@@ -25,6 +26,7 @@ import { create } from 'zustand'
 
 import { DEFAULT_TITLE_ID } from '@shared/catalog'
 import { EVENT_CHANNELS, INVOKE_CHANNELS } from '@shared/channels'
+import { enqueueToast, nextToast, overlayOwnsToast } from '@shared/toast-queue'
 import type {
   EventChannel,
   EventMap,
@@ -184,8 +186,14 @@ function offlineConfig(): LauncherConfig {
     scenarios: {},
     launchWindowMode: 'minimise',
     inGameCrt: false,
+    // Matches `config-store.ts`'s default: the in-game toast is on unless a player turns it off. This
+    // literal is the renderer's offline fallback, so it has to agree with the real default or the
+    // fallback would silently describe a different launcher.
+    inGameOverlay: true,
     raUser: '',
-    raKey: '',
+    raConfigured: false,
+    keyBindings: structuredClone(DEFAULT_BINDINGS),
+    onboardingComplete: false,
     launchThroughSteam: false,
     raTicked: [],
     gogPathOverride: '',
@@ -376,6 +384,8 @@ const SOUND_FOR: Record<InputAction, SfxName> = {
  * does this key do here?", and the effects can never drift from them.
  */
 type Intent =
+  | { kind: 'open-preferences'; page: 'display' | 'controls' }
+  | { kind: 'open-achievements' }
   | { kind: 'dismiss-error' }
   | { kind: 'move-menu'; delta: number }
   | { kind: 'open-version'; titleId: TitleId }
@@ -416,6 +426,8 @@ function resolveIntent(state: LauncherState, action: InputAction): Intent | null
   // Back stays live on purpose: the user must never be trapped behind a launch, and
   // both this store's `launch()` and the main process (`runLaunch` ->
   // `game-already-running`) refuse a second one.
+  if (state.credentialsOpen || state.preferences !== null) return null
+  if (state.achievementsOpen && action !== 'back' && action !== 'menu') return null
   if (state.busy !== null && action !== 'back') return null
 
   /**
@@ -522,13 +534,15 @@ function resolveIntent(state: LauncherState, action: InputAction): Intent | null
       case 'nav-right':
         // The Change keys are inert on the rows that carry no value to move — LAUNCH and
         // SETTINGS are actions — but they are the only way to change any other row.
-        return option === 'launch' || option === 'settings'
+        return option === 'launch' || option === 'settings' || option === 'display' || option === 'controls' || option === 'achievements'
           ? null
           : { kind: 'toggle-option', option }
       case 'confirm':
         // Enter on LAUNCH starts the game; on SETTINGS it opens the settings surface; on
         // every other row it is the same gesture as the Change keys, which is what the legacy
         // screen did (`screen_launch.cpp`: Enter on the launch row, Left/Right elsewhere).
+        if (option === 'display' || option === 'controls') return { kind: 'open-preferences', page: option }
+        if (option === 'achievements') return { kind: 'open-achievements' }
         if (option === 'launch') return { kind: 'launch' }
         if (option === 'settings') return { kind: 'open-settings' }
         return { kind: 'toggle-option', option }
@@ -578,6 +592,9 @@ const INITIAL_GAME_STATUS: GameStatus = {
  * screen tell "not loaded yet" apart from "loaded and empty".
  */
 const INITIAL_STATE: LauncherState = {
+  preferences: null,
+  inputDevice: 'keyboard',
+  overlayReason: 'not-started',
   screen: 'boot',
   menuIndex: 0,
   titleId: DEFAULT_TITLE_ID,
@@ -600,6 +617,18 @@ const INITIAL_STATE: LauncherState = {
   busy: null,
   modProgress: null,
   gameStatus: INITIAL_GAME_STATUS,
+  /**
+   * True only while main reports a live link to the in-game plugin (`overlay:state`).
+   *
+   * Starts false, which is the honest default: with no game running there is no plugin, and the
+   * launcher's own toast is the only one.
+   */
+  overlayAvailable: false,
+  /**
+   * Badge art fetched so far, keyed by RA's badge name (`Achievements.tsx` asks for what it is about to
+   * draw). Empty at boot: nothing is fetched until a list is on screen.
+   */
+  badges: {},
   ready: false
 }
 
@@ -610,6 +639,7 @@ const INITIAL_STATE: LauncherState = {
 const store = create<LauncherStore>()((set, get) => {
   /** Memoised first load; also what makes `init()` idempotent. */
   let initPromise: Promise<void> | null = null
+  const toastExpiry = new Map<string, ReturnType<typeof setTimeout>>()
 
   /**
    * Publishes a config that came back from main (or was merged locally). The
@@ -648,7 +678,6 @@ const store = create<LauncherStore>()((set, get) => {
     const current = get().gameStatus
     const exitedThisRow =
       !current.running &&
-      current.exitCode !== null &&
       current.titleId === titleId &&
       current.versionId === versionId
     if (exitedThisRow) return current
@@ -698,6 +727,18 @@ const store = create<LauncherStore>()((set, get) => {
         startedAt: null
       }
     })
+
+    /*
+     * Whatever the in-game overlay was holding now belongs to this window.
+     *
+     * While a game runs with the plugin linked, `pushAchievement` queues instead of showing, because
+     * the plugin is drawing the toast inside the game's own frame. The game is over, so the launcher
+     * is the surface the player is looking at - and anything that arrived in the last moments of the
+     * session (an unlock raised by the exit itself, for instance) has to be shown rather than left in
+     * a queue nothing will drain.
+     */
+    if (get().achievement === null) get().popAchievement()
+
     // A null code is the "never ran, or launched outside the launcher" case the type
     // documents, so only a real non-zero code is a failure worth interrupting for. A stop
     // the launcher asked for is not a failure at all: `taskkill /F` makes the game exit 1,
@@ -720,6 +761,19 @@ const store = create<LauncherStore>()((set, get) => {
 
   const onAchievementUnlock = (achievement: Achievement): void => {
     get().pushAchievement(achievement)
+  }
+
+  /**
+   * The in-game overlay's state, pushed by main whenever it changes.
+   *
+   * The important half is the *unavailable* one: if the plugin dies mid-session, or its pipe breaks,
+   * this window takes the toast back at once and drains whatever the plugin was holding, so an unlock
+   * is never lost in the gap between the two surfaces. `api` is carried for the log and for tests; the
+   * launcher's behaviour does not depend on which present call the plugin hooked.
+   */
+  const onOverlayState = (state: { available: boolean; api: string; reason: string }): void => {
+    set({ overlayAvailable: state.available, overlayReason: state.reason })
+    if (!state.available && state.reason !== 'connecting' && state.reason !== 'linked' && get().achievement === null) get().popAchievement()
   }
 
   // -- navigation ----------------------------------------------------------
@@ -761,6 +815,7 @@ const store = create<LauncherStore>()((set, get) => {
 
   const goToMenu = (): void => {
     const state = get()
+    if (!state.config?.onboardingComplete) void get().patchConfig({ onboardingComplete: true })
     // The cursor returns to the title the user came from, so backing out of a
     // version list does not lose their place. Keeping `menuIndex` and `titleId` in
     // step is the same invariant `setMenuIndex` maintains.
@@ -906,22 +961,51 @@ const store = create<LauncherStore>()((set, get) => {
   }
 
   const openCredentials = (): void => {
-    set({ credentialsOpen: true })
+    set({ credentialsOpen: true, settingsOpen: false, achievementsOpen: false, panelOpen: false })
   }
 
   const closeCredentials = (): void => {
-    set({ credentialsOpen: false })
+    set({ credentialsOpen: false, settingsOpen: true })
   }
 
   const saveCredentials = (user: string, key: string): void => {
-    set({ credentialsOpen: false })
-    void get().patchConfig({ raUser: user, raKey: key })
+    void (async () => {
+      const outcome = key === ''
+        ? await invoke(INVOKE_CHANNELS.credentialsRemove, undefined)
+        : await invoke(INVOKE_CHANNELS.credentialsSet, { user, key })
+      if (outcome.ok && outcome.value.ok) {
+        set({ config: outcome.value.config, credentialsOpen: false, settingsOpen: true })
+      } else {
+        get().showError({ title: 'CREDENTIAL NOT SAVED', message: outcome.ok && !outcome.value.ok ? outcome.value.message : 'Secure storage is unavailable.' })
+      }
+    })()
+  }
+
+  /**
+   * Fetches one RetroAchievements badge, once, and keeps the answer either way.
+   *
+   * `null` is recorded as deliberately as a `data:` URL is: "asked, and there is no art" is what stops a
+   * row from re-asking on every render, which on a 130-row list would be a fetch per frame. The row then
+   * draws its letter slot — the fallback the whole cache is built around, since RA's art cannot be shipped
+   * with the launcher and a badge that cannot be fetched must cost nothing.
+   *
+   * No in-flight guard here: `readBadge` in the main process already single-flights per name, so three rows
+   * sharing a badge reach one fetch rather than three.
+   */
+  const loadBadge = async (name: string): Promise<void> => {
+    if (name === '') return
+
+    const state = get()
+    if (Object.prototype.hasOwnProperty.call(state.badges, name)) return
+
+    const outcome = await invoke(INVOKE_CHANNELS.achievementsBadge, { name })
+    set((current) => ({ badges: { ...current.badges, [name]: outcome.ok ? outcome.value : null } }))
   }
 
   const openAchievements = async (): Promise<void> => {
     const gameId = get().titleId
     const title = get().catalog?.titles.find((candidate) => candidate.id === gameId)?.name ?? ''
-    set({ achievementsOpen: true, achievements: null, achievementsTitle: title })
+    set({ achievementsOpen: true, achievements: null, raAchievements: null, achievementsTitle: title, settingsOpen: false, panelOpen: false, credentialsOpen: false })
     const outcome = await invoke(INVOKE_CHANNELS.achievementsList, { gameId })
     if (get().achievementsOpen) set({ achievements: outcome.ok ? outcome.value : [] })
 
@@ -936,8 +1020,42 @@ const store = create<LauncherStore>()((set, get) => {
     set({ achievementsOpen: false })
   }
 
+  /**
+   * Marks one of the launcher's own achievements unlocked, because the player said so.
+   *
+   * This is the *only* producer of an unlock the launcher has, and that is a measured limitation rather
+   * than a shortcut: these are native Windows builds, so RetroAchievements cannot report anything for
+   * them (it reads an emulator's memory) and the launcher does not read game memory. A click is
+   * therefore a statement by the player — the same kind of statement a tick on the RA list already is —
+   * and `src/main/ipc.ts` broadcasts the result, which is what raises the toast. On a launch with the
+   * in-game overlay linked, that toast is drawn inside the game's own frame.
+   *
+   * The list is updated from what *main* answers rather than from the request, so the date shown is the
+   * one that was persisted.
+   */
+  const unlockAchievement = async (id: string): Promise<void> => {
+    const outcome = await invoke(INVOKE_CHANNELS.achievementsUnlock, { id })
+    if (!outcome.ok || outcome.value === null) return
+
+    const unlocked = outcome.value
+    set((state) => ({
+      achievements:
+        state.achievements === null
+          ? null
+          : state.achievements.map((row) => (row.id === unlocked.id ? unlocked : row))
+    }))
+  }
+
+  const openPreferences = (page: 'display' | 'controls' | 'launcher-controls'): void => {
+    set({ preferences: page, panelOpen: false, settingsOpen: false, achievementsOpen: false, credentialsOpen: false })
+  }
+  const closePreferences = (): void => {
+    const fromLauncher = get().preferences === 'launcher-controls'
+    set({ preferences: null, settingsOpen: fromLauncher, panelOpen: !fromLauncher && get().screen === 'version' })
+  }
+
   const openSettings = (): void => {
-    set({ settingsOpen: true, settingsIndex: 0, panelOpen: false })
+    set({ settingsOpen: true, panelOpen: false, achievementsOpen: false, credentialsOpen: false })
   }
 
   const closeSettings = (): void => {
@@ -967,6 +1085,11 @@ const store = create<LauncherStore>()((set, get) => {
         return
       case 'ingameCrt':
         void get().patchConfig({ inGameCrt: !(config?.inGameCrt ?? false) })
+        return
+      case 'ingameOverlay':
+        // The `?? true` matters: this default is on, unlike every other toggle on this surface, so
+        // falling back to false here would flip the setting the first time the row was touched.
+        void get().patchConfig({ inGameOverlay: !(config?.inGameOverlay ?? true) })
         return
       case 'steamLaunch':
         // Handing a launch to Steam trades this launcher's process tracking for Steam's playtime and
@@ -1022,6 +1145,14 @@ const store = create<LauncherStore>()((set, get) => {
         return
       case 'redetect':
         void get().refreshCatalog()
+        return
+      case 'diagnostics':
+        void invoke(INVOKE_CHANNELS.diagnosticsExport, undefined).then((outcome) => {
+          get().showError({ title: 'DIAGNOSTICS', message: outcome.ok ? outcome.value.message : 'Export failed.' })
+        })
+        return
+      case 'controls':
+        get().openPreferences('launcher-controls')
         return
       case 'retroAccount':
         get().openCredentials()
@@ -1139,7 +1270,7 @@ const store = create<LauncherStore>()((set, get) => {
 
   // -- launch --------------------------------------------------------------
 
-  const launch = async (): Promise<void> => {
+  const launch = async (configure = false): Promise<void> => {
     const state = get()
 
     // One launch at a time. The main process refuses a concurrent sequence
@@ -1167,9 +1298,10 @@ const store = create<LauncherStore>()((set, get) => {
 
     // Set before the call, never after: the phase events are pushed while the
     // request is in flight, and they need a readout to write their label into.
-    set({ busy: busyOnly(LAUNCH_START_LABEL), error: null, modProgress: null })
+    set({ busy: busyOnly(LAUNCH_START_LABEL), error: null, modProgress: null, gameStatus: INITIAL_GAME_STATUS })
 
     const request: LaunchRequest = {
+      configure,
       titleId: title.id,
       versionId: version.id,
       // The resolved mode/scenario, not the raw config: `resolveMode` is what pins a
@@ -1191,7 +1323,7 @@ const store = create<LauncherStore>()((set, get) => {
     const result: LaunchResult = outcome.value
     if (!result.ok) {
       set({ busy: null })
-      get().showError(errorForFailure(result.code))
+      get().showError({ ...errorForFailure(result.code), message: result.message })
       return
     }
 
@@ -1205,6 +1337,7 @@ const store = create<LauncherStore>()((set, get) => {
   settingsOpen: false,
   settingsIndex: 0,
       // The record Back uses to find its way to the row that is running.
+      preferences: null,
       gameplay: { titleId: title.id, versionId: version.id },
       screen: 'gameplay',
       gameStatus: statusAfterLaunch(title.id, version.id)
@@ -1247,26 +1380,41 @@ const store = create<LauncherStore>()((set, get) => {
   const pushAchievement = (achievement: Achievement): void => {
     const state = get()
 
-    // One toast at a time: `AchievementToastProps` carries a single achievement and
-    // tells the store when it is done, so the rest wait their turn.
-    if (state.achievement === null) {
-      set({ achievement })
-      return
+    /*
+     * The rules live in `@shared/toast-queue`, and they are tested there.
+     *
+     * What they say, in short: a duplicate of what is on screen or already queued is dropped; the
+     * first unlock shows immediately; and while the in-game plugin owns the toast - linked, with a game
+     * running - this window keeps the unlock but stays quiet, because the plugin is drawing it inside
+     * the game's own frame. It is kept rather than dropped so that `onGameExit` and `onOverlayState`
+     * can show it the moment the launcher is the surface the player is looking at.
+     */
+    const next = enqueueToast(
+      { current: state.achievement, queue: state.achievementQueue },
+      achievement,
+      (state.overlayReason === 'connecting' || state.overlayReason === 'linked' || overlayOwnsToast(state.overlayAvailable, state.gameStatus.running))
+    )
+
+    // Identity means nothing changed, which is how a duplicate avoids a state write entirely.
+    if (next.current === state.achievement && next.queue === state.achievementQueue) return
+    set({ achievement: next.current, achievementQueue: next.queue })
+    for (const [id, timer] of toastExpiry) {
+      if (!next.queue.some((row) => row.id === id)) { clearTimeout(timer); toastExpiry.delete(id) }
     }
-
-    // A duplicate is dropped rather than queued twice. The main process can push the
-    // same unlock twice — `achievements:unlock` answers its caller *and* the store's
-    // own `onUnlock` broadcasts it (src/main/ipc.ts) — and a toast that comes back
-    // forever is worse than one that is missing.
-    if (state.achievement.id === achievement.id) return
-    if (state.achievementQueue.some((queued) => queued.id === achievement.id)) return
-
-    set({ achievementQueue: [...state.achievementQueue, achievement] })
+    for (const queued of next.queue) {
+      if (toastExpiry.has(queued.id)) continue
+      toastExpiry.set(queued.id, setTimeout(() => {
+        set((current) => ({ achievementQueue: current.achievementQueue.filter((row) => row.id !== queued.id) }))
+        toastExpiry.delete(queued.id)
+      }, 30_000))
+    }
   }
 
   const popAchievement = (): void => {
-    const [next, ...rest] = get().achievementQueue
-    set({ achievement: next ?? null, achievementQueue: rest })
+    const state = get()
+    const next = nextToast({ current: state.achievement, queue: state.achievementQueue })
+    set({ achievement: next.current, achievementQueue: next.queue })
+    if (next.current) { clearTimeout(toastExpiry.get(next.current.id)); toastExpiry.delete(next.current.id) }
   }
 
   // -- input ---------------------------------------------------------------
@@ -1275,6 +1423,7 @@ const store = create<LauncherStore>()((set, get) => {
     // Nothing here branches on the device: `InputAction` is the canonical intent
     // every source produces (contracts.ts), and `useActions` is what maps a key, a
     // pad or a pointer onto those six actions.
+    set({ inputDevice: _device })
     const intent = resolveIntent(get(), action)
     // An action this screen does not answer makes no sound: feedback for a keypress
     // that did nothing would be a lie.
@@ -1287,6 +1436,8 @@ const store = create<LauncherStore>()((set, get) => {
     sfx.play(SOUND_FOR[action])
 
     switch (intent.kind) {
+      case 'open-preferences': get().openPreferences(intent.page); return
+      case 'open-achievements': void get().openAchievements(); return
       case 'dismiss-error':
         get().dismissError()
         return
@@ -1358,11 +1509,18 @@ const store = create<LauncherStore>()((set, get) => {
         subscribe(EVENT_CHANNELS.launchPhase, onLaunchPhase),
         subscribe(EVENT_CHANNELS.gameExit, onGameExit),
         subscribe(EVENT_CHANNELS.catalogChanged, onCatalogChanged),
-        subscribe(EVENT_CHANNELS.achievementUnlock, onAchievementUnlock)
+        subscribe(EVENT_CHANNELS.achievementUnlock, onAchievementUnlock),
+        subscribe(EVENT_CHANNELS.overlayState, onOverlayState),
+        subscribe(EVENT_CHANNELS.overlayDelivered, ({ id }) => {
+          clearTimeout(toastExpiry.get(id)); toastExpiry.delete(id)
+          set((state) => ({ achievementQueue: state.achievementQueue.filter((row) => row.id !== id), achievement: state.achievement?.id === id ? null : state.achievement }))
+        }),
+        subscribe(EVENT_CHANNELS.toast, (message) => get().showError({ title: message.title, message: message.message }))
       ]
       for (const unsubscribe of subscriptions) {
         if (unsubscribe !== null) eventSubscriptions.push(unsubscribe)
       }
+      eventSubscriptions.push(() => { for (const timer of toastExpiry.values()) clearTimeout(timer); toastExpiry.clear() })
 
       // The catalog first, so nothing downstream has to guess whether the world has
       // arrived yet; `ready` is set with it, in one update, so a screen never sees
@@ -1395,7 +1553,7 @@ const store = create<LauncherStore>()((set, get) => {
         // the user out of a screen they are already using.
         screen:
           state.screen === 'boot'
-            ? snapshot.needsInstallScreen
+            ? snapshot.needsInstallScreen || !snapshot.config.onboardingComplete
               ? 'install'
               : 'menu'
             : state.screen
@@ -1427,11 +1585,15 @@ const store = create<LauncherStore>()((set, get) => {
     activateSetting,
     closeSettings,
     openAchievements,
+    openPreferences,
+    closePreferences,
     openCredentials,
     toggleRetroTick,
     closeCredentials,
     saveCredentials,
     closeAchievements,
+    unlockAchievement,
+    loadBadge,
     movePanelOption,
     setMode,
     setScenario,

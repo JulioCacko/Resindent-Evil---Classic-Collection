@@ -145,6 +145,45 @@ describe('mods', () => {
     sandbox = ''
   })
 
+  /**
+   * The in-game overlay's delivery, which is the reason `LauncherFile` exists.
+   *
+   * `re_classic_overlay.asi` is the launcher's own artifact rather than part of RE-Enhance's payload,
+   * and it still has to land in the game folder for the ASI loader to find it. It rides the injection
+   * so that the manifest - the record of what was overlayed - is also what takes it away again.
+   */
+  it('carries the launcher\u2019s own file through the injection, and a restore removes it', async () => {
+    const launcherDir = join(sandbox, 'launcher')
+    await writeTree(launcherDir, { 're_classic_overlay.asi': 'stub plugin bytes' })
+
+    const result = await injectMod(context(), undefined, undefined, [
+      { from: join(launcherDir, 're_classic_overlay.asi'), to: 're_classic_overlay.asi' }
+    ])
+
+    expect(result.ok).toBe(true)
+    // One file more than the payload alone: it is copied and counted like any other.
+    expect(result.filesTotal).toBe(EXPECTED_MANIFEST.length + 1)
+    expect(result.filesDone).toBe(EXPECTED_MANIFEST.length + 1)
+    expect(await exists(installFile('re_classic_overlay.asi'))).toBe(true)
+    expect(await readManifest(installPath)).toContain('re_classic_overlay.asi')
+
+    await removeMod(context())
+    // Nothing backed it up - it was never in the retail install - so a restore deletes it rather than
+    // restoring a copy, which is exactly how the plugin leaves a row that is switched to ORIGINAL.
+    expect(await exists(installFile('re_classic_overlay.asi'))).toBe(false)
+  })
+
+  it('skips a launcher file that was never built, rather than failing the injection', async () => {
+    const result = await injectMod(context(), undefined, undefined, [
+      { from: join(sandbox, 'never-built.asi'), to: 'never-built.asi' }
+    ])
+
+    // A clone that has not run `pnpm build:overlay` still launches games; it has no in-game toast.
+    expect(result.ok).toBe(true)
+    expect(result.filesTotal).toBe(EXPECTED_MANIFEST.length)
+    expect(await exists(installFile('never-built.asi'))).toBe(false)
+  })
+
   it('injects the mod tree over the install and records a manifest', async () => {
     const result = await injectMod(context())
 

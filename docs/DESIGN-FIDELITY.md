@@ -621,3 +621,12 @@ Then re-run `pnpm check:fidelity` (with `--strict` once the tree is settled), th
 geometry spec, and the side-by-side. Never round a design number, never re-derive it
 from another one, and never let a component compute a value the export states
 outright — those are exactly the three ways this claim would quietly become false.
+
+
+## Fan release additions
+
+Collection, Version and Now Playing retain their measured geometry and 283-token fidelity check. VersionSelect owns the single launch panel.
+
+New settings pages extend the design using the existing dark palette, Actor face, red focus accent and authored 1920×1080 stage. Settings use a category rail; Controls uses action/primary/secondary columns. MGS references inform hierarchy and navigation only. Native game action slots are not fabricated.
+
+New dialogs have focus containment, visible focus, Escape cancellation and focus restoration. Underlying screens are inert while full-screen dialogs are active. Reduced-motion CSS suppresses nonessential transitions. Geometry tests remain, supplemented by credential/key-capture checks and 1280×720/1920×1080 screenshots. Physical DPI and controller evidence remains a separate gate.

@@ -197,7 +197,7 @@ src/
         ├── styles/theme.css      colour tokens
         └── styles/tailwind.css   Tailwind entry
 assets/                          shipped with the build
-├── achievements/achievements.json   365 definitions (RE1 115 / RE2 131 / RE3 119)
+├── achievements/achievements.json   373 definitions (RE1 117 / RE2 135 / RE3 121; 8 launcher-observable)
 ├── audio/                       source WAVs, copied to the renderer by assets:sync
 ├── fonts/                       Actor-Regular.ttf + OFL.txt
 └── videos/                      source MP4s for the info panel's video lane
@@ -235,7 +235,7 @@ Two directions, one rule each:
 Every payload arriving from the renderer is re-validated in `ipc.ts` before it can
 reach the filesystem, the registry or a child process.
 
-### Invoke channels (20)
+### Invoke channels (21)
 
 | Channel | Payload | Result | Notes |
 |---|---|---|---|
@@ -723,6 +723,7 @@ the first flush still reads as "not clean".
 | Launcher settings | `<userData>/config.json` | `config-store.ts` | JSON, `LauncherConfig` |
 | Achievement progress | `<userData>/achievements.sav` | `achievements.ts` | `id=1\|<iso>` lines |
 | Log | `<userData>/re-log.txt` | `logger.ts` | `[YYYY-MM-DD HH:MM:SS] [WARN] message` |
+| RetroAchievements badge art | `<userData>/badges/<BadgeName>.png` | `badges.ts` | PNG, fetched on demand from `media.retroachievements.org` and cached here. Never committed or shipped: RA's badges are RA's assets, and `badges.ts` validates the name before it becomes a file name |
 | Legacy settings (read only) | `<appDir>/config.ini` | the old launcher | key = value, optional `[section]` |
 | Legacy progress (read only) | `<appDir>/achievements.sav` | the old launcher | same as above |
 | Achievement definitions | `<appDir>/assets/achievements/achievements.json`, then `<userData>/achievements.json` | shipped + optional user override | `{ "re1": [ … ], "re2": [ … ], "re3": [ … ] }` |
@@ -753,6 +754,7 @@ the repository root in development.
 | `scenarios` | `{ [versionId]: 'leon' \| 'claire' }` | `{}` | Per-row RE2 scenario; missing = row default |
 | `gogPathOverride` | string | `''` | Explicit GOG root; `''` = auto-detect |
 | `keepLauncherVisible` | bool | `true` | Keep the window up while a game runs |
+| `inGameOverlay` | bool | `true` | Draw the achievement toast inside the game's own frame. Copies the overlay plugin into the install and links to it; only possible in ENHANCED mode, because the plugin is loaded by the ASI loader that ships with RE-Enhance (§12) |
 
 Writes are atomic (temp file + rename in the same directory) and a write failure
 is logged rather than thrown, so a read-only profile keeps working with the
@@ -927,3 +929,188 @@ strict typecheck. It sits at `.ref/designref/` (gitignored) as a *reference*, ne
 dependency — the app imports nothing from it, and `pnpm check:fidelity` is the only thing
 that reads it. In a clone that guard reports that it verified nothing, rather than passing
 quietly: see `docs/DESIGN-FIDELITY.md` §1.
+
+---
+
+## 12. The in-game overlay: the plugin in the game's own presentation chain
+
+The achievement toast draws in the launcher's window (§10 and `overlays/AchievementToast.tsx`), so
+it has never been visible while a game runs. The route being built is the one the Steam overlay
+uses — our code *inside* the game's process, drawing into the frame it is about to present — and it
+starts with a measurement, because three things about it were beliefs rather than observations.
+
+`native/_gate/gate.cpp` is that measurement: a 32-bit ASI plugin that hooks nothing, patches
+nothing, touches no game file and writes only to `%TEMP%\re-overlay-gate\`. `tools/gate-run.ps1`
+installs it beside a title, launches the title the way the launcher does, answers the loader's
+dialog, samples the screen, kills the game and puts the install back. `tools/build-native.mjs`
+builds it and refuses a plugin that is not 32-bit or that wants a VC redistributable.
+
+### 12.1 The loader loads it: there is no injector to write
+
+Every install already ships the **Ultimate ASI Loader** (ThirteenAG, `Ultimate-ASI-Loader-x86`,
+2,160,128 bytes, identical in all three) as a proxy DLL — `dinput8.dll` in RE1 and RE3, `dsound.dll`
+in RE2 — because that is how RE-Enhance loads its own `bio1hd.asi` / `bio2hd.asi` / `bio3hd.asi`.
+Our probe appeared in the module list of all three processes, at the base address the plugin itself
+reported, alongside the mod's own `.asi`.
+
+That removes the cost that "inject a DLL" usually implies: no `CreateRemoteThread`, no `LoadLibrary`
+injection, no proxy DLL of our own, no code cave. The plugin is one file the launcher copies into
+the install, loaded by a loader that is already there and already in production use.
+
+### 12.2 The chain, per title — measured in the running process
+
+| Title | Game-folder `ddraw.dll` | Game-folder wrappers present at runtime | Final present path |
+|---|---|---|---|
+| RE1 | Classic REbirth 1.1.3 | `re_ddraw.dll` (dgVoodoo 2.79 DirectDraw), `D3DImm.dll`, `libwebp.dll`, `bio1hd.asi` | **DXGI + D3D11** (`DXGI.DLL`, `D3D11.DLL` load ~4 s after the window appears) |
+| RE2 | Classic REbirth 1.0.9.1 | `dsound.dll` (ASI loader), `libwebp.dll`, `bio2hd.asi` | **D3D9 only** — `d3d9.dll` mapped, **no `d3d11.dll`** |
+| RE3 | Classic REbirth 1.0.1.0 | `dinput.dll`, `dinput8.dll` (ASI loader), `libwebp.dll`, `bio3hd.asi` | **D3D9 only** — `d3d9.dll` mapped, **no `d3d11.dll`** |
+
+Both RE2 and RE3 also map the *system* `ddraw.dll` and `dxgi.dll`: REbirth forwards to the system
+DirectDraw, and D3D9 on modern Windows pulls DXGI in for its flip model. Neither implies a D3D11
+device, which is why the module list — not a guess from file names — is what the hook target is
+chosen from.
+
+**This corrects the plan's own expectation.** Static reading suggested RE1 and RE2 would both end in
+D3D11 through dgVoodoo; the running processes say RE2 and RE3 both present through **D3D9**, and RE1
+is the only title with dgVoodoo and D3D11 in its chain. So `IDirect3DDevice9::Present` is the
+primary hook, and the DXGI/D3D11 path is RE1's — the reverse of what was assumed.
+
+### 12.3 The games present, and a capture can see it
+
+| Title | Distinct frames (SHA-256 of every pixel) | Luminance min/avg/max (of 255) | Verdict |
+|---|---|---|---|
+| RE2 | 13 of 15 samples | 5.1 / 44.1 / 139.9 | presenting (the frame was the game's own opening FMV) |
+| RE3 | 11 of 15 samples | 5.1 / 6.6 / 9.0 | presenting (dark opening) |
+| RE1 | 1 of 30 samples | 2.6 / 2.6 / 2.6 | **not presenting — the install cannot start the mod** (12.4) |
+
+Two capture paths had to be separated to get this right, and the difference is itself a finding:
+`PrintWindow(..., PW_RENDERFULLCONTENT)` returns the *window's* content and **reads pure black for
+these dgVoodoo/D3D11 and D3D9 windows**; `CopyFromScreen` reads the screen, so it sees the game only
+while the game is genuinely in front. The probe verifies that at every sample (`GetForegroundWindow`
+against the game's handle) and reports which path produced each frame. The first version of this
+probe did neither check, and a 12×12 grid instead of a whole-frame hash — which is why it reported
+"no presentation observed" about a game that was drawing behind the terminal that ran it.
+
+### 12.4 RE1's install cannot start RE-Enhance (pre-existing, and not this probe)
+
+Launched with the launcher's own patches, RE1's window stays black and the game shows its own error
+dialog: **"Couldn't find the font/language/item_all.psb."** The RE-Enhance RE1 payload's readme is
+explicit — "Install the GOG Version of the game using the JAPANESE language option (VERY
+IMPORTANT!!)" — and this install is the US variant: its data is in `USA\Data\`, `jpn\` holds nothing
+but Japanese movie files, and no `.psb` exists anywhere in the install or the payload.
+
+Two runs separate the patch from the install. With **no** `config.ini` change at all, the process
+sits on a `#32770` dialog titled `CONFIGURATION` — the RE-Enhance setup dialog that `launch.ts`'s
+`BootConfig = 0` is documented to suppress — and never opens a game window. With the launcher's
+patch, that dialog is suppressed, the game starts, and it is the *game* that reports the missing
+Japanese data file. The probe writes only to `%TEMP%`, so it is not in this story: the install is
+not in the state the injected mod requires.
+
+**Consequence for the overlay:** the D3D11/DXGI hook cannot be validated on RE1 on this machine
+until the install matches the payload. RE2 and RE3 — the two that run — are both D3D9, so the
+primary hook is testable immediately, and RE1's D3D11 path stays written-but-unverified until then.
+
+### 12.5 Reaching the present call without an injector library
+
+"Inject a DLL and hook Present" normally means a function-hooking library: an inline `jmp` written
+over the API's code, which needs a length disassembler to relocate the instructions it overwrites,
+and running a disassembler inside a 1998 game is the same class of fragility that §6 measured when
+`SetParent` froze the wrapper's presentation. None of that is necessary here, and the reason is two
+measurements taken in the hermetic host (`native/testhost`, which creates real devices and prints
+where each vtable actually lives):
+
+| Object | vtable | Where it lives | Shared between instances? |
+|---|---|---|---|
+| `IDirect3D9` | `0x648E2C88` | inside `d3d9.dll`, `PAGE_EXECUTE_READ` | **yes** — both objects reported the same address |
+| `IDirect3DDevice9` | `0x0817E39C`, `0x084FBB3C` | the heap, `PAGE_READWRITE` | **no** — allocated per device |
+| `IDXGISwapChain` | `0x69FC20EC` | inside `dxgi.dll`, `PAGE_EXECUTE_READ` | **yes** |
+
+A vtable that is a single static table in a module's read-only data is the opportunity: replacing
+**one pointer** in it redirects that method for every object of the class, the game's included. That
+is a *data* patch — `VirtualProtect`, write, restore — with no code overwritten and no trampoline.
+The original pointer is saved first and chained to, so another overlay that got there first is
+still called.
+
+The per-instance device vtable looks like the hard case — there is no class table to patch — and it
+turns out not to matter. The entry worth patching one level up is on the *shared* table, and its
+replacement receives the new `IDirect3DDevice9**` as its own last argument:
+
+```
+IDirect3D9::CreateDevice   (shared table in d3d9.dll, entry 16)  -> ours
+    -> patches Present in the returned device's own table (entry 17)
+        -> counts the call, then chains to the original
+```
+
+The device that could not be found is handed to us by the game. Discovery never intercepts anything
+either: the plugin calls `Direct3DCreate9` through `GetProcAddress` purely to obtain an object of the
+class whose vtable address it needs, then releases it and keeps the module loaded so the patched page
+cannot be unmapped.
+
+Two details that would each have been a crash rather than a bug:
+
+- **The calling convention is `__stdcall`, not `__thiscall`.** COM methods are declared
+  `STDMETHODCALLTYPE`, which is `__stdcall` on x86 because COM must be callable from any language —
+  the interface pointer is simply the first stack argument. `__thiscall` passes `this` in a register
+  and would misalign every argument.
+- **A patch is refused unless the entry it replaces is executable code inside a mapped image.** A
+  refused patch costs the overlay; a patch applied to the wrong table costs the game.
+
+`native/testhost` proves the chain without a game: it creates a real device and presents real frames,
+and `src/main/overlay-link.test.ts` reads the plugin's counter **over the pipe** and asserts it moved.
+The plugin's log is not the evidence — a log line saying "patched" would be written by a patch that
+never fired. The same test asserts the handshake's `api` string, which is `d3d9` once the patch is in
+place and `none` when nothing could be patched, so "loaded but hooking nothing" is a visible state.
+
+### 12.6 What it does in a real game, measured
+
+The hermetic host is not the claim. This is: the plugin installed into a real Resident Evil 3, launched
+the way the launcher launches it, driven through its own pipe, with the frame it drew into read back off
+the game's device (`tools/probe-overlay.ps1`):
+
+```
+patched IDirect3D9::CreateDevice (entry 16, 0x64920060 -> 0x59FD1E10)
+vtable probe: patched=0x648E2C88 fresh=0x648E2C88 shared=1
+patched IDirect3DDevice9::Present (entry 17, 0x649C05D0 -> 0x59FD1E90)
+composed 560x145 for seq=1 in 0 ms (view 2560x1440)
+readback: gold=1815 of 81200 pixels in the toast box, on a 2560x1440 frame
+STAT  251  75  1
+```
+
+1815 pixels of the design's `#D4AF37` in the frame the game is about to present, **identical across five
+launches**, with 64–75 frames drawn per toast against 235–251 presents. `shared=1` confirms the class
+table is shared in the game's own process, which is what makes the data-patch approach valid there and
+not only in a test host.
+
+Three things that measurement taught, each of which cost a wrong answer first:
+
+- **Screen capture cannot verify this from automation.** `CopyFromScreen` reads the *screen*, so a script
+  that launches a game and captures it photographs whatever window is on top, and Windows refuses to let a
+  background process bring a game forward. Reading the render target back has no such dependency — and
+  the first version of *that* read the first drawn frame, where the fade-in is at alpha 0, and reported
+  `gold=0` about a toast drawing perfectly.
+- **The toast's scale is a proportion of the render target, and it must stay that way.** RE3 renders at
+  2560x1440 and shows a 640x480 window. The card is 560 px of a 2560 px buffer = 21.875%, exactly the
+  design's 420 of 1920, presented at 140 px in the window — which is what the design asks for. Anchoring
+  it to the *window* instead would have made it a quarter of the intended size.
+- **The hook is a race, and the fix is to patch from `DllMain`.** RE3's renderer (Classic REbirth) can
+  create its device before the plugin's own thread finishes starting; the thread's ~86 ms lost that race
+  on some launches (`STAT 0 0 1`). The hook now goes in from `DllMain` with `GetModuleHandle` only — it
+  loads nothing, so the loader lock `DllMain` holds is never asked for — and the GDI+ work, which *did*
+  deadlock that early, stays on the thread.
+
+
+
+
+## 13. Fan release preparation (supersedes conflicting historical notes)
+
+The implementation retains Electron main/preload/React and the shared channel map. credentials:set and credentials:remove keep secrets in the main process. Config migration encrypts with Windows safeStorage, verifies the payload, writes atomically, and only then replaces plaintext. Public config exposes raConfigured; raSecret never crosses IPC. Config changes serialize and update memory only after successful persistence.
+
+game:settings reports capabilities for the detected version and mode. game:display-set validates supported RE3 window sizes and refuses changes while a game or launch is active. Paths come from the catalog, never the renderer. Per-installation profiles capture Enhanced configuration before mod copying/restoration and replay it after injection. Setting removal restores the captured display row. launch.configure opens RE-Enhance's configuration screen; it does not imply verified native action-slot mappings.
+
+IPC rejects unexpected windows and subframes. Diagnostics export uses an allowlist and redaction, never serializes config or credentials.
+
+Stopping retains the tracked process until its exit event. Stop ownership belongs to that process, not a global flag. Renderer launch start clears the previous exit record. VersionSelect owns the single launch panel; App owns mutually exclusive full-screen additions.
+
+Overlay startup has a ten-second cancellable deadline. A generation counter rejects late callbacks. Handshake (linked) and observed presents (rendering) are distinct. Idle/disconnected rendering restores launcher notification ownership. Queues are bounded at 32 and expire; overlay:delivered removes notifications only after native counters confirm drawing. Achievement persistence is independent of notification delivery.
+
+RELEASE-GATES.md distinguishes fixture checks, real window/present evidence, and reviewed gameplay/hardware acceptance. The repository currently has no registered code graph.

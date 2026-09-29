@@ -111,12 +111,42 @@ export interface GameTitle {
   hasAnyInstalled: boolean
 }
 
+/**
+ * What the launcher saw launch, for an achievement it can tick by itself.
+ *
+ * The same shape `observedIds` matches on, and deliberately carried *on the definition* rather than in a
+ * second table: a flag in one file and its condition in another is two things that can disagree, and a
+ * disagreement here is silent - the definition reads as observed and ticks nothing.
+ *
+ * Named fields are combined with AND; an absent field is a wildcard.
+ */
+export interface ObservedCondition {
+  titleId: TitleId
+  /** The catalog row's id, for an achievement about one release rather than a whole title. */
+  versionId?: string
+  /** RE2's scenario option, which is a launch choice and so observable. */
+  scenario?: string
+  mode?: 'enhanced' | 'original'
+}
+
 export interface Achievement {
   id: string
   gameId: TitleId
   name: string
   desc: string
   icon: string
+  /**
+   * Present when the *launcher* can tell this one happened, which is a much narrower set than it looks.
+   *
+   * These games are native Windows binaries, so nothing here reads their memory: what the launcher can
+   * observe is what it did itself — that a given title, version, scenario or mode was launched. So "Play
+   * Resident Evil 3" is observable and gets ticked when that row launches, while "Finish the game with an A
+   * rank" is not and never will be. Marking the second kind observable would be a lie the launcher tells
+   * about the player's own save file.
+   *
+   * Absent means not observable, which is the honest default for every definition that predates this field.
+   */
+  observed?: ObservedCondition
   unlocked: boolean
   unlockDate: string
 }
@@ -154,6 +184,8 @@ export interface RaAchievement {
 export type LaunchWindowMode = 'minimise' | 'positioned' | 'stay'
 
 export interface LauncherConfig {
+  keyBindings: import('./controls').KeyBindings
+  onboardingComplete: boolean
   crtEnabled: boolean
   /**
    * Ask the *game* for a CRT look, on top of the launcher's own filter.
@@ -172,18 +204,29 @@ export interface LauncherConfig {
    */
   inGameCrt: boolean
   /**
+   * Draw the achievement toast inside the game's own frame.
+   *
+   * The launcher's own toast draws in the launcher's window, which is not where a player is looking
+   * while a game runs. With this on, the launcher copies its overlay plugin into the install and links
+   * to it, and the plugin draws the toast into the frame the game is about to present - the Steam
+   * overlay's route, with our code inside the game's process (docs/ARCHITECTURE.md §12).
+   *
+   * On by default, because the whole point of it is a toast the player sees without leaving the game,
+   * and it cannot appear at all unless a game is running *and* RE-Enhance is injected (the plugin is
+   * loaded by the ASI loader that ships with the mod, not by anything the launcher does). It is a
+   * setting rather than a constant because "our code inside your game" is a thing a player is entitled
+   * to refuse.
+   */
+  inGameOverlay: boolean
+  /**
    * RetroAchievements account name. Optional - the API answers with the key alone - and used
    * only to build the request URL when it is set.
    */
   raUser: string
   /**
-   * The user's personal RetroAchievements web API key.
-   *
-   * A credential, and treated as one: it is never compiled in, never logged, and is sent to
-   * retroachievements.org and nowhere else. It lives here because this is where the launcher
-   * keeps everything the user configured.
+   * Whether an encrypted RetroAchievements key is stored. The secret never crosses IPC.
    */
-  raKey: string
+  raConfigured: boolean
   /**
    * RetroAchievements entries ticked locally, by RA's own numeric ids.
    *
@@ -237,6 +280,7 @@ export interface CatalogSnapshot {
 }
 
 export interface LaunchRequest {
+  configure?: boolean
   titleId: TitleId
   versionId: string
   mode: LaunchMode

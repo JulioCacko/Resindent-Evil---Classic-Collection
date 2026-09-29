@@ -1,3 +1,4 @@
+import { DEFAULT_BINDINGS } from '@shared/controls'
 /**
  * config-store tests.
  *
@@ -67,8 +68,11 @@ describe('defaultConfig', () => {
       scenarios: {},
       launchWindowMode: 'minimise',
       inGameCrt: false,
+      inGameOverlay: true,
     raUser: '',
-    raKey: '',
+    raConfigured: false,
+    keyBindings: structuredClone(DEFAULT_BINDINGS),
+    onboardingComplete: false,
     launchThroughSteam: false,
     raTicked: [],
       gogPathOverride: '',
@@ -398,9 +402,8 @@ describe('write resilience', () => {
       legacyConfigPath: join(blocker, 'config.ini')
     })
 
-    const config = await store.patch({ masterVolume: 0.5 })
-    expect(config.masterVolume).toBe(0.5)
-    expect(store.get().masterVolume).toBe(0.5)
+    await expect(store.patch({ masterVolume: 0.5 })).rejects.toThrow('could not be saved')
+    expect(store.get().masterVolume).toBe(1)
     expect(warn).toHaveBeenCalled()
   })
 })
@@ -429,5 +432,43 @@ describe('the locally-ticked RetroAchievements list', () => {
   it('falls back to the default when the value is not an array at all', async () => {
     await writeFile(configPath, JSON.stringify({ raTicked: 'nope' }), 'utf8')
     expect((await makeStore().load()).raTicked).toEqual([])
+  })
+})
+
+describe('secure credentials', () => {
+  const secrets = {
+    isEncryptionAvailable: () => true,
+    encryptString: (text: string) => Buffer.from(text.split('').reverse().join('')),
+    decryptString: (data: Buffer) => data.toString().split('').reverse().join('')
+  }
+  it('migrates plaintext and never returns a key in public configuration', async () => {
+    await writeStoredConfig({ raKey: 'private-test-value', raUser: 'player' })
+    const store = makeStore({ secrets })
+    const config = await store.load()
+    expect(config.raConfigured).toBe(true)
+    expect(JSON.stringify(config)).not.toContain('private-test-value')
+    expect(await store.getCredential()).toBe('private-test-value')
+    expect(await readFile(configPath, 'utf8')).not.toContain('private-test-value')
+    expect(await makeStore({ secrets }).getCredential()).toBe('private-test-value')
+    await store.patch({ masterVolume: 0.4 })
+    expect(await makeStore({ secrets }).getCredential()).toBe('private-test-value')
+    await store.setCredential('', '')
+    expect(await store.getCredential()).toBe('')
+    expect(store.get().raConfigured).toBe(false)
+  })
+  it('preserves the original document when encryption is unavailable', async () => {
+    await writeStoredConfig({ raKey: 'keep-until-secure' })
+    const store = makeStore({ secrets: { ...secrets, isEncryptionAvailable: () => false } })
+    await expect(store.load()).rejects.toThrow('unavailable')
+    expect(await readFile(configPath, 'utf8')).toContain('keep-until-secure')
+  })
+  it('serializes concurrent edits without losing fields or secrets', async () => {
+    const store = makeStore({ secrets })
+    await store.load()
+    await Promise.all([store.patch({ masterVolume: 0.4 }), store.setMode('re1_us', 'enhanced'), store.setCredential('player', 'key')])
+    const fresh = makeStore({ secrets })
+    expect((await fresh.load()).masterVolume).toBe(0.4)
+    expect(fresh.get().modes.re1_us).toBe('enhanced')
+    expect(await fresh.getCredential()).toBe('key')
   })
 })

@@ -1,3 +1,4 @@
+import { useLauncher } from '@renderer/state/store'
 /**
  * First-run installation gate.
  *
@@ -144,6 +145,8 @@ export function InstallStatus(props: InstallStatusProps): ReactNode {
    * signature is the frozen one while no listener is installed here.
    */
   const { titles, configPath, appDir } = props
+  const refresh = useLauncher((state) => state.refreshCatalog)
+  const settings = useLauncher((state) => state.openSettings)
 
   return (
     <div className="absolute bg-[#0f0f0f] inset-0 overflow-hidden z-40" data-name="install-status">
@@ -164,7 +167,7 @@ export function InstallStatus(props: InstallStatusProps): ReactNode {
         className="absolute font-['Actor:Regular',sans-serif] leading-none left-0 not-italic right-0 text-[#999] text-[20px] text-center top-[140px]"
         data-name="install-subline"
       >
-        Verify your GOG installs. You can continue even if some titles are missing.
+        Review detected games and defaults. Missing games remain unavailable.
       </p>
 
       {/* x=120 and a 20px step: `ScreenInstall::Draw`'s 1680x100 rows at 120px
@@ -184,6 +187,11 @@ export function InstallStatus(props: InstallStatusProps): ReactNode {
         )}
       </ul>
 
+      <div className="absolute left-[120px] top-[650px] right-[120px] text-[#ccc] text-[20px] leading-[1.5]">
+        <p>Defaults: launcher minimises during play · Enhanced overlay enabled · CRT disabled · no accounts connected.</p>
+        <p>RE1 Enhanced requires the Japanese GOG installation. In GOG, install or verify Resident Evil with Japanese selected, then re-detect. Never rename English data folders as a repair.</p>
+        <p>For missing or partial games: verify files in the owning store, select the installation folder, then scan again.</p>
+      </div>
       {/*
         Pinned above the 68px helper bar (`HELPER_BAR.height`) rather than flowed
         after the rows, so a screen holding three or eight titles keeps its meta
@@ -198,24 +206,25 @@ export function InstallStatus(props: InstallStatusProps): ReactNode {
         </p>
         {/* The helper bar's own idiom for a key hint: 32px cap, 8px to the caption,
             24px `#999` caption. */}
-        <div className="flex gap-[8px] items-center" data-name="install-recheck">
+        <button className="flex gap-[8px] items-center" data-name="install-recheck" onClick={() => void refresh()}>
           <KeyCap kind="enter" />
           <p className="font-['Actor:Regular',sans-serif] leading-none not-italic text-[#999] text-[24px] whitespace-nowrap">
-            RE-CHECK
+            RE-DETECT
           </p>
-        </div>
+        </button>
         {/*
           Informational this pass: the label is clickable-looking because the
           pointer path is planned, but it is a `<span>` and not a `<button>` on
           purpose — a focusable control that does nothing would be a lie to the
           keyboard user, who navigates this screen through the action layer.
         */}
-        <span
+        <button onClick={settings}
           className="cursor-pointer font-['Actor:Regular',sans-serif] leading-none not-italic text-[#ccc] text-[20px] hover:text-white"
           data-name="install-change-folder"
         >
           CHANGE INSTALL FOLDER
-        </span>
+        </button>
+        <button className="text-white text-[24px]" onClick={props.onContinue}>CONTINUE TO COLLECTION</button>
       </div>
     </div>
   )

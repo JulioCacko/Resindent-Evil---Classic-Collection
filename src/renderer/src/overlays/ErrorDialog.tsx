@@ -1,3 +1,4 @@
+import { useModalFocus } from '@renderer/input/useModalFocus'
 /**
  * Modal error dialog.
  *
@@ -35,7 +36,7 @@
  * a click on the card bubbles to the scrim, so one click can never call
  * `onDismiss` twice.
  */
-import { useId } from 'react'
+import { useId, useRef } from 'react'
 import type { ReactNode } from 'react'
 
 import { KeyCap } from '@renderer/components/HelperBar'
@@ -65,6 +66,8 @@ export function ErrorDialog({ error, onDismiss }: ErrorDialogProps): ReactNode {
    * on the canvas underneath, and a duplicate id would make the accessible name
    * ambiguous rather than wrong.
    */
+  const root = useRef<HTMLDivElement>(null)
+  useModalFocus(root)
   const titleId = useId()
   const messageId = useId()
 
@@ -75,6 +78,8 @@ export function ErrorDialog({ error, onDismiss }: ErrorDialogProps): ReactNode {
       onClick={onDismiss}
     >
       <div
+        ref={root}
+        tabIndex={-1}
         aria-describedby={messageId}
         aria-labelledby={titleId}
         aria-modal="true"

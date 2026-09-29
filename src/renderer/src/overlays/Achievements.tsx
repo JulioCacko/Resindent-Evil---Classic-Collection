@@ -1,3 +1,4 @@
+import { useModalFocus } from '@renderer/input/useModalFocus'
 /**
  * The achievements surface.
  *
@@ -13,18 +14,41 @@
  * these games are native Windows builds - so the two are never merged into one list and never share
  * a heading.
  */
+import { useEffect, useRef } from 'react'
+
 import { HelperBar } from '@renderer/components/HelperBar'
 import { ACHIEVEMENTS_LABEL, HINTS_ACHIEVEMENTS } from '@renderer/data/design'
 import type { Achievement, RaAchievement } from '@shared/types'
 
-/** One achievement: a letter slot, the name, the description, and the state the launcher knows. */
-function AchievementRow({ achievement }: { achievement: Achievement }) {
+/**
+ * One achievement: a letter slot, the name, the description, and the state the launcher knows.
+ *
+ * `onToggle` makes a *locked* row actionable, which is the launcher's only way to be told an
+ * achievement was earned: RA reads an emulator's memory and these games are native Windows builds, so
+ * the launcher has never detected an in-game event and never will. An unlocked row is not actionable -
+ * there is no per-row way back, and a control that could silently undo a saved unlock would be a worse
+ * thing to offer than nothing.
+ */
+function AchievementRow({
+  achievement,
+  onToggle
+}: {
+  achievement: Achievement
+  onToggle?: (() => void) | undefined
+}) {
   const state = achievement.unlocked ? 'text-white' : 'text-[#999]'
+  const interactive = onToggle !== undefined && !achievement.unlocked && achievement.observed === undefined
   return (
     <div
-      className="bg-[#1a1a1a] border border-[#4d4d4d] border-solid flex gap-[12px] items-start p-[12px] rounded-[4px] w-full"
+      aria-pressed={interactive ? false : undefined}
+      className={`bg-[#1a1a1a] border border-[#4d4d4d] border-solid flex gap-[12px] items-start p-[12px] rounded-[4px] w-full${interactive ? ' cursor-pointer' : ''}`}
       data-name="achievement-row"
       data-unlocked={achievement.unlocked ? 'true' : 'false'}
+      aria-label={`${achievement.name} — ${achievement.observed ? 'automatic launch milestone' : 'manual checklist'}`}
+      onClick={interactive ? onToggle : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={(event) => { if (interactive && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); event.stopPropagation(); onToggle?.() } }}
+      role={interactive ? 'button' : undefined}
     >
       {/*
         The design has no achievement art. Rather than invent a badge or ship someone else's, the
@@ -57,7 +81,9 @@ function AchievementRow({ achievement }: { achievement: Achievement }) {
           ? achievement.unlockDate === ''
             ? ACHIEVEMENTS_LABEL.unlocked
             : achievement.unlockDate
-          : ACHIEVEMENTS_LABEL.locked}
+          : interactive
+            ? ACHIEVEMENTS_LABEL.lockHint
+            : ACHIEVEMENTS_LABEL.locked}
       </p>
     </div>
   )
@@ -78,22 +104,64 @@ function AchievementRow({ achievement }: { achievement: Achievement }) {
 function RetroRow({
   entry,
   ticked,
-  onToggle
+  onToggle,
+  badge,
+  onNeedBadge
 }: {
   entry: RaAchievement
   ticked: boolean
   onToggle?: (() => void) | undefined
+  /**
+   * This entry's badge art as a `data:` URL, `null` when RA has none, or `undefined` while it has not been
+   * asked for. The last two draw the same thing, and that is the point of the fallback: the launcher ships
+   * no achievement art because RA's badges are RA's assets, so a badge that is missing, refused or simply
+   * not fetched yet costs the row nothing.
+   */
+  badge?: string | null | undefined
+  /** Asks for the badge by RA's name. Called once per row, on mount. */
+  onNeedBadge?: ((name: string) => void) | undefined
 }) {
   const interactive = onToggle !== undefined
+
+  /*
+   * Asked for on mount rather than by the list, so a 130-entry list fetches what the player is looking at
+   * instead of everything at once - and only once, because the store records a refusal as well as a hit.
+   */
+  useEffect(() => {
+    if (entry.badge !== '' && badge === undefined) onNeedBadge?.(entry.badge)
+  }, [entry.badge, badge, onNeedBadge])
+
   return (
     <div
       aria-pressed={interactive ? ticked : undefined}
       className={`bg-[#1a1a1a] border border-[#4d4d4d] border-solid flex gap-[12px] items-start p-[12px] rounded-[4px] w-full${interactive ? ' cursor-pointer' : ''}`}
       data-name="retro-row"
       data-ticked={ticked ? 'true' : 'false'}
+      data-has-badge={badge != null ? 'true' : 'false'}
       onClick={onToggle}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={(event) => { if (interactive && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); event.stopPropagation(); onToggle?.() } }}
       role={interactive ? 'button' : undefined}
     >
+      {/*
+        The badge, in the same 48px box `AchievementRow` uses for its letter slot: same ground, same hairline,
+        same square corners - so the two lists line up, and the concentric-radius question keeps its single
+        answer. RA's art when it arrives, the title's first letter otherwise, which is exactly what the
+        launcher's own list shows for want of art it is allowed to ship.
+      */}
+      <div
+        aria-hidden="true"
+        className="bg-[#0f0f0f] border border-[#4d4d4d] border-solid flex h-[48px] items-center justify-center overflow-hidden shrink-0 w-[48px]"
+        data-name="retro-badge"
+      >
+        {badge == null ? (
+          <p className="font-['Actor:Regular',sans-serif] leading-none not-italic text-[22px] text-[#999]">
+            {entry.title.slice(0, 1).toUpperCase()}
+          </p>
+        ) : (
+          <img alt="" className="block h-[48px] w-[48px]" src={badge} />
+        )}
+      </div>
       <div className="flex flex-col gap-[4px] min-w-px flex-[1_0_0]">
         <p
           className={`font-['Actor:Regular',sans-serif] leading-none not-italic text-[20px] ${ticked ? 'text-white' : 'text-[#ccc]'}`}
@@ -137,6 +205,23 @@ export interface AchievementsProps {
    */
   raTicked?: number[] | undefined
   onToggleRa?: ((id: number) => void) | undefined
+  /**
+   * Badge art by RA's badge name, and the action that fetches one.
+   *
+   * Both optional, and the rows fall back to their letter slots without them: the surface renders correctly
+   * with no badge support at all, which is what it did before any of this existed.
+   */
+  badges?: Record<string, string | null> | undefined
+  onLoadBadge?: ((name: string) => void) | undefined
+  /**
+   * Marks one of these achievements unlocked, by its id.
+   *
+   * Optional so the surface renders correctly without it (no clickable rows rather than rows that
+   * invite a click they cannot honour), and mouse-only for the same reason the RA ticks are: the
+   * keyboard path drives every real decision this launcher makes, and a "mark it yourself" action has
+   * no business on it.
+   */
+  onUnlockAchievement?: ((id: string) => void) | undefined
 }
 
 export function Achievements({
@@ -146,15 +231,21 @@ export function Achievements({
   raAchievements,
   raConnected,
   raTicked = [],
-  onToggleRa
+  onToggleRa,
+  badges,
+  onLoadBadge,
+  onUnlockAchievement
 }: AchievementsProps) {
+  const root = useRef<HTMLDivElement>(null)
+  useModalFocus(root)
   const list = achievements ?? []
-  const unlocked = list.filter((achievement) => achievement.unlocked).length
   const tickedCount =
     raAchievements === null ? 0 : raAchievements.filter((entry) => raTicked.includes(entry.id)).length
 
   return (
     <div
+      ref={root}
+      aria-modal="true"
       aria-label={`Achievements for ${title}`}
       className="absolute bg-[#0f0f0f] flex flex-col inset-0"
       data-figma-node="achievements"
@@ -171,7 +262,7 @@ export function Achievements({
         >
           {list.length === 0
             ? ACHIEVEMENTS_LABEL.empty
-            : `${title} · ${String(unlocked)} ${ACHIEVEMENTS_LABEL.of} ${String(list.length)} ${ACHIEVEMENTS_LABEL.unlockedCount}`}
+            :  `${title} · ${list.filter((row) => row.observed && row.unlocked).length} automatic launch milestones · ${list.filter((row) => !row.observed && row.unlocked).length} manually checked · No platform sync`}
         </p>
 
         <div
@@ -179,7 +270,15 @@ export function Achievements({
           data-figma-node="achievements-list"
         >
           {list.map((achievement) => (
-            <AchievementRow achievement={achievement} key={achievement.id} />
+            <AchievementRow
+              achievement={achievement}
+              key={achievement.id}
+              onToggle={
+                onUnlockAchievement === undefined
+                  ? undefined
+                  : () => onUnlockAchievement(achievement.id)
+              }
+            />
           ))}
         </div>
 
@@ -212,8 +311,10 @@ export function Achievements({
             ? null
             : raAchievements.map((entry) => (
                 <RetroRow
+                  badge={badges?.[entry.badge]}
                   entry={entry}
                   key={entry.id}
+                  onNeedBadge={onLoadBadge}
                   onToggle={onToggleRa === undefined ? undefined : () => onToggleRa(entry.id)}
                   ticked={raTicked.includes(entry.id)}
                 />

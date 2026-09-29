@@ -1,3 +1,6 @@
+import { useLauncher } from '@renderer/state/store'
+import { keyLabel } from '@shared/controls'
+import type { InputAction } from '@shared/types'
 /**
  * The 68px helper bar that closes every screen, and the key caps it is built from.
  *
@@ -258,6 +261,17 @@ type HintWithCaption = HelperHintLike & { text?: string }
  * straight from the export's `Helper`).
  */
 export function HelperBar({ hints }: HelperBarProps) {
+  const device = useLauncher((state) => state.inputDevice)
+  const bindings = useLauncher((state) => state.config?.keyBindings)
+  const actions: Record<string, InputAction> = { left: 'nav-left', right: 'nav-right', up: 'nav-up', down: 'nav-down', enter: 'confirm', esc: 'back', f1: 'menu' }
+  const defaults: Record<string, string> = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', enter: 'Enter', esc: 'Escape', f1: 'F1' }
+  const caption = (kind: string) => {
+    const action = actions[kind]
+    if (!action) return undefined
+    if (device === 'gamepad') return action === 'confirm' ? 'A / ×' : action === 'back' ? 'B / ○' : action === 'menu' ? 'F1' : 'D-pad'
+    const key = bindings?.[action]?.[0]
+    return key && key !== defaults[kind] ? keyLabel(key) : undefined
+  }
   return (
     <div
       className="absolute bottom-[-1px] content-stretch flex flex-col h-[68px] items-center justify-center left-0 overflow-clip px-[32px] py-[18px] w-[1920px]"
@@ -278,8 +292,8 @@ export function HelperBar({ hints }: HelperBarProps) {
                 {hint.keys.map((kind, keyIndex) => (
                   <KeyCap
                     key={`${kind}-${keyIndex}`}
-                    kind={kind}
-                    label={kind === TEXT_KEY ? hint.text : undefined}
+                    kind={caption(kind) ? 'text' : kind}
+                    label={caption(kind) ?? (kind === TEXT_KEY ? hint.text : undefined)}
                   />
                 ))}
                 <p className="font-['Actor:Regular',sans-serif] leading-none not-italic relative shrink-0 text-[#999] text-[24px] whitespace-nowrap">

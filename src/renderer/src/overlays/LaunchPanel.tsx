@@ -40,7 +40,7 @@ import type { GameVersion, LaunchMode, Re2Scenario } from '@shared/types'
 import type { LaunchPanelProps } from '@renderer/contracts'
 import { canLaunch, panelOptions } from '@renderer/data/derive'
 import { CRT_DEFAULTS, MODE_LABEL, SCENARIO_LABEL } from '@renderer/data/design'
-import { useLauncher } from '@renderer/state/store'
+import { useLauncher, launcherStore } from '@renderer/state/store'
 
 /**
  * The row kinds `panelOptions` can yield, in the order it yields them. Re-stated
@@ -48,7 +48,7 @@ import { useLauncher } from '@renderer/state/store'
  * src/renderer/src/contracts.ts is an ambient `declare`, and a contracts file
  * emits no runtime code — the *value* comes from data/derive.ts.
  */
-type PanelOptionKind = 'mode' | 'crt' | 'scenario' | 'settings' | 'launch'
+type PanelOptionKind = 'mode' | 'crt' | 'scenario' | 'settings' | 'launch' | 'display' | 'controls' | 'achievements'
 
 /** The CRT row's two words. The caller owns the toggle; the panel only states it. */
 const CRT_ON = 'ON'
@@ -168,6 +168,10 @@ function buildRows(
     const selected = index === active
 
     switch (kind) {
+      case 'display':
+      case 'controls':
+      case 'achievements':
+        return { kind, label: kind.toUpperCase(), value: '', valueIsNote: false, selected, disabled: false }
       case 'mode': {
         /**
          * A locked mode is not toggleable, and a row that cannot run is not either
@@ -286,6 +290,11 @@ export function LaunchPanel({
     // The cursor follows the click, mirroring VersionRow's pointer path, so the row
     // that just acted is the one the keyboard would act on next.
     onSelectOption(index)
+    if (row.kind === 'display' || row.kind === 'controls') {
+      launcherStore().openPreferences(row.kind)
+      return
+    }
+    if (row.kind === 'achievements') { void launcherStore().openAchievements(); return }
 
     if (row.kind === 'settings') {
       // Like LAUNCH, one click opens it whether or not the row already held the cursor.

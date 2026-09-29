@@ -12,6 +12,7 @@ import { useEffect, useRef } from 'react'
 import type { ActionHandler, ActionsOptions } from '@renderer/contracts'
 import { THROTTLE_MS, eventToAction } from './actions'
 import { useGamepad } from './useGamepad'
+import { launcherStore } from '@renderer/state/store'
 
 /**
  * Keys whose browser default the launcher owns: the arrows scroll the document
@@ -75,7 +76,7 @@ export function useActions(handler: ActionHandler, options?: ActionsOptions): vo
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (optionsRef.current?.enabled === false) return
+      if (optionsRef.current?.enabled === false || event.defaultPrevented) return
       // Leave app and browser shortcuts alone (Ctrl+R, Cmd+Q, devtools): in a
       // kiosk-shaped frame they are the only way back out.
       if (event.ctrlKey || event.metaKey) return
@@ -84,7 +85,7 @@ export function useActions(handler: ActionHandler, options?: ActionsOptions): vo
       if (event.isComposing === true) return
       if (isEditableTarget(event.target)) return
 
-      const action = eventToAction(event)
+      const action = eventToAction(event, launcherStore().config?.keyBindings)
       if (action === null) return
 
       // Suppressed before the throttle test: a rate-limited auto-repeat must

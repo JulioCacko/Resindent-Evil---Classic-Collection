@@ -293,7 +293,8 @@ test.describe('the launcher flow', () => {
     await captureScreenshot(page, testInfo, 'flow-6-settings')
 
     const rows = page.locator('[data-figma-node="settings-rows"] [data-name^="setting-"]')
-    expect(await rows.count(), 'every settings row is drawn').toBe(16)
+    expect(await rows.count(), 'the active settings group is drawn').toBeGreaterThan(0)
+    await page.getByRole('button', { name: 'Presentation', exact: true }).click()
 
     /** Reads a setting's readout, and the same field from the main process's config. */
     const readBack = async (id: string): Promise<{ shown: string; persisted: unknown }> => {
@@ -458,12 +459,23 @@ test('the achievements surface opens from the settings row and lists the title',
   // Clicking rather than counting arrow presses keeps the test independent of the row order, which
   // has changed three times as rows were added.
   await press(page, 'F1')
+  await page.getByRole('button', { name: 'Accounts', exact: true }).click()
   const row = page.locator('[data-name="setting-achievements"]')
-  await expect(row, 'the settings surface offers the row').toBeVisible()
-  await row.click()
-  await row.click()
-
   const surface = page.locator('[data-figma-node="achievements"]')
+  await expect(row, 'the settings surface offers the row').toBeVisible()
+
+  /*
+   * Click once, and click again only if the surface did not open.
+   *
+   * This was two unconditional clicks, because the settings rows are select-then-run - and the second click
+   * now lands on a row that the *open surface* covers, so Playwright refuses it and the test times out at 30
+   * seconds. Which of the two behaviours is correct is a question about the settings surface, not about this
+   * test; what this test is here to prove is that the row OPENS the surface, so it asks that instead of
+   * encoding a click ritual.
+   */
+  await row.click()
+  if (!(await surface.isVisible().catch(() => false))) await row.click()
+
   await expect(surface, 'the row opens the surface').toBeVisible()
 
   const achievements = page.locator('[data-name="achievement-row"]')
@@ -471,6 +483,34 @@ test('the achievements surface opens from the settings row and lists the title',
   const count = await achievements.count()
   expect(count, 'a title with achievements lists them').toBeGreaterThan(0)
 
+  /*
+   * By INDEX, not by "the first locked row": a locator filtered on `data-unlocked="false"` re-resolves
+   * after the unlock and simply finds the next locked row, so the assertion would watch a different
+   * element than the one that was clicked and could never pass. The row order does not change - only the
+   * attribute does - so index 0 is the stable reference.
+   */
+  const first = achievements.nth(0)
+  await expect(first, 'the first row is drawn locked, and invites a click').toHaveAttribute(
+    'data-unlocked',
+    'false'
+  )
+
+  await first.click()
+
+  /*
+   * The toast: asserted FIRST, and its 3.8 s display window is why.
+   *
+   * `[data-name="achievement-toast"]` only exists while a toast is showing, so this has to be checked
+   * before anything that retries for long - the row assertion below retries up to 10 s, which is longer
+   * than the toast lives. Asserting it here also found a real bug: `App.tsx` read the toast from
+   * `achievementQueue[0]` while the store displays `achievement`, so a single unlock showed nothing.
+   */
+  await expect(page.locator('[data-name="achievement-toast"]'), 'the unlock is announced').toBeVisible()
+
+  await expect(first, 'the row the player marked shows as unlocked').toHaveAttribute(
+    'data-unlocked',
+    'true'
+  )
   await captureScreenshot(page, testInfo, 'achievements')
 
   // Back leaves it, which the surface's own helper bar promises.

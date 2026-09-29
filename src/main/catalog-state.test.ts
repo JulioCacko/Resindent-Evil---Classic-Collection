@@ -1,3 +1,4 @@
+import { DEFAULT_BINDINGS } from '@shared/controls'
 /**
  * Tests for the catalog join.
  *
@@ -42,6 +43,7 @@ const PATHS: MainPaths = {
   assetsDir: 'C:\\Program Files\\RE Launcher\\assets',
   legacyConfigPath: 'C:\\GOG Games\\config.ini',
   legacyProgressPath: 'C:\\Users\\tester\\AppData\\Roaming\\re-launcher\\achievements.sav',
+  badgesDir: 'C:\\Users\\tester\\AppData\\Roaming\\re-launcher\\badges',
   isPackaged: false
 }
 
@@ -59,8 +61,11 @@ const CONFIG: LauncherConfig = {
   scenarios: {},
   launchWindowMode: 'minimise',
   inGameCrt: false,
+  inGameOverlay: true,
     raUser: '',
-    raKey: '',
+    raConfigured: false,
+    keyBindings: structuredClone(DEFAULT_BINDINGS),
+    onboardingComplete: false,
   launchThroughSteam: false,
   raTicked: [],
   gogPathOverride: 'D:\\GOG Games',

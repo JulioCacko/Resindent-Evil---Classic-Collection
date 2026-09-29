@@ -1,3 +1,4 @@
+import { useModalFocus } from '@renderer/input/useModalFocus'
 /**
  * The RetroAchievements login.
  *
@@ -16,14 +17,13 @@
  * native Windows builds from GOG and Steam, where no emulator is running. Connecting loads the lists
  * as reference; nothing about it makes an achievement arrive by itself.
  */
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { RA_LOGIN_LABEL } from '@renderer/data/design'
 
 export interface CredentialsProps {
   /** The stored values, so reopening the panel shows what is already configured. */
   user: string
-  key: string
   onSave: (user: string, key: string) => void
   onCancel: () => void
 }
@@ -49,6 +49,8 @@ function Field({
       </span>
       <input
         autoComplete="off"
+        type={name === 'key' ? 'password' : 'text'}
+        autoFocus={name === 'user'}
         className="bg-[#1a1a1a] border border-[#4d4d4d] border-solid font-['Actor:Regular',sans-serif] h-[44px] leading-none not-italic px-[12px] rounded-[4px] text-[18px] text-white w-full focus:border-[#999] focus:outline-none"
         data-figma-node={`credentials-${name}`}
         onChange={(event) => onChange(event.target.value)}
@@ -62,12 +64,16 @@ function Field({
   )
 }
 
-export function Credentials({ user, key: apiKey, onSave, onCancel }: CredentialsProps) {
+export function Credentials({ user, onSave, onCancel }: CredentialsProps) {
+  const root = useRef<HTMLDivElement>(null)
+  useModalFocus(root)
   const [draftUser, setDraftUser] = useState(user)
-  const [draftKey, setDraftKey] = useState(apiKey)
+  const [draftKey, setDraftKey] = useState('')
 
   return (
     <div
+      ref={root}
+      aria-modal="true"
       aria-label="RetroAchievements login"
       className="absolute bg-[rgba(0,0,0,0.72)] flex inset-0 items-center justify-center"
       data-figma-node="credentials"
@@ -112,6 +118,7 @@ export function Credentials({ user, key: apiKey, onSave, onCancel }: Credentials
           value={draftKey}
         />
 
+        <button type="button" onClick={() => onSave('', '')}>REMOVE SAVED CREDENTIAL</button>
         <p
           className="font-['Actor:Regular',sans-serif] leading-[1.25] not-italic text-[15px] text-[#999]"
           data-figma-node="credentials-note"

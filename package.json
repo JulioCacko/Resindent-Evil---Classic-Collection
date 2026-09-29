@@ -16,12 +16,15 @@
     "compile": "electron-vite build",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.e2e.json --noEmit",
     "assets:sync": "node tools/sync-design-assets.mjs",
+    "build:overlay": "node tools/build-native.mjs --project native/overlay --out resources/re_classic_overlay.asi && node tools/build-native.mjs --project native/testhost --out native/testhost/overlay-testhost.exe --ext .exe",
+    "build:gate": "node tools/build-native.mjs",
+    "probe:overlay": "pwsh -NoProfile -File tools/probe-overlay.ps1",
     "check:fidelity": "node tools/check-fidelity.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "npm run compile && playwright test",
-    "build": "npm run typecheck && npm run compile && electron-builder --win --publish never",
-    "build:dir": "npm run compile && electron-builder --win --dir --publish never"
+    "build": "npm run typecheck && npm run build:overlay && npm run compile && electron-builder --win --publish never",
+    "build:dir": "npm run build:overlay && npm run compile && electron-builder --win --dir --publish never"
   },
   "dependencies": {
     "clsx": "^2.1.1",

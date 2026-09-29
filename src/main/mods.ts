@@ -31,7 +31,7 @@ import { constants as fsConstants } from 'node:fs'
 import { appendFile, copyFile, lstat, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import type { ModProgress } from '@shared/types'
-import type { ModContext, ModResult } from './contracts'
+import type { ModContext, LauncherFile, ModResult } from './contracts'
 
 /** Backup directory name, fixed by the brief and shared with the IPC layer. */
 const BACKUP_DIR_NAME = '.mod_backup'
@@ -60,6 +60,13 @@ interface SourceFile {
   absolute: string
   relative: string
 }
+
+/**
+ * A file the *launcher* puts in the install, rather than one that comes from the mod payload.
+ *
+ * Declared in `contracts.ts` (this module implements those declarations); see `LauncherFile` there
+ * for why the overlay rides the injection pass.
+ */
 
 // ---------------------------------------------------------------------------
 // small path / errno helpers
@@ -315,7 +322,8 @@ export async function readManifest(installPath: string): Promise<string[]> {
 export async function injectMod(
   context: ModContext,
   onProgress?: (progress: ModProgress) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  launcherFiles?: readonly LauncherFile[]
 ): Promise<ModResult> {
   const { installPath } = context
   const modPathSegments = context.modPath === '' ? null : relativeSegments(context.modPath)
@@ -415,6 +423,17 @@ export async function injectMod(
       await collectSourceFiles(sourceRoot, '', files)
     } catch (error) {
       return failure(error, sourceRoot, 0, 0)
+    }
+
+    /*
+     * The launcher's own files join the same list, so every line below - backup, copy, manifest -
+     * treats them identically. Only the ones that exist are added: a launcher file that is not there
+     * is a build that has not run `pnpm build:overlay`, and that must not fail a launch.
+     */
+    for (const file of launcherFiles ?? []) {
+      if (await isRegularFile(file.from)) {
+        files.push({ absolute: file.from, relative: file.to })
+      }
     }
 
     filesTotal = files.length

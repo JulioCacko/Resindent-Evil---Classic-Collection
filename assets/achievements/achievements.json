@@ -689,7 +689,9 @@
       "name": "Piers Won't Be Happy about This",
       "desc": "Escape alone as Chris",
       "icon": ""
-    }
+    },
+    {"id":"re1_play","name":"Answer the Call","desc":"Play Resident Evil","icon":"","observed":{"titleId":"re1"}},
+    {"id":"re1_enhanced","name":"Source Material","desc":"Play Resident Evil with RE-Enhance injected","icon":"","observed":{"titleId":"re1","mode":"enhanced"}}
   ],
   "re2": [
     {
@@ -1477,7 +1479,11 @@
       "name": "A Cut Above the Rest",
       "desc": "Defeat G-Type 4 in the Laboratory Cargo Room using only the knife",
       "icon": ""
-    }
+    },
+    {"id":"re2_play","name":"Raccoon City","desc":"Play Resident Evil 2","icon":"","observed":{"titleId":"re2"}},
+    {"id":"re2_leon","name":"First Day on the Job","desc":"Play Resident Evil 2 as Leon","icon":"","observed":{"titleId":"re2","scenario":"leon"}},
+    {"id":"re2_claire","name":"Looking for Chris","desc":"Play Resident Evil 2 as Claire","icon":"","observed":{"titleId":"re2","scenario":"claire"}},
+    {"id":"re2_enhanced","name":"Source Material II","desc":"Play Resident Evil 2 with RE-Enhance injected","icon":"","observed":{"titleId":"re2","mode":"enhanced"}}
   ],
   "re3": [
     {
@@ -2193,6 +2199,8 @@
       "name": "I Need To Start Another Run Quickly",
       "desc": "Beat the game in under 3 hours (Hard | No Mercs. Unlocks)",
       "icon": ""
-    }
+    },
+    {"id":"re3_play","name":"The Last Escape","desc":"Play Resident Evil 3","icon":"","observed":{"titleId":"re3"}},
+    {"id":"re3_enhanced","name":"Source Material III","desc":"Play Resident Evil 3 with RE-Enhance injected","icon":"","observed":{"titleId":"re3","mode":"enhanced"}}
   ]
 }

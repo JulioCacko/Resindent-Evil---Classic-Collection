@@ -1,3 +1,4 @@
+import { refreshExternalGame } from './launch'
 /**
  * Tests for launch preparation and process tracking.
  *
@@ -130,6 +131,7 @@ interface FakeSpawn {
 function createFakeSpawn(pid?: number): FakeSpawn {
   const calls: SpawnCall[] = []
   const listeners = new Map<string, Array<(...args: unknown[]) => void>>()
+  fakeExits.push(() => { for (const listener of listeners.get('exit') ?? []) listener(0, null) })
 
   const spawn: SpawnFn = (executable, args, options) => {
     calls.push({ executable, args, options })
@@ -169,6 +171,7 @@ function useInstallContext(overrides: Partial<InstallContext>): void {
 }
 
 const activeSubscriptions: Array<() => void> = []
+const fakeExits: Array<() => void> = []
 
 function subscribeToExits(events: GameExitEvent[]): void {
   activeSubscriptions.push(onGameExit((event) => events.push(event)))
@@ -193,7 +196,8 @@ beforeEach(async () => {
 
 afterEach(async () => {
   for (const unsubscribe of activeSubscriptions.splice(0)) unsubscribe()
-  killGame()
+  for (const exit of fakeExits.splice(0)) exit()
+  await refreshExternalGame(async () => false)
   setLaunchDeps(null)
   setInstallContextResolver(null)
   await rm(sandbox, { recursive: true, force: true })
@@ -454,6 +458,43 @@ describe('prepareLaunch', () => {
       // has no `dgVoodoo.conf`, and the patch is skipped rather than invented.
       { filePath: join(installDir, CONFIG_INI), section: 'DLL', key: 'RetroMode', value: '1' }
     ])
+
+    /*
+     * The RE3 window-size patch is RE3's alone, and this asserts the half of that rule which can go wrong
+     * quietly: written for a title that has no such key, it would land in a file nothing reads and read as
+     * "the setting does nothing". That is exactly what eleven measured attempts found on RE2 - its file and
+     * its registry key both ignore every value - so the guard is worth pinning even though the positive
+     * case (RE3 receives `Display_mode = 4`) is not asserted yet.
+     */
+    expect(calls.some((call) => call.key === 'Display_mode')).toBe(false)
+  })
+
+  it('does not force an unverified fullscreen setting on RE3', async () => {
+    /*
+     * MEASURED, nine launches, one value each: `[GAME] Display_mode` in RE3's config is a window-size
+     * selector - 0 gives 640x480, 1 gives 960x720, 2 gives 1280x960, 3 gives 1600x1200, and 4 fills the
+     * monitor at its native resolution. Values 5 and up behave like 0, and the RE-Enhance payload ships
+     * `6`, which is one of those no-ops - so RE3 has always opened in its smallest mode, as a default
+     * nobody chose.
+     *
+     * The section is asserted as well as the value, because `[GAME]` is where RE3 keeps it while every
+     * other patch this launcher writes lives in `[DLL]`: a value written into the wrong block is a patch
+     * that reads as correct and does nothing.
+     */
+    await installExecutable('ResidentEvil3.exe')
+    const calls: PatchCall[] = []
+    setLaunchDeps({
+      patchConfig: async (filePath, section, key, value) => {
+        calls.push({ filePath, section, key, value })
+        return true
+      },
+      inGameCrt: false
+    })
+    useInstallContext({})
+
+    expectPrepared(await prepareLaunch(request('re3_us')))
+
+    expect(calls.some((call) => call.key === 'Display_mode')).toBe(false)
   })
 
   it('turns the in-game CRT off by writing the payloads own defaults back', async () => {
@@ -654,7 +695,7 @@ describe('performLaunch', () => {
     expect(events[0].exitCode).toBe(1)
   })
 
-  it('clears the tracked process when it is killed, and still reports the exit', async () => {
+  it('keeps the stopping process tracked until exit before allowing a relaunch', async () => {
     await installExecutable(RETAIL_EXECUTABLE)
     useInstallContext({})
     const prepared = expectPrepared(await prepareLaunch(request('re1_us')))
@@ -669,7 +710,8 @@ describe('performLaunch', () => {
     killGame({ kill: (pid) => killed.push(pid) })
     expect(killed, 'the kill was handed the spawned pid').toEqual([4242])
 
-    expect(getGameStatus()).toMatchObject({ running: false, titleId: null, versionId: null })
+    expect(getGameStatus()).toMatchObject({ running: true, titleId: 're1', versionId: 're1_us' })
+    expect(await prepareLaunch(request('re1_us'))).toMatchObject({ ok: false, code: 'game-already-running' })
 
     // The killed child still reports its own exit; the slot is already free. `requested`
     // is what keeps that exit from being reported to the user as a crash: `taskkill /F`

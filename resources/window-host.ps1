@@ -126,6 +126,7 @@ switch ($Action) {
         [pscustomobject]@{
           handle = $_.handle; class = $_.class; title = $_.title; visible = $_.visible
           width = $_.width; height = $_.height; exStyle = $_.exStyle
+          borderX = $_.borderX; borderY = $_.borderY
         }
       })
     Write-Result ([pscustomobject]@{ ok = $true; action = 'query'; processId = $ProcessId; windows = $windows })
